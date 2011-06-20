@@ -78,32 +78,6 @@ class Cache[T] {
   var validation:Long = 1000
 
   // ========================================================================
-  // Set Resource Reader
-  // ========================================================================
-  /**
-   * Set resource reader that create InputStream from some uri.
-   * 
-   * @param raed function of resource reader
-   */
-  def setRead(read:(URI, Long) => (InputStream, Long)):Unit = {
-    this.read = read
-    return
-  }
-
-  // ========================================================================
-  // Set Cache Builder
-  // ========================================================================
-  /**
-   * Set cache builder function to create instance from InputStream
-   * 
-   * @param build function of cache builder
-   */
-  def setBuild(build:(InputStream) => T):Unit = {
-    this.build = build
-    return
-  }
-
-  // ========================================================================
   // Retrieve Instance
   // ========================================================================
   /**
@@ -234,7 +208,7 @@ class Cache[T] {
         cache = build(in)
         validate = now
         lastModified = mod
-        logger.debug("")
+        logger.debug("load cache from " + uri)
       } finally {
         Util.close(in)
       }
