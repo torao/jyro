@@ -160,6 +160,32 @@ class Cache[T] {
   }
 
   // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  // Reader: Reader Utility Functions
+  // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  /**
+   * The collection of general purpose resource reader functions for 
+   * {@code Cache.setRead()}.
+   */
+  object Reader {
+
+    // ======================================================================
+    // Properties
+    // ======================================================================
+    /**
+     * Properties builder function.
+     * 
+     * @param in input stream
+     * @return properties
+     */
+    def ofProperties(in:InputStream): java.util.Properties = {
+      val prop = new java.util.Properties()
+      prop.load(in)
+      return prop
+    }
+
+  }
+
+  // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   // Entry: Cache Entry
   // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   /**
