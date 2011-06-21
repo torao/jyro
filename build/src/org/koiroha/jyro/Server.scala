@@ -88,13 +88,14 @@ object Server {
    * @param args commandline arguments
    */
   private def help():Unit = {
+    import org.koiroha.jyro._
     System.err.printf(
 """Usage: %s [option]
-Startup Jyro Server 
+Startup %s %s Server 
 
 Server options:
   -p, --port   listening port (default %d)
-""", Array(classOf[Server].getName, defaultPort))
+""", Array(getClass.getName, Jyro.name, Jyro.version, defaultPort))
   }
 
 }

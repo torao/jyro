@@ -7,7 +7,7 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.korioha.jyro
+package org.koiroha.jyro
 
 import java.io._
 
@@ -52,6 +52,14 @@ object Jyro {
    * Version resource bundle of Jyro.
    */
   private val res = java.util.ResourceBundle.getBundle("org.koiroha.jyro.version");
+
+  // ========================================================================
+  // Application Name
+  // ========================================================================
+  /**
+   * Human readable application name.
+   */
+  def name = { res.getString("name") }
 
   // ========================================================================
   // Application ID
