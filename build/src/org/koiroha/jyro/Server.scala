@@ -9,6 +9,10 @@
  */
 package org.koiroha.jyro
 
+import org.apache.log4j._
+
+import org.eclipse.jetty.server.{Server => JettyServer}
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Server: 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -19,12 +23,33 @@ package org.koiroha.jyro
 class Server {
 
   // ========================================================================
+  // Interface
+  // ========================================================================
+  /**
+   * Network interface to listen.
+   */
+  var bindAddress = null
+
+  // ========================================================================
   // Server Port
   // ========================================================================
   /**
    * Listening port of console for this server.
    */
   var port = Server.defaultPort
+
+  // ========================================================================
+  // Start Server
+  // ========================================================================
+  /**
+   * Listening port of console for this server.
+   */
+  def start():Unit = {
+    new org.eclipse.jetty.server.Server()
+    val server = new JettyServer(port)
+    server.start()
+    return
+  }
 
 }
 
@@ -36,6 +61,14 @@ class Server {
  * @author takami torao
 */
 object Server {
+
+  // ========================================================================
+  // Log Output
+  // ========================================================================
+  /**
+   * Log output of this class.
+   */
+  private val logger = Logger.getLogger(classOf[Server])
 
   // ========================================================================
   // Default Server Port
@@ -54,7 +87,15 @@ object Server {
    */
   def main(args:Array[String]):Unit = {
     val server = new Server()
-    parseOptions(server, args.toList)
+
+    // parse commandline parameters
+    try {
+      parseOptions(server, args.toList)
+    } catch {
+      case ex:Throwable =>
+        help
+        System.exit(1)
+    }
     return
   }
 
@@ -69,6 +110,7 @@ object Server {
    */
   private def parseOptions(server:Server, args:List[String]):Unit = {
     args match {
+      // port number
       case ("-p" | "--port") :: port :: rest =>
         server.port = port.toInt
         parseOptions(server, rest)
