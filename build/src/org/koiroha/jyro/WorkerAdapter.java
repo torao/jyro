@@ -9,8 +9,12 @@
  */
 package org.koiroha.jyro;
 
+import java.net.*;
+
+import org.apache.log4j.Logger;
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Worker: Node Worker
+// WorkerAdapter: Node Worker
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  * 
@@ -19,7 +23,34 @@ package org.koiroha.jyro;
  * @author torao
  * @since 2011/07/02 Java SE 6
  */
-public interface Worker {
+public class WorkerAdapter {
+
+	// ======================================================================
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output of this class.
+	*/
+	private static final Logger logger = Logger.getLogger(WorkerAdapter.class);
+
+	// ======================================================================
+	// Class Loader
+	// ======================================================================
+	/**
+	 * Class loader that this worker use.
+	*/
+	private final URLClassLoader loader;
+
+	// ======================================================================
+	// Constructor
+	// ======================================================================
+	/**
+	 * 
+	*/
+	public WorkerAdapter(URL[] urls){
+		this.loader = new URLClassLoader(urls);
+		return;
+	}
 
 	// ======================================================================
 	// Execute Process
@@ -31,6 +62,8 @@ public interface Worker {
 	 * @param args arguments
 	 * @return result
 	*/
-	public Object exec(Object... args);
+	public Object exec(Object... args){
+		return null;
+	}
 
 }

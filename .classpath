@@ -33,11 +33,11 @@
 	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/stax-api-1.0.1.jar"/>
 	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/optional/log4j-1.2.14.jar"/>
 	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/optional/slf4j-log4j12-1.5.11.jar"/>
+	<classpathentry kind="lib" path="build/lib/xmllib_1.0.jar"/>
 	<classpathentry kind="var" path="TOMCAT_HOME/lib/servlet-api.jar"/>
 	<classpathentry kind="var" path="TOMCAT_HOME/lib/jasper.jar"/>
 	<classpathentry kind="var" path="TOMCAT_HOME/lib/jsp-api.jar"/>
 	<classpathentry kind="var" path="TOMCAT_HOME/lib/el-api.jar"/>
 	<classpathentry kind="var" path="TOMCAT_HOME/lib/annotations-api.jar"/>
-	<classpathentry kind="lib" path="build/lib/xmllib_1.0.jar"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>
