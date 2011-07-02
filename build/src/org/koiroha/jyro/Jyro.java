@@ -9,13 +9,14 @@
  */
 package org.koiroha.jyro;
 
+import java.io.File;
 import java.util.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Jyro: Node Container
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * 
+ *
  * @author takami torao
  */
 public class Jyro {
@@ -77,22 +78,42 @@ public class Jyro {
 	private final Map<String,List<NodeImpl>> nodes = new HashMap<String,List<NodeImpl>>();
 
 	// ======================================================================
-	// Constructor
+	// Directory
 	// ======================================================================
 	/**
-	 *
+	 * Home directory of this instance.
 	 */
-	public Jyro() {
-		return;
-	}
+	private final File dir;
 
 	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
-	 *
+	 * @param dir home directory of this instance
+	 * @param loader default class loader
 	 */
-	public NodeImpl get(String taskName, int num) {
+	public Jyro(File dir, ClassLoader loader) {
+		this.dir = dir;
+		return;
+	}
+
+	// ======================================================================
+	// Startup Services
+	// ======================================================================
+	/**
+	 * Start all services in this instance.
+	 */
+	public void startup(){
+		return;
+	}
+
+	// ======================================================================
+	// Shutdown Services
+	// ======================================================================
+	/**
+	 * Shutdown all services in this instance.
+	 */
+	public void shutdown(){
 		return;
 	}
 
