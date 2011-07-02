@@ -25,8 +25,7 @@ public interface Process {
 	// 
 	// ======================================================================
 	/**
-	 * 
-	 * <p>
+	 * Post specified job to this process.
 	*/
 	public void post(Job job);
 	
