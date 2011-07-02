@@ -7,49 +7,36 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro.webapp;
-
-import java.io.IOException;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.*;
+package org.koiroha.jyro;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// ConsoleServlet: Console Servlet
+// Node: Node Interface
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * The servlet for web console of Jyro.
- *
- * @author takami torao
+ * 
+ * <p>
+ * @version $Revision:$ $Date:$
+ * @author torao
+ * @since 2011/07/02 Java SE 6
  */
-public class ConsoleServlet extends HttpServlet {
+public interface Node {
 
 	// ======================================================================
-	// Serial Version
+	// Retrieve Name
 	// ======================================================================
 	/**
-	 * Serial version UID of this class.
-	 */
-	private static final long serialVersionUID = 1L;
+	 * Retrieve task name of this node. The return value may be ununiquely in
+	 * node container scope if same node running on context.
+	 * 
+	 * @return name of this node
+	*/
+	public String getTaskName();
 
 	// ======================================================================
-	// Constructor
+	// Retrieve 
 	// ======================================================================
 	/**
-	 *
-	 */
-	public ConsoleServlet() {
-		return;
-	}
-
-	// ======================================================================
-	// 
-	// ======================================================================
-	/**
-	 *
-	 */
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		return;
-	}
+	 * 
+	*/
 
 }

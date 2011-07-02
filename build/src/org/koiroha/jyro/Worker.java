@@ -7,49 +7,48 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro.webapp;
+package org.koiroha.jyro;
 
-import java.io.IOException;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.*;
+import org.apache.log4j.Logger;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// ConsoleServlet: Console Servlet
+// Worker: Node Worker
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * The servlet for web console of Jyro.
- *
- * @author takami torao
+ * 
+ * <p>
+ * @version $Revision:$ $Date:$
+ * @author torao
+ * @since 2011/07/02 Java SE 6
  */
-public class ConsoleServlet extends HttpServlet {
+public class Worker {
 
 	// ======================================================================
-	// Serial Version
+	// Log Output
 	// ======================================================================
 	/**
-	 * Serial version UID of this class.
-	 */
-	private static final long serialVersionUID = 1L;
+	 * Log output of this class.
+	*/
+	private static final Logger logger = Logger.getLogger(Worker.class);
 
 	// ======================================================================
-	// Constructor
+	// Log Output
 	// ======================================================================
 	/**
-	 *
-	 */
-	public ConsoleServlet() {
-		return;
-	}
+	 * Log output of this class.
+	*/
+	
 
 	// ======================================================================
-	// 
+	// Execute Process
 	// ======================================================================
 	/**
-	 *
-	 */
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		return;
-	}
+	 * Execute this process with specified arguments. This method called in
+	 * multi-thread environment.
+	 * 
+	 * @param args arguments
+	 * @return result
+	*/
+	public Object exec(Object... args);
 
 }

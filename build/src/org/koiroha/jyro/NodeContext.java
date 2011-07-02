@@ -9,37 +9,16 @@
  */
 package org.koiroha.jyro;
 
-import javax.jms.*;
-
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// JobController: Job Controller
+// NodeContext: 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- *
- * @author takami torao
+ * 
+ * <p>
+ * @version $Revision:$ $Date:$
+ * @author torao
+ * @since 2011/07/03 Java SE 6
  */
-public class JobController implements MessageListener {
-
-	// ======================================================================
-	// Constructor
-	// ======================================================================
-	/**
-	 *
-	 */
-	public JobController() {
-		return;
-	}
-
-	// ======================================================================
-	//
-	// ======================================================================
-	/**
-	 *
-	 * @param message
-	*/
-	@Override
-	public void onMessage(Message message) {
-		return;
-	}
+public interface NodeContext {
 
 }

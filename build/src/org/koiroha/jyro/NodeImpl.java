@@ -7,140 +7,143 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro.cell;
+package org.koiroha.jyro;
 
-import java.io.Serializable;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.concurrent.*;
+
+import org.apache.log4j.Logger;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Job: 
+// Node: 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  * 
  * <p>
  * @version $Revision:$ $Date:$
  * @author torao
- * @since 2011/06/28 Java SE 6
- * @param <T> result type of this job
+ * @since 2011/07/01 Java SE 6
  */
-public class Job<T> implements Serializable {
+public class NodeImpl implements Node {
 
 	// ======================================================================
-	// Serial Version
+	// Log Output
 	// ======================================================================
 	/**
-	 * Serial version of this class.
+	 * Log output of this class.
 	 */
-	private static final long serialVersionUID = 1L;
+	private static final Logger logger = Logger.getLogger(NodeImpl.class);
 
 	// ======================================================================
-	// Timestamp
+	// Task Name
 	// ======================================================================
 	/**
-	 * Construction timestamp of this job.
+	 * Task name of this node.
 	 */
-	private final long timestamp;
-
-	// ======================================================================
-	// Attributes
-	// ======================================================================
-	/**
-	 * Application-depend attribute.
-	 */
-	private final Map<String,String> attribute = new HashMap<String,String>();
+	private final String taskName;
 
 	// ======================================================================
 	// Process
 	// ======================================================================
 	/**
-	 * Distributed process.
+	 * Task name of this node.
 	 */
-	private final Process<T> process;
+	private final Worker process;
 
 	// ======================================================================
-	// Result
+	// Job Queue
 	// ======================================================================
 	/**
-	 * Result of process execution.
+	 * Job queue for workers.
 	 */
-	private T result = null;
+	private final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>();
+
+	// ======================================================================
+	// Thread Pool
+	// ======================================================================
+	/**
+	 * Thread pool to run workers.
+	 */
+	private final ThreadPoolExecutor workers;
 
 	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
-	 * 
-	 * @param proc process of this job
+	 * @param proc process to execute on this node
+	 * @param taskName task name of this node
 	 */
-	public Job(Process<T> proc) {
-		this.timestamp = System.currentTimeMillis();
+	public NodeImpl(String taskName, Worker proc) {
+		this.taskName = taskName;
 		this.process = proc;
+		this.workers = new ThreadPoolExecutor(5, 10, 10, TimeUnit.SECONDS, queue);
 		return;
 	}
 
 	// ======================================================================
-	// Retrieve Timestamp
+	// Retrieve Name
 	// ======================================================================
 	/**
-	 * Retrieve creation timestamp of this job.
+	 * Retrieve name of this node. The return value may be ununique in Jyro
+	 * scope if same workers running on context.
 	 * 
-	 * @return creation timestamp
-	 */
-	public long getTimestamp() {
-		return timestamp;
+	 * @return name of this node
+	*/
+	public String getTaskName(){
+		return taskName;
 	}
 
 	// ======================================================================
-	// Retrieve Attribute
+	// Retrieve Enqueued Job
 	// ======================================================================
 	/**
-	 * Retrieve application-specified attribute for this job. Return null if
-	 * value is not exist.
+	 * Retrieve enqueued and waiting jobs count.
 	 * 
-	 * @param name attribute name
-	 * @return attribute value
+	 * @return size of waiting jobs
 	 */
-	public String getAttribute(String name) {
-		return attribute.get(name);
+	public int getWaitingJobs(){
+		return queue.size();
 	}
 
 	// ======================================================================
-	// Set Attribute
+	// Max Worker Execution
 	// ======================================================================
 	/**
-	 * Set application-specified attribute for this job.
+	 * Retrieve the number of maximum worker threads to execute.
 	 * 
-	 * @param name attribute name
-	 * @param value attribute value
-	 * @return old value of specified name
-	 */
-	public String setAttribute(String name, String value) {
-		return attribute.put(name, value);
+	 * @return max workers
+	*/
+	public int getMaximumWorkers(){
+		return workers.getMaximumPoolSize();
 	}
 
 	// ======================================================================
-	// Retrieve Result
+	// Max Worker Execution
 	// ======================================================================
 	/**
-	 * Retrieve result of this job execution.
+	 * Set the number of maximum worker threads to execute.
+	 * for implementation.
 	 * 
-	 * @return result of this job
-	 */
-	public T getResult(){
-		return result;
+	 * @param max number of maximum workers
+	*/
+	public void setMaximumWorkers(int max){
+		workers.setMaximumPoolSize(max);
+		return;
 	}
 
 	// ======================================================================
-	// Execute Process
+	// 
 	// ======================================================================
 	/**
-	 * Execute process and return result.
 	 * 
-	 * @return result of process
-	 */
-	public T execute(){
-		this.result = process.execute();
-		return result;
+	*/
+	public void post() {
+		workers.execute(new Runnable(){
+			public void run(){
+				process.exec();
+			}
+		});
+		return;
 	}
-	
+
 }
