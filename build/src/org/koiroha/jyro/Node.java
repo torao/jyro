@@ -7,31 +7,36 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro.cell;
-
-import java.io.Serializable;
+package org.koiroha.jyro;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Process: Job Process
+// Node: Node Interface
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * The class to execute some process asynchronously.
+ * 
  * <p>
  * @version $Revision:$ $Date:$
  * @author torao
- * @since 2011/06/30 Java SE 6
- * @param <T> result type of execution
+ * @since 2011/07/02 Java SE 6
  */
-public interface Process<T> extends Serializable {
+public interface Node {
 
 	// ======================================================================
-	// Execute
+	// Retrieve Name
 	// ======================================================================
 	/**
-	 * Execute some process.
+	 * Retrieve task name of this node. The return value may be ununiquely in
+	 * node container scope if same node running on context.
 	 * 
-	 * @return result
+	 * @return name of this node
 	*/
-	public T execute();
+	public String getTaskName();
+
+	// ======================================================================
+	// Retrieve 
+	// ======================================================================
+	/**
+	 * 
+	*/
 
 }

@@ -9,7 +9,10 @@
  */
 package org.koiroha.jyro.webapp;
 
-import javax.servlet.http.HttpServlet;
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // ConsoleServlet: Console Servlet
@@ -36,6 +39,16 @@ public class ConsoleServlet extends HttpServlet {
 	 *
 	 */
 	public ConsoleServlet() {
+		return;
+	}
+
+	// ======================================================================
+	// 
+	// ======================================================================
+	/**
+	 *
+	 */
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		return;
 	}
 

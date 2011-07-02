@@ -7,83 +7,89 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro;
+package org.koiroha.jyro.cell;
 
-import java.util.*;
+import java.util.concurrent.ThreadPoolExecutor;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Jyro: Node Container
+// PooledThreadCell: Pooled-Thread Cell
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * 
- * @author takami torao
+ * Cell class that uses thread pool for worker threads.
+ * <p>
+ * @version $Revision:$ $Date:$
+ * @author torao
+ * @since 2011/06/30 Java SE 6
  */
-public class Jyro {
+public class PooledThreadCell implements Cell {
 
 	// ======================================================================
-	// Application Name
+	// Core Pool Size
 	// ======================================================================
 	/**
-	 * Human readable application name.
+	 * The number of threads to keep in the pool.
 	 */
-	public static final String NAME;
+	private int corePoolSize = 5;
 
 	// ======================================================================
-	// Application ID
+	// Max Pool Size
 	// ======================================================================
 	/**
-	 * Application ID to be able to use file or directory name, part of uri
-	 * and so on.
+	 * The number of threads to keep in the pool.
 	 */
-	public static final String ID;
+	private int maximumPoolSize = 10;
 
 	// ======================================================================
-	// Version
+	// Max Pool Size
 	// ======================================================================
 	/**
-	 * The three numbers separated with period that specifies version of Jyro
-	 * such as "1.0.9".
+	 * The number of threads to keep in the pool.
 	 */
-	public static final String VERSION;
+	private ThreadPoolExecutor executor = null;
 
 	// ======================================================================
-	// Build Number
+	// コンストラクタ
 	// ======================================================================
 	/**
-	 * Read build number from application bundle resource and return.
+	 * コンストラクタは何も行いません。
+	 * <p>
 	 */
-	public static final String BUILD;
-
-	// ======================================================================
-	// Static Initializer
-	// ======================================================================
-	/**
-	 * Read and set version constants.
-	 */
-	static {
-		ResourceBundle res = ResourceBundle.getBundle("org.koiroha.jyro.version");
-		NAME = res.getString("name");
-		ID = res.getString("id");
-		VERSION = res.getString("version");
-		BUILD = res.getString("build");
+	public PooledThreadCell() {
+		return;
 	}
 
 	// ======================================================================
-	// Nodes
+	// Start Cell
 	// ======================================================================
 	/**
-	 * Nodes in this context.
-	 */
-	private final Map<String,List<NodeImpl>> nodes = new HashMap<String,List<NodeImpl>>();
+	 * Start job execution of this cell.
+	*/
+	public void start(){
+		return;
+	}
 
 	// ======================================================================
-	// Constructor
+	// Stop Cell
 	// ======================================================================
 	/**
-	 *
-	 */
-	public Jyro() {
+	 * Stop job execution of this cell.
+	*/
+	public void stop(){
 		return;
+	}
+
+	// ======================================================================
+	// 
+	// ======================================================================
+	/**
+	 * 
+	 * <p>
+	 * @param job
+	 */
+	@Override
+	public void post(Job job) {
+		// TODO Auto-generated method stub
+
 	}
 
 }

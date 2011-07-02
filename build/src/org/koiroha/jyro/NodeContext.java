@@ -7,31 +7,18 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro.cell;
-
-import java.io.Serializable;
+package org.koiroha.jyro;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Process: Job Process
+// NodeContext: 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * The class to execute some process asynchronously.
+ * 
  * <p>
  * @version $Revision:$ $Date:$
  * @author torao
- * @since 2011/06/30 Java SE 6
- * @param <T> result type of execution
+ * @since 2011/07/03 Java SE 6
  */
-public interface Process<T> extends Serializable {
-
-	// ======================================================================
-	// Execute
-	// ======================================================================
-	/**
-	 * Execute some process.
-	 * 
-	 * @return result
-	*/
-	public T execute();
+public interface NodeContext {
 
 }

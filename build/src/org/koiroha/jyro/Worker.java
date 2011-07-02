@@ -7,31 +7,30 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro.cell;
-
-import java.io.Serializable;
+package org.koiroha.jyro;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Process: Job Process
+// Worker: Node Worker
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * The class to execute some process asynchronously.
+ * 
  * <p>
  * @version $Revision:$ $Date:$
  * @author torao
- * @since 2011/06/30 Java SE 6
- * @param <T> result type of execution
+ * @since 2011/07/02 Java SE 6
  */
-public interface Process<T> extends Serializable {
+public interface Worker {
 
 	// ======================================================================
-	// Execute
+	// Execute Process
 	// ======================================================================
 	/**
-	 * Execute some process.
+	 * Execute this process with specified arguments. This method called in
+	 * multi-thread environment.
 	 * 
+	 * @param args arguments
 	 * @return result
 	*/
-	public T execute();
+	public Object exec(Object... args);
 
 }

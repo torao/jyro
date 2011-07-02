@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://www.koiroha.org/xmlns/jyro/configuration_1.0" targetNamespace="http://www.koiroha.org/xmlns/jyro/configuration_1.0">
+
+	<xsd:element name="jyro">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="property" minOccurs="0" maxOccurs="unbounded"/>
+				<xsd:element ref="node" minOccurs="0" maxOccurs="unbounded"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="node">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="worker" minOccurs="1" maxOccurs="1"/>
+			</xsd:sequence>
+			<xsd:attribute name="task" type="xsd:string" use="required">
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="worker">
+		<xsd:complexType>
+			<xsd:sequence>
+			</xsd:sequence>
+			<xsd:attribute name="min" type="xsd:unsignedInt" use="optional" default="5">
+			</xsd:attribute>
+			<xsd:attribute name="max" type="xsd:unsignedInt" use="optional" default="10">
+			</xsd:attribute>
+			<xsd:attribute name="type" type="xsd:string" use="optional">
+			</xsd:attribute>
+			<xsd:attribute name="charset" type="xsd:string" use="optional">
+			</xsd:attribute>
+			<xsd:attribute name="classpath" type="xsd:string" use="optional">
+			</xsd:attribute>
+			<xsd:attribute name="libext" type="xsd:string" use="optional">
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="property">
+		<xsd:complexType>
+			<xsd:attribute name="name" type="propertyName" use="required">
+			</xsd:attribute>
+			<xsd:attribute name="value" type="xsd:string" use="required">
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:simpleType name="propertyName">
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="\w+(\.\w+)*"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+</xsd:schema>

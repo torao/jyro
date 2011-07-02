@@ -9,81 +9,75 @@
  */
 package org.koiroha.jyro;
 
-import java.util.*;
-
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Jyro: Node Container
+// JyroException: 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  * 
- * @author takami torao
+ * <p>
+ * @version $Revision:$ $Date:$
+ * @author torao
+ * @since 2011/07/03 Java SE 6
  */
-public class Jyro {
+public class JyroException extends Exception {
 
 	// ======================================================================
-	// Application Name
+	// Serial Version
 	// ======================================================================
 	/**
-	 * Human readable application name.
+	 * Serial version of this class.
 	 */
-	public static final String NAME;
+	private static final long serialVersionUID = 1L;
 
 	// ======================================================================
-	// Application ID
+	// コンストラクタ
 	// ======================================================================
 	/**
-	 * Application ID to be able to use file or directory name, part of uri
-	 * and so on.
+	 * コンストラクタは何も行いません。
+	 * <p>
 	 */
-	public static final String ID;
-
-	// ======================================================================
-	// Version
-	// ======================================================================
-	/**
-	 * The three numbers separated with period that specifies version of Jyro
-	 * such as "1.0.9".
-	 */
-	public static final String VERSION;
-
-	// ======================================================================
-	// Build Number
-	// ======================================================================
-	/**
-	 * Read build number from application bundle resource and return.
-	 */
-	public static final String BUILD;
-
-	// ======================================================================
-	// Static Initializer
-	// ======================================================================
-	/**
-	 * Read and set version constants.
-	 */
-	static {
-		ResourceBundle res = ResourceBundle.getBundle("org.koiroha.jyro.version");
-		NAME = res.getString("name");
-		ID = res.getString("id");
-		VERSION = res.getString("version");
-		BUILD = res.getString("build");
+	public JyroException() {
+		// TODO Auto-generated constructor stub
 	}
 
 	// ======================================================================
-	// Nodes
+	// コンストラクタ
 	// ======================================================================
 	/**
-	 * Nodes in this context.
+	 * コンストラクタは何も行いません。
+	 * <p>
+	 * @param arg0
 	 */
-	private final Map<String,List<NodeImpl>> nodes = new HashMap<String,List<NodeImpl>>();
+	public JyroException(String arg0) {
+		super(arg0);
+		// TODO Auto-generated constructor stub
+	}
 
 	// ======================================================================
-	// Constructor
+	// コンストラクタ
 	// ======================================================================
 	/**
-	 *
+	 * コンストラクタは何も行いません。
+	 * <p>
+	 * @param arg0
 	 */
-	public Jyro() {
-		return;
+	public JyroException(Throwable arg0) {
+		super(arg0);
+		// TODO Auto-generated constructor stub
+	}
+
+	// ======================================================================
+	// コンストラクタ
+	// ======================================================================
+	/**
+	 * コンストラクタは何も行いません。
+	 * <p>
+	 * @param arg0
+	 * @param arg1
+	 */
+	public JyroException(String arg0, Throwable arg1) {
+		super(arg0, arg1);
+		// TODO Auto-generated constructor stub
 	}
 
 }
