@@ -7,44 +7,48 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro.cell;
+package org.koiroha.jyro;
+
+import org.apache.log4j.Logger;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Cell: 
+// Worker: Node Worker
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * The class of process unit that has job queue and worker threads.
+ * 
  * <p>
  * @version $Revision:$ $Date:$
  * @author torao
- * @since 2011/06/28 Java SE 6
+ * @since 2011/07/02 Java SE 6
  */
-public interface Cell {
+public class WorkerAdapter {
 
 	// ======================================================================
-	// Start Cell
+	// Log Output
 	// ======================================================================
 	/**
-	 * Start job execution of this cell.
+	 * Log output of this class.
 	*/
-	public void start();
+	private static final Logger logger = Logger.getLogger(WorkerAdapter.class);
 
 	// ======================================================================
-	// Stop Cell
+	// Log Output
 	// ======================================================================
 	/**
-	 * Stop job execution of this cell.
+	 * Log output of this class.
 	*/
-	public void stop();
+	
 
 	// ======================================================================
-	// Enqueue Job
+	// Execute Process
 	// ======================================================================
 	/**
-	 * Enqueue job to this cell.
+	 * Execute this process with specified arguments. This method called in
+	 * multi-thread environment.
 	 * 
-	 * @param job 
+	 * @param args arguments
+	 * @return result
 	*/
-	public void post(Job<?> job);
+	public Object exec(Object... args);
 
 }
