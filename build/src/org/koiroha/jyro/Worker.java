@@ -13,7 +13,7 @@ package org.koiroha.jyro;
 // Worker: Node Worker
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * 
+ * Interface for node worker.
  * <p>
  * @version $Revision:$ $Date:$
  * @author torao
