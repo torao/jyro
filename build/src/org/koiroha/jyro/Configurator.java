@@ -19,6 +19,7 @@ import javax.xml.parsers.*;
 import javax.xml.xpath.*;
 
 import org.apache.log4j.Logger;
+import org.koiroha.jyro.util.*;
 import org.koiroha.jyro.util.Text;
 import org.koiroha.xml.DefaultNamespaceContext;
 import org.w3c.dom.*;
@@ -61,6 +62,14 @@ final class Configurator {
 	private final Map<String,String> param = new HashMap<String,String>();
 
 	// ======================================================================
+	// XPath
+	// ======================================================================
+	/**
+	 * Utility instnce of xpath.
+	 */
+	private final XPath xpath;
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -69,6 +78,13 @@ final class Configurator {
 	 */
 	public Configurator(File dir){
 		this.dir = dir;
+
+		// utility xpath instance that used in this class
+		DefaultNamespaceContext nc = new DefaultNamespaceContext();
+		nc.setNamespaceURI("j", XMLNS10);
+		XPathFactory xpathFactory = XPathFactory.newInstance();
+		xpath = xpathFactory.newXPath();
+		xpath.setNamespaceContext(nc);
 		return;
 	}
 
@@ -107,6 +123,8 @@ final class Configurator {
 	 *
 	 * @param parent parent class loader of each nodes
 	 * @param init initial property replaced by ${...}
+	 * @return taskname-node map
+	 * @throws JyroException in case fail to configure
 	 */
 	public Map<String,List<Node>> createNodes(ClassLoader parent, Properties init) throws JyroException {
 		param.clear();	// init parameter
@@ -121,6 +139,8 @@ final class Configurator {
 		Document doc = null;
 		try {
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			factory.setNamespaceAware(true);
+			factory.setXIncludeAware(true);
 			DocumentBuilder builder = factory.newDocumentBuilder();
 			doc = builder.parse(file);
 		} catch(ParserConfigurationException ex){
@@ -141,16 +161,9 @@ final class Configurator {
 			param.put(e.getKey().toString(), e.getValue().toString());
 		}
 
-		// utility xpath instance that used in this class
-		DefaultNamespaceContext nc = new DefaultNamespaceContext();
-		nc.setNamespaceURI("j", XMLNS10);
-		XPathFactory xpathFactory = XPathFactory.newInstance();
-		XPath xpath = xpathFactory.newXPath();
-		xpath.setNamespaceContext(nc);
-
 		// retrieve all property settings in configuration
 		Element root = doc.getDocumentElement();
-		for(Element elem: elemset(xpath, "j:jyro/j:property", root)){
+		for(Element elem: elemset("j:property", root)){
 			String name = elem.getAttribute("name");
 			String value = f(elem.getAttribute("value"));
 			param.put(name, value);
@@ -158,8 +171,8 @@ final class Configurator {
 
 		// build all nodes and taskname mapping
 		Map<String,List<Node>> map = new HashMap<String,List<Node>>();
-		for(Element elem: elemset(xpath, "j:jyro/j:node", root)){
-			Node node = buildNode(xpath, elem, parent);
+		for(Element elem: elemset("j:node", root)){
+			Node node = buildNode(elem, parent);
 			List<Node> list = map.get(node.getTaskName());
 			if(list == null){
 				list = new ArrayList<Node>();
@@ -171,18 +184,17 @@ final class Configurator {
 	}
 
 	// ======================================================================
-	// Parse Configuration
+	// Build Node
 	// ======================================================================
 	/**
-	 * Parse xml configuration specified in constructor.
+	 * Build node instance from specified element.
 	 *
 	 * @param elem node element
 	 * @param parent default class loader of this node
 	 * @return Jyro instance
 	 * @throws JyroException fail to build node
-	 * @throws XPathException invalid xpath (bug?)
 	 */
-	private Node buildNode(XPath xpath, Element elem, ClassLoader parent) throws JyroException {
+	private Node buildNode(Element elem, ClassLoader parent) throws JyroException {
 
 		// retrieve task name
 		String task = f(elem.getAttribute("task"));
@@ -193,15 +205,17 @@ final class Configurator {
 		ClassLoader loader = getLibextLoader(classpath, extdirs, parent);
 
 		// retrieve worker element
-		Element wk = elem(xpath, "j:worker", elem);
-		if(wk == null){
-			throw new JyroException("no worker found in node definition: " + task);
-		}
-
-		// build worker as Java implementation
 		Worker worker = null;
-		if(wk.hasAttribute("class")){
+		Element wk = elem("j:worker", elem);
+		if(wk != null){
 			worker = createWorker(f(wk.getAttribute("class")), loader);
+		} else {
+			wk = elem("j:script", elem);
+			if(wk != null){
+				worker = createScript(loader, wk);
+			} else {
+				throw new JyroException("no worker found in node definition: " + task);
+			}
 		}
 
 		// create node implementation
@@ -240,6 +254,42 @@ final class Configurator {
 	}
 
 	// ======================================================================
+	// Create Worker
+	// ======================================================================
+	/**
+	 * Create worker for specified Java class.
+	 *
+	 * @param clazz class name of worker
+	 * @param loader class loader to create worker
+	 * @return worker instance
+	 * @throws JyroException if fail to create worker instance
+	 */
+	private Worker createScript(ClassLoader loader, Element elem) throws JyroException {
+		String type = f(elem.getAttribute("type"));
+		String includes = f(elem.getAttribute("includes"));
+		String charset = f(elem.getAttribute("charset"));
+
+		// parse include files
+		List<File> files = new ArrayList<File>();
+		StringTokenizer tk = new StringTokenizer(includes, File.pathSeparator);
+		while(tk.hasMoreTokens()){
+			String path = tk.nextToken();
+			try {
+				for(File f: IO.fileSet(dir, path)){
+					files.add(f);
+				}
+			} catch(IOException ex){
+				logger.warn("invalid include path: " + path + "; " + ex);
+			}
+		}
+
+		File[] fs = files.toArray(new File[files.size()]);
+		String[] cs = new String[fs.length];
+		Arrays.fill(cs, charset);
+		return new ScriptWorker(loader, type, fs, cs);
+	}
+
+	// ======================================================================
 	// Format String
 	// ======================================================================
 	/**
@@ -275,13 +325,12 @@ final class Configurator {
 	/**
 	 * Retrieve element for specified xpath expression.
 	 *
-	 * @param xpath xpath object
 	 * @param expr xpath expression
 	 * @param elem base node
 	 * @return element
 	 */
-	private Element elem(XPath xpath, String expr, Object elem){
-		Iterator<Element> it = elemset(xpath, expr, elem).iterator();
+	private Element elem(String expr, Object elem){
+		Iterator<Element> it = elemset(expr, elem).iterator();
 		if(it.hasNext()){
 			return it.next();
 		}
@@ -294,11 +343,11 @@ final class Configurator {
 	/**
 	 * Retrieve nodeset for specified element.
 	 *
-	 * @param xpath xpath object
 	 * @param expr xpath expression
 	 * @param elem base node
+	 * @return iterable of elements
 	 */
-	private Iterable<Element> elemset(XPath xpath, String expr, Object elem){
+	private Iterable<Element> elemset(String expr, Object elem){
 		List<Element> list = new ArrayList<Element>();
 		try {
 			NodeList nl = (NodeList)xpath.evaluate(expr, elem, XPathConstants.NODESET);

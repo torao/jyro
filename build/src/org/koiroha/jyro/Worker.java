@@ -13,7 +13,7 @@ package org.koiroha.jyro;
 // Worker: Node Worker
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * 
+ *
  * <p>
  * @version $Revision:$ $Date:$
  * @author torao
@@ -27,10 +27,11 @@ public interface Worker {
 	/**
 	 * Execute this process with specified arguments. This method called in
 	 * multi-thread environment.
-	 * 
+	 *
 	 * @param args arguments
 	 * @return result
+	 * @throws WorkerException
 	*/
-	public Object exec(Object... args);
+	public Object exec(Object... args) throws WorkerException;
 
 }

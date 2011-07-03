@@ -9,10 +9,7 @@
  */
 package org.koiroha.jyro;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import org.apache.log4j.Logger;
 
@@ -85,6 +82,9 @@ public class Node {
 	 * @param loader class loader of this node
 	 */
 	public Node(String taskName, ClassLoader loader, Worker proc) {
+		assert(taskName != null);
+		assert(loader != null);
+		assert(proc != null);
 		this.taskName = taskName;
 		this.loader = loader;
 		this.worker = proc;
@@ -177,6 +177,7 @@ public class Node {
 	*/
 	public void start(){
 		logger.debug("start node " + getTaskName());
+		threads.prestartAllCoreThreads();
 		return;
 	}
 
@@ -187,7 +188,8 @@ public class Node {
 	 * Stop workers on this node.
 	*/
 	public void stop(){
-		logger.debug("top node " + getTaskName());
+		logger.debug("stop node " + getTaskName());
+		threads.shutdown();
 		return;
 	}
 

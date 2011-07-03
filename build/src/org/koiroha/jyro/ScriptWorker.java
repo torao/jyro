@@ -9,11 +9,12 @@
  */
 package org.koiroha.jyro;
 
-import java.io.File;
+import java.io.*;
 
 import javax.script.*;
 
 import org.apache.log4j.Logger;
+import org.koiroha.jyro.util.IO;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // ScriptWorker: Script Worker
@@ -38,21 +39,20 @@ public class ScriptWorker implements Worker {
 	private static final Logger logger = Logger.getLogger(ScriptWorker.class);
 
 	// ======================================================================
-	// Static Initializer
-	// ======================================================================
-	/**
-	 *
-	 */
-	static {
-	}
-
-	// ======================================================================
 	// Script Engine
 	// ======================================================================
 	/**
-	 *
+	 * Invocable script engine.
 	 */
-	private final ScriptEngine engine;
+	private final Invocable engine;
+
+	// ======================================================================
+	// Function Name
+	// ======================================================================
+	/**
+	 * Function name to call script.
+	 */
+	private final String function = "main";
 
 	// ======================================================================
 	// Constructor
@@ -61,15 +61,16 @@ public class ScriptWorker implements Worker {
 	 * @param loader class loader that used in script
 	 * @param type MIME-Type or script name
 	 * @param includes included script files
+	 * @param charsets character set for each include files
 	 * @throws JyroException
 	 */
-	public ScriptWorker(ClassLoader loader, String type, File... includes) throws JyroException {
+	public ScriptWorker(ClassLoader loader, String type, File[] includes, String[] charsets) throws JyroException {
 
 		// log output default supported script
 		ScriptEngineManager manager = new ScriptEngineManager(loader);
 		for(ScriptEngineFactory f: manager.getEngineFactories()){
 			logger.debug(String.format(
-				"%s %s (%s %s); name=[%s], mime-type=[%s], ext=[%s]",
+				"%s %s (%s %s); name=%s, mime-type=%s, ext=%s",
 				f.getLanguageName(), f.getLanguageVersion(),
 				f.getEngineName(), f.getEngineVersion(),
 				f.getNames(), f.getMimeTypes(), f.getExtensions()));
@@ -83,10 +84,39 @@ public class ScriptWorker implements Worker {
 				throw new JyroException("unsupported script type: " + type);
 			}
 		}
-		this.engine = engine;
 
-		// load all script files
-		this.engine.
+		if(! (engine instanceof Invocable)){
+			throw new JyroException("function invocation is not supported by script engine: " + type);
+		}
+		this.engine = (Invocable)engine;
+
+		// load all script files and evaluate
+		for(int i=0; i<includes.length; i++){
+			File src = includes[i];
+			String charset = charsets[i];
+			Reader in = null;
+			try {
+
+				// open source file
+				if(charset == null) {
+					in = new FileReader(src);
+				} else {
+					in = new InputStreamReader(new FileInputStream(src), charset);
+				}
+				in = new BufferedReader(in);
+
+				// evaluate source file
+				engine.put(ScriptEngine.FILENAME, src.getAbsolutePath());
+				engine.eval(in);
+			} catch(FileNotFoundException ex){
+				logger.warn("script file not found: " + src);
+			} catch(Exception ex){
+				throw new JyroException("fail to evaluate script: " + src, ex);
+			} finally {
+				IO.close(in);
+			}
+		}
+
 		return;
 	}
 
@@ -99,8 +129,15 @@ public class ScriptWorker implements Worker {
 	 *
 	 * @param args arguments
 	 * @return result
+	 * @throws WorkerException
 	*/
 	@Override
-	public Object exec(Object... args);
+	public Object exec(Object... args) throws WorkerException {
+		try {
+			return engine.invokeFunction(function, args);
+		} catch(Exception ex){
+			throw new WorkerException(ex);
+		}
+	}
 
 }

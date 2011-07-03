@@ -9,7 +9,7 @@
  */
 package org.koiroha.jyro;
 
-import java.io.*;
+import java.io.File;
 import java.util.*;
 
 import org.apache.log4j.Logger;
@@ -154,14 +154,6 @@ public class Jyro {
 	private final File dir;
 
 	// ======================================================================
-	// Directory
-	// ======================================================================
-	/**
-	 * Home directory of this instance.
-	 */
-	private final RandomAccessFile lock = null;
-
-	// ======================================================================
 	// Class Loader
 	// ======================================================================
 	/**
@@ -176,6 +168,7 @@ public class Jyro {
 	 * @param dir home directory of this instance
 	 * @param parent parent class loader
 	 * @param prop init property replace with placeholder such as ${foo.bar}
+	 * @throws JyroException if cannot configure instance
 	 */
 	public Jyro(File dir, ClassLoader parent, Properties prop) throws JyroException{
 		logger.debug("initializing Jyro on directory: " + dir);
@@ -209,31 +202,7 @@ public class Jyro {
 	 */
 	public void startup() throws JyroException {
 		logger.debug("startup()");
-/* if use lock
-		// create temporary directory if not exits
-		File tmp = getTemporaryDirectory();
-		if(! tmp.isDirectory()){
-			if(tmp.mkdirs()){
-				logger.debug("create new temporary directory: " + tmp);
-			} else {
-				logger.warn("fail to create temporary directory: " + tmp);
-			}
-		}
 
-		// acquire lock of home directory
-		File lockFile = new File(tmp, Configurator.FILE_LOCK);
-		try {
-			lock = new RandomAccessFile(lockFile, "rw");
-			FileLock fl = lock.getChannel().tryLock();
-			if(fl == null){
-				throw new JyroException("unable to acquire lock of home: " + lockFile);
-			}
-			logger.debug("${jyro.home} lock success: " + Configurator.DIR_TMP + "/" + Configurator.FILE_LOCK);
-		} catch(IOException ex){
-			IO.close(lock);
-			throw new JyroException("fail to lock: " + lockFile, ex);
-		}
-*/
 		// start all nodes
 		for(List<Node> l: nodes.values()){
 			for(Node n: l){
@@ -260,23 +229,8 @@ public class Jyro {
 				n.stop();
 			}
 		}
-/*
-		IO.close(lock);
-		lock = null;
-*/
-		return;
-	}
 
-	// ======================================================================
-	// Retrieve Temporary Directory
-	// ======================================================================
-	/**
-	 * Retrieve temporary directory
-	 *
-	 * @return temporary directory of this instance.
-	 */
-	private File getTemporaryDirectory(){
-		return new File(dir, Const.DIR_TMP);
+		return;
 	}
 
 }
