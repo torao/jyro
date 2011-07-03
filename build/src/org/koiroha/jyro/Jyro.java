@@ -9,16 +9,29 @@
  */
 package org.koiroha.jyro;
 
+import java.io.*;
+import java.nio.channels.FileLock;
 import java.util.*;
+
+import org.apache.log4j.Logger;
+import org.koiroha.jyro.util.IO;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Jyro: Node Container
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * 
+ *
  * @author takami torao
  */
 public class Jyro {
+
+	// ======================================================================
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output of this class.
+	 */
+	private static final Logger logger = Logger.getLogger(Jyro.class);
 
 	// ======================================================================
 	// Application Name
@@ -77,12 +90,71 @@ public class Jyro {
 	private final Map<String,List<NodeImpl>> nodes = new HashMap<String,List<NodeImpl>>();
 
 	// ======================================================================
+	// Directory
+	// ======================================================================
+	/**
+	 * Home directory of this instance.
+	 */
+	private final File dir;
+
+	// ======================================================================
+	// Directory
+	// ======================================================================
+	/**
+	 * Home directory of this instance.
+	 */
+	private RandomAccessFile lock = null;
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
-	 *
+	 * @param dir home directory of this instance
+	 * @param loader default class loader
 	 */
-	public Jyro() {
+	public Jyro(File dir, ClassLoader loader) {
+		this.dir = dir;
+		return;
+	}
+
+	// ======================================================================
+	// Startup Services
+	// ======================================================================
+	/**
+	 * Start all services in this instance.
+	 *
+	 * @throws JyroException if fail to startup jyro
+	 */
+	public void startup() throws JyroException {
+		logger.debug("startup()");
+
+		// acquire lock of home directory
+		File lockFile = new File(dir, "tmp" + File.separator + ".lock");
+		try {
+			lock = new RandomAccessFile(lockFile, "w");
+			FileLock fl = lock.getChannel().tryLock();
+			if(fl == null){
+				throw new JyroException("unable to acquire lock of home: " + lockFile);
+			}
+		} catch(IOException ex){
+			IO.close(lock);
+			throw new JyroException("fail to lock: " + lockFile);
+		}
+		return;
+	}
+
+	// ======================================================================
+	// Shutdown Services
+	// ======================================================================
+	/**
+	 * Shutdown all services in this instance.
+	 *
+	 * @throws JyroException if fail to shutdown jyro
+	 */
+	public void shutdown() throws JyroException {
+		logger.debug("shutdown()");
+		IO.close(lock);
+		lock = null;
 		return;
 	}
 

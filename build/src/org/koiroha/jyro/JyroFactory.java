@@ -124,8 +124,38 @@ public class JyroFactory {
 		nl = (NodeList)xpath.evaluate("j:jyro/j:node", root, XPathConstants.NODESET);
 		for(int i=0; i<nl.getLength(); i++){
 			Element elem = (Element)nl.item(i);
-			String task = f(elem.getAttribute("task"));
+			Node node = buildNode(elem);
 		}
+		return;
+	}
+
+	// ======================================================================
+	// Parse Configuration
+	// ======================================================================
+	/**
+	 * Parse xml configuration specified in constructor.
+	 * 
+	 * @return Jyro instance
+	 * @throws XPathException invalid xpath (bug?)
+	 */
+	private Node buildNode(Element elem) throws XPathException {
+		String task = f(elem.getAttribute("task"));
+		return;
+	}
+
+	// ======================================================================
+	// Build Worker Adapter
+	// ======================================================================
+	/**
+	 * Build worker adapter.
+	 * 
+	 * @param elem worker element
+	 * @return worker
+	 * @throws XPathException invalid xpath
+	 */
+	private WorkerAdapter buildWorker(Element elem) throws XPathException {
+		
+		// retrieve classpath and extdirs parameter
 		return;
 	}
 

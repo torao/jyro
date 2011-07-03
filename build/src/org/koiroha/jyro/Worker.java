@@ -9,8 +9,6 @@
  */
 package org.koiroha.jyro;
 
-import org.apache.log4j.Logger;
-
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Worker: Node Worker
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -21,23 +19,7 @@ import org.apache.log4j.Logger;
  * @author torao
  * @since 2011/07/02 Java SE 6
  */
-public class Worker {
-
-	// ======================================================================
-	// Log Output
-	// ======================================================================
-	/**
-	 * Log output of this class.
-	*/
-	private static final Logger logger = Logger.getLogger(Worker.class);
-
-	// ======================================================================
-	// Log Output
-	// ======================================================================
-	/**
-	 * Log output of this class.
-	*/
-	
+public interface Worker {
 
 	// ======================================================================
 	// Execute Process
