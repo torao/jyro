@@ -16,7 +16,6 @@ import javax.servlet.http.*;
 
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
-import org.koiroha.jyro.util.IO;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // ConsoleServlet: Console Servlet
@@ -89,21 +88,19 @@ public class ConsoleServlet extends HttpServlet {
 		// resolve relative path
 		File dir = new File(dirName);
 		if(! dir.isAbsolute()){
-			dirName = getServletContext().getRealPath("/") + dirName;
+			dirName = getServletContext().getRealPath(dirName);
+			dir = new File(dirName);
 		}
 		logger.info("jyro.home=" + dirName);
 
-		// build jyro instance
-		InputStream in = null;
 		try {
-			this.jyro = JyroFactory.createInstance(dir, null);
+			// build jyro instance
+			this.jyro = new Jyro(dir, null, null);
 
 			// startup jyro
 			this.jyro.startup();
 		} catch(JyroException ex){
 			throw new ServletException(ex);
-		} finally {
-			IO.close(in);
 		}
 		return;
 	}

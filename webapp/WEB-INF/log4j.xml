@@ -15,10 +15,12 @@
      </layout>
   </appender>
 
-  <category name="org.koiroha" >
+<!--
+  <category name="org.koiroha" additivity="false">
     <priority value ="debug" />
     <appender-ref ref="stdout" />
-  </category>  
+  </category>
+-->
   <root>
     <priority value ="debug" />
     <appender-ref ref="stdout"/>
