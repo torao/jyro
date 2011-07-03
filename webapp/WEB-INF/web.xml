@@ -10,7 +10,7 @@
    <servlet-class>org.koiroha.jyro.webapp.ConsoleServlet</servlet-class>
    <init-param>
      <param-name>jyro.home</param-name>
-     <param-value>../build/sample/home</param-value>
+     <param-value>WEB-INF/jyro</param-value>
    </init-param>
    <load-on-startup>1</load-on-startup>
  </servlet>

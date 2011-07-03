@@ -9,16 +9,20 @@
  */
 package org.koiroha.jyro;
 
+import static org.koiroha.jyro.Jyro.Const.*;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import javax.xml.parsers.*;
 import javax.xml.xpath.*;
 
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.util.Text;
 import org.koiroha.xml.DefaultNamespaceContext;
 import org.w3c.dom.*;
+import org.xml.sax.SAXException;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // JyroFactory: Jyro Factory
@@ -30,7 +34,7 @@ import org.w3c.dom.*;
  * @author torao
  * @since 2011/07/03 Java SE 6
  */
-public class JyroFactory {
+final class Configurator {
 
 	// ======================================================================
 	// Log Output
@@ -38,120 +42,132 @@ public class JyroFactory {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(JyroFactory.class);
+	private static final Logger logger = Logger.getLogger(Configurator.class);
 
 	// ======================================================================
-	// XML Namespace
+	// Home Directory
 	// ======================================================================
 	/**
-	 * XML Namespace of Jyro configuration xml.
+	 * Home directory to configure Jyro instance.
 	 */
-	public static final String XMLNS10 = "http://www.koiroha.org/xmlns/jyro/configuration_1.0";
+	private final File dir;
 
 	// ======================================================================
-	// Default Library Directory
+	// Property
 	// ======================================================================
 	/**
-	 * Library directory name to load as default. ${jyro.home}/{@value}
+	 * Placeholder map in configuration such as ${foo.bar}.
 	 */
-	public static final String DIR_LIB = "lib";
-
-	// ======================================================================
-	// Temporary Directory
-	// ======================================================================
-	/**
-	 * Temporary directory to place some work files. ${jyro.home}/{@value}
-	 */
-	public static final String DIR_TMP = "tmp";
-
-	// ======================================================================
-	// Lock Filename
-	// ======================================================================
-	/**
-	 * Lock filename that will be placed in temporary directory.
-	 */
-	public static final String FILE_LOCK = ".lock";
-
-	// ======================================================================
-	// Root Node
-	// ======================================================================
-	/**
-	 * Root element of xml configuration.
-	 */
-	private final Element root;
-
-	// ======================================================================
-	// XPath
-	// ======================================================================
-	/**
-	 * XPath to parse xml.
-	 */
-	private final XPath xpath;
-
-	// ======================================================================
-	// Properties Map
-	// ======================================================================
-	/**
-	 * Properties map defined in configuration.
-	 */
-	private final Map<String,String> properties = new HashMap<String,String>();
+	private final Map<String,String> param = new HashMap<String,String>();
 
 	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
-	 * The constructor is hidden in this class.
 	 *
-	 * @param root root element of xml configuration
-	 * @param prop default properties
+	 * @param dir home directory of jyro
 	 */
-	private JyroFactory(Element root, Properties prop) {
-		DefaultNamespaceContext nc = new DefaultNamespaceContext();
-		nc.setNamespaceURI("j", XMLNS10);
-		this.root = root;
-		XPathFactory factory = XPathFactory.newInstance();
-		this.xpath = factory.newXPath();
-		this.xpath.setNamespaceContext(nc);
-
-		// retrieve all system properties
-		for(Map.Entry<Object,Object> e: System.getProperties().entrySet()){
-			properties.put(e.getKey().toString(), e.getValue().toString());
-		}
-
-		// retrieve all specified properties
-		for(Map.Entry<Object,Object> e: prop.entrySet()){
-			properties.put(e.getKey().toString(), e.getValue().toString());
-		}
+	public Configurator(File dir){
+		this.dir = dir;
 		return;
 	}
 
 	// ======================================================================
-	// Parse Configuration
+	// Retrieve Class Loader
 	// ======================================================================
 	/**
-	 * Parse xml configuration specified in constructor.
+	 * Retrieve jyro instance scope classloader. This method returns all
+	 * *.jar and *.zip files in ${jyro.home}/lib.
 	 *
-	 * @return Jyro instance
-	 * @throws XPathException invalid xpath (bug?)
+	 * @param parent parent class loader
+	 * @return jyro instance scope class loader
+	 * @throws JyroException
 	 */
-	private Jyro parse() throws XPathException {
+	public ClassLoader getJyroClassLoader(ClassLoader parent) throws JyroException {
 
-		// parse all properties in configuration
-		NodeList nl = (NodeList)xpath.evaluate("j:jyro/j:property", root, XPathConstants.NODESET);
-		for(int i=0; i<nl.getLength(); i++){
-			Element elem = (Element)nl.item(i);
+		// determine default class loader if specified value is null
+		if(parent == null){
+			parent = Thread.currentThread().getContextClassLoader();
+			if(parent == null){
+				parent = ClassLoader.getSystemClassLoader();
+			}
+		}
+
+		// get class loader for extra libraries
+		String classpath = "";
+		String libext = new File(dir, DIR_LIB).toString();
+		return getLibextLoader(classpath, libext, parent);
+	}
+
+	// ======================================================================
+	// Create All Nodes
+	// ======================================================================
+	/**
+	 * Create all nodes in this configuration.
+	 *
+	 * @param parent parent class loader of each nodes
+	 * @param init initial property replaced by ${...}
+	 */
+	public Map<String,List<Node>> createNodes(ClassLoader parent, Properties init) throws JyroException {
+		param.clear();	// init parameter
+
+		if(init == null){
+			init = new Properties();
+		}
+
+		// read jyro configuration xml
+		File file = new File(dir, FILE_CONF);
+		logger.debug("loading configuration: " + file);
+		Document doc = null;
+		try {
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			doc = builder.parse(file);
+		} catch(ParserConfigurationException ex){
+			throw new IllegalStateException("bad xml parser environment", ex);
+		} catch(IOException ex){
+			throw new JyroException("fail to read jyro configuration: " + file, ex);
+		} catch(SAXException ex){
+			throw new JyroException("fail to read jyro configuration: " + file, ex);
+		}
+
+		// retrieve all system properties
+		for(Map.Entry<Object,Object> e: System.getProperties().entrySet()){
+			param.put(e.getKey().toString(), e.getValue().toString());
+		}
+
+		// retrieve all specified properties
+		for(Map.Entry<Object,Object> e: init.entrySet()){
+			param.put(e.getKey().toString(), e.getValue().toString());
+		}
+
+		// utility xpath instance that used in this class
+		DefaultNamespaceContext nc = new DefaultNamespaceContext();
+		nc.setNamespaceURI("j", XMLNS10);
+		XPathFactory xpathFactory = XPathFactory.newInstance();
+		XPath xpath = xpathFactory.newXPath();
+		xpath.setNamespaceContext(nc);
+
+		// retrieve all property settings in configuration
+		Element root = doc.getDocumentElement();
+		for(Element elem: elemset(xpath, "j:jyro/j:property", root)){
 			String name = elem.getAttribute("name");
 			String value = f(elem.getAttribute("value"));
-			properties.put(name, value);
+			param.put(name, value);
 		}
 
-		// build all nodes
-		nl = (NodeList)xpath.evaluate("j:jyro/j:node", root, XPathConstants.NODESET);
-		for(int i=0; i<nl.getLength(); i++){
-			Element elem = (Element)nl.item(i);
-			Node node = buildNode(elem);
+		// build all nodes and taskname mapping
+		Map<String,List<Node>> map = new HashMap<String,List<Node>>();
+		for(Element elem: elemset(xpath, "j:jyro/j:node", root)){
+			Node node = buildNode(xpath, elem, parent);
+			List<Node> list = map.get(node.getTaskName());
+			if(list == null){
+				list = new ArrayList<Node>();
+				map.put(node.getTaskName(), list);
+			}
+			list.add(node);
 		}
-		return;
+		return map;
 	}
 
 	// ======================================================================
@@ -166,25 +182,30 @@ public class JyroFactory {
 	 * @throws JyroException fail to build node
 	 * @throws XPathException invalid xpath (bug?)
 	 */
-	private Node buildNode(Element elem, ClassLoader parent) throws JyroException, XPathException {
+	private Node buildNode(XPath xpath, Element elem, ClassLoader parent) throws JyroException {
 
 		// retrieve task name
 		String task = f(elem.getAttribute("task"));
 
 		// retrieve node-scope class loader
-		String classpath = elem.getAttribute("classpath");
-		String extdirs = elem.getAttribute("extdirs");
+		String classpath = f(elem.getAttribute("classpath"));
+		String extdirs = f(elem.getAttribute("extdirs"));
 		ClassLoader loader = getLibextLoader(classpath, extdirs, parent);
 
-		// build worker
+		// retrieve worker element
+		Element wk = elem(xpath, "j:worker", elem);
+		if(wk == null){
+			throw new JyroException("no worker found in node definition: " + task);
+		}
+
+		// build worker as Java implementation
 		Worker worker = null;
-		Element wk = (Element)xpath.evaluate("j:worker", elem, XPathConstants.NODE);
 		if(wk.hasAttribute("class")){
-			worker = createWorker(wk.getAttribute("class"), loader);
+			worker = createWorker(f(wk.getAttribute("class")), loader);
 		}
 
 		// create node implementation
-		NodeImpl node = new NodeImpl(task, loader, worker);
+		Node node = new Node(task, loader, worker);
 
 		// set minimum thread-pool size
 		if(wk.hasAttribute("min")){
@@ -228,7 +249,7 @@ public class JyroFactory {
 	 * @return formatted string
 	 */
 	private String f(String value){
-		return Text.format(value, properties);
+		return Text.format(value, param);
 	}
 
 	// ======================================================================
@@ -249,63 +270,45 @@ public class JyroFactory {
 	}
 
 	// ======================================================================
-	// Create Instance
+	// Retrieve Element
 	// ======================================================================
 	/**
-	 * Create Jyro instance from specified jyro.home directory.
+	 * Retrieve element for specified xpath expression.
 	 *
-	 * @param dir jyro.home directory
-	 * @param parent default class loader
-	 * @return Jyro instance
-	 * @throws JyroException if fail to configure
+	 * @param xpath xpath object
+	 * @param expr xpath expression
+	 * @param elem base node
+	 * @return element
 	 */
-	public static Jyro createInstance(File dir, ClassLoader parent) throws JyroException {
-
-		// set default class loader if not specified
-		if(parent == null){
-			parent = Thread.currentThread().getContextClassLoader();
-			if(parent == null){
-				parent = ClassLoader.getSystemClassLoader();
-			}
-		}
-
-		// get class loader for extra libraries
-		String classpath = "";
-		String libext = new File(dir, DIR_LIB).toString();
-		ClassLoader loader = getLibextLoader(classpath, libext, parent);
-
-		try {
-			JyroFactory factory = new JyroFactory(root, prop);
-			return factory.parse();
-		} catch(XPathException ex){
-			logger.error("unexpected exception, this maybe bug; " + ex);
-			throw new IllegalStateException(ex);
+	private Element elem(XPath xpath, String expr, Object elem){
+		Iterator<Element> it = elemset(xpath, expr, elem).iterator();
+		if(it.hasNext()){
+			return it.next();
 		}
 		return null;
-
-		// create Jyro instance
-		return new Jyro(dir, loader);
 	}
 
 	// ======================================================================
-	// Create Instance
+	// Retrieve Nodeset
 	// ======================================================================
 	/**
-	 * Create Jyro instance from specified DOM element with properties.
+	 * Retrieve nodeset for specified element.
 	 *
-	 * @param config xml element of configuration
-	 * @param prop default properties
-	 * @return Jyro instance
-	 * @throws JyroException if fail to build instance
+	 * @param xpath xpath object
+	 * @param expr xpath expression
+	 * @param elem base node
 	 */
-	public static Jyro createInstance(Element config, Properties prop) throws JyroException {
+	private Iterable<Element> elemset(XPath xpath, String expr, Object elem){
+		List<Element> list = new ArrayList<Element>();
 		try {
-
+			NodeList nl = (NodeList)xpath.evaluate(expr, elem, XPathConstants.NODESET);
+			for(int i=0; i<nl.getLength(); i++){
+				list.add((Element)nl.item(i));
+			}
 		} catch(XPathException ex){
-			logger.error("unexpected exception, this maybe bug; " + ex);
-			throw new IllegalStateException(ex);
+			throw new IllegalStateException("invalid xpath expression (this maybe bug): " + expr, ex);
 		}
-		return null;
+		return list;
 	}
 
 	// ======================================================================
