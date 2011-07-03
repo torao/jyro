@@ -106,6 +106,14 @@ public class Jyro {
 	private RandomAccessFile lock = null;
 
 	// ======================================================================
+	// Class Loader
+	// ======================================================================
+	/**
+	 * Class loader for instance-scope classes.
+	 */
+	private final ClassLoader loader;
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -114,6 +122,7 @@ public class Jyro {
 	 */
 	public Jyro(File dir, ClassLoader loader) {
 		this.dir = dir;
+		this.loader = loader;
 		return;
 	}
 
@@ -128,18 +137,30 @@ public class Jyro {
 	public void startup() throws JyroException {
 		logger.debug("startup()");
 
+		// create temporary directory if not exits
+		File tmp = getTemporaryDirectory();
+		if(! tmp.isDirectory()){
+			if(tmp.mkdirs()){
+				logger.debug("create new temporary directory: " + tmp);
+			} else {
+				logger.warn("fail to create temporary directory: " + tmp);
+			}
+		}
+
 		// acquire lock of home directory
-		File lockFile = new File(dir, "tmp" + File.separator + ".lock");
+		File lockFile = new File(tmp, JyroFactory.FILE_LOCK);
 		try {
-			lock = new RandomAccessFile(lockFile, "w");
+			lock = new RandomAccessFile(lockFile, "rw");
 			FileLock fl = lock.getChannel().tryLock();
 			if(fl == null){
 				throw new JyroException("unable to acquire lock of home: " + lockFile);
 			}
+			logger.debug("${jyro.home} lock success: " + JyroFactory.DIR_TMP + "/" + JyroFactory.FILE_LOCK);
 		} catch(IOException ex){
 			IO.close(lock);
-			throw new JyroException("fail to lock: " + lockFile);
+			throw new JyroException("fail to lock: " + lockFile, ex);
 		}
+
 		return;
 	}
 
@@ -156,6 +177,18 @@ public class Jyro {
 		IO.close(lock);
 		lock = null;
 		return;
+	}
+
+	// ======================================================================
+	// Retrieve Temporary Directory
+	// ======================================================================
+	/**
+	 * Retrieve temporary directory
+	 *
+	 * @return temporary directory of this instance.
+	 */
+	private File getTemporaryDirectory(){
+		return new File(dir, JyroFactory.DIR_TMP);
 	}
 
 }

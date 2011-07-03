@@ -17,6 +17,10 @@
 			</xsd:sequence>
 			<xsd:attribute name="task" type="xsd:string" use="required">
 			</xsd:attribute>
+			<xsd:attribute name="classpath" type="xsd:string" use="optional">
+			</xsd:attribute>
+			<xsd:attribute name="extdirs" type="xsd:string" use="optional">
+			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
 
@@ -31,10 +35,6 @@
 			<xsd:attribute name="type" type="xsd:string" use="optional">
 			</xsd:attribute>
 			<xsd:attribute name="charset" type="xsd:string" use="optional">
-			</xsd:attribute>
-			<xsd:attribute name="classpath" type="xsd:string" use="optional">
-			</xsd:attribute>
-			<xsd:attribute name="libext" type="xsd:string" use="optional">
 			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="build/src.console"/>
@@ -11,3 +12,48 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry kind="output" path="webapp/WEB-INF/classes"/>
 </classpath>
+=======
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="build/src"/>
+	<classpathentry kind="src" path="build/src.console"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
+	<classpathentry kind="lib" path="build/lib/jetty-7.4.2/servlet-api-2.5.jar"/>
+	<classpathentry kind="lib" path="build/lib/jetty-7.4.2/jetty-server-7.4.2.v20110526.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://download.eclipse.org/jetty/stable-7/apidocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/geronimo-jms_1.1_spec-1.1.1.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/activation-1.1.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/activemq-camel-5.5.0.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/activemq-console-5.5.0.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/activemq-core-5.5.0.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/activemq-jaas-5.5.0.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/activemq-protobuf-1.1.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/activemq-web-5.5.0.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/camel-core-2.7.0.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/camel-jetty-2.7.0.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/camel-jms-2.7.0.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/camel-spring-2.7.0.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/geronimo-j2ee-management_1.1_spec-1.0.1.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/geronimo-jta_1.0.1B_spec-1.0.1.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/jaxb-api-2.1.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/jaxb-impl-2.1.6.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/jcl-over-slf4j-1.5.11.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/kahadb-5.5.0.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/slf4j-api-1.5.11.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/stax-1.2.0.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/stax-api-1.0.1.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/optional/log4j-1.2.14.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/optional/slf4j-log4j12-1.5.11.jar"/>
+	<classpathentry kind="var" path="TOMCAT_HOME/lib/servlet-api.jar"/>
+	<classpathentry kind="var" path="TOMCAT_HOME/lib/jasper.jar"/>
+	<classpathentry kind="var" path="TOMCAT_HOME/lib/jsp-api.jar"/>
+	<classpathentry kind="var" path="TOMCAT_HOME/lib/el-api.jar"/>
+	<classpathentry kind="var" path="TOMCAT_HOME/lib/annotations-api.jar"/>
+	<classpathentry kind="lib" path="webapp/WEB-INF/lib/log4j-1.2.16.jar"/>
+	<classpathentry kind="lib" path="webapp/WEB-INF/lib/xmllib_1.0.jar"/>
+	<classpathentry kind="output" path="webapp/WEB-INF/classes"/>
+</classpath>
+>>>>>>> 322c4f930e0529c29118f0587f1c43a003153ba5

@@ -75,28 +75,28 @@ public class ConsoleServlet extends HttpServlet {
 		super.init();
 
 		// retrieve jyro.home
-		String dir = getInitParameter("jyro.home");
-		if(dir == null){
-			dir = getServletContext().getInitParameter("jyro.home");
-			if(dir == null){
-				dir = System.getProperty("jyro.home");
-				if(dir == null){
+		String dirName = getInitParameter("jyro.home");
+		if(dirName == null){
+			dirName = getServletContext().getInitParameter("jyro.home");
+			if(dirName == null){
+				dirName = System.getProperty("jyro.home");
+				if(dirName == null){
 					throw new ServletException("jyro.home not specified in servlet or context paramter, system property");
 				}
 			}
 		}
 
 		// resolve relative path
-		File d = new File(dir);
-		if(! d.isAbsolute()){
-			dir = getServletContext().getRealPath("/") + dir;
+		File dir = new File(dirName);
+		if(! dir.isAbsolute()){
+			dirName = getServletContext().getRealPath("/") + dirName;
 		}
-		logger.info("jyro.home=" + dir);
+		logger.info("jyro.home=" + dirName);
 
 		// build jyro instance
 		InputStream in = null;
 		try {
-			this.jyro = JyroFactory.createInstance(in);
+			this.jyro = JyroFactory.createInstance(dir, null);
 
 			// startup jyro
 			this.jyro.startup();

@@ -9,16 +9,15 @@
  */
 package org.koiroha.jyro;
 
-import java.util.LinkedList;
 import java.util.concurrent.*;
 
 import org.apache.log4j.Logger;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Node: 
+// Node:
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * 
+ *
  * <p>
  * @version $Revision:$ $Date:$
  * @author torao
@@ -41,6 +40,14 @@ public class NodeImpl implements Node {
 	 * Task name of this node.
 	 */
 	private final String taskName;
+
+	// ======================================================================
+	// Class Loader
+	// ======================================================================
+	/**
+	 * Class Loader of this node.
+	 */
+	private final ClassLoader loader;
 
 	// ======================================================================
 	// Process
@@ -72,9 +79,11 @@ public class NodeImpl implements Node {
 	/**
 	 * @param proc process to execute on this node
 	 * @param taskName task name of this node
+	 * @param loader class loader of this node
 	 */
-	public NodeImpl(String taskName, Worker proc) {
+	public NodeImpl(String taskName, ClassLoader loader, Worker proc) {
 		this.taskName = taskName;
+		this.loader = loader;
 		this.process = proc;
 		this.workers = new ThreadPoolExecutor(5, 10, 10, TimeUnit.SECONDS, queue);
 		return;
@@ -86,9 +95,10 @@ public class NodeImpl implements Node {
 	/**
 	 * Retrieve name of this node. The return value may be ununique in Jyro
 	 * scope if same workers running on context.
-	 * 
+	 *
 	 * @return name of this node
 	*/
+	@Override
 	public String getTaskName(){
 		return taskName;
 	}
@@ -98,7 +108,7 @@ public class NodeImpl implements Node {
 	// ======================================================================
 	/**
 	 * Retrieve enqueued and waiting jobs count.
-	 * 
+	 *
 	 * @return size of waiting jobs
 	 */
 	public int getWaitingJobs(){
@@ -106,11 +116,37 @@ public class NodeImpl implements Node {
 	}
 
 	// ======================================================================
+	// Min Worker Execution
+	// ======================================================================
+	/**
+	 * Retrieve the number of minimum worker threads to execute.
+	 *
+	 * @return max workers
+	*/
+	public int getMinimumWorkers(){
+		return workers.getCorePoolSize();
+	}
+
+	// ======================================================================
+	// Min Worker Execution
+	// ======================================================================
+	/**
+	 * Set the number of minimum worker threads to execute.
+	 * for implementation.
+	 *
+	 * @param min number of minimum workers
+	*/
+	public void setMinimumWorkers(int min){
+		workers.setCorePoolSize(min);
+		return;
+	}
+
+	// ======================================================================
 	// Max Worker Execution
 	// ======================================================================
 	/**
 	 * Retrieve the number of maximum worker threads to execute.
-	 * 
+	 *
 	 * @return max workers
 	*/
 	public int getMaximumWorkers(){
@@ -123,7 +159,7 @@ public class NodeImpl implements Node {
 	/**
 	 * Set the number of maximum worker threads to execute.
 	 * for implementation.
-	 * 
+	 *
 	 * @param max number of maximum workers
 	*/
 	public void setMaximumWorkers(int max){
@@ -132,13 +168,14 @@ public class NodeImpl implements Node {
 	}
 
 	// ======================================================================
-	// 
+	//
 	// ======================================================================
 	/**
-	 * 
+	 *
 	*/
 	public void post() {
 		workers.execute(new Runnable(){
+			@Override
 			public void run(){
 				process.exec();
 			}
