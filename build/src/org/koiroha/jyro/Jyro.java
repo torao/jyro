@@ -9,8 +9,12 @@
  */
 package org.koiroha.jyro;
 
-import java.io.File;
+import java.io.*;
+import java.nio.channels.FileLock;
 import java.util.*;
+
+import org.apache.log4j.Logger;
+import org.koiroha.jyro.util.IO;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Jyro: Node Container
@@ -20,6 +24,14 @@ import java.util.*;
  * @author takami torao
  */
 public class Jyro {
+
+	// ======================================================================
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output of this class.
+	 */
+	private static final Logger logger = Logger.getLogger(Jyro.class);
 
 	// ======================================================================
 	// Application Name
@@ -86,6 +98,14 @@ public class Jyro {
 	private final File dir;
 
 	// ======================================================================
+	// Directory
+	// ======================================================================
+	/**
+	 * Home directory of this instance.
+	 */
+	private RandomAccessFile lock = null;
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -102,8 +122,24 @@ public class Jyro {
 	// ======================================================================
 	/**
 	 * Start all services in this instance.
+	 *
+	 * @throws JyroException if fail to startup jyro
 	 */
-	public void startup(){
+	public void startup() throws JyroException {
+		logger.debug("startup()");
+
+		// acquire lock of home directory
+		File lockFile = new File(dir, "tmp" + File.separator + ".lock");
+		try {
+			lock = new RandomAccessFile(lockFile, "w");
+			FileLock fl = lock.getChannel().tryLock();
+			if(fl == null){
+				throw new JyroException("unable to acquire lock of home: " + lockFile);
+			}
+		} catch(IOException ex){
+			IO.close(lock);
+			throw new JyroException("fail to lock: " + lockFile);
+		}
 		return;
 	}
 
@@ -112,8 +148,13 @@ public class Jyro {
 	// ======================================================================
 	/**
 	 * Shutdown all services in this instance.
+	 *
+	 * @throws JyroException if fail to shutdown jyro
 	 */
-	public void shutdown(){
+	public void shutdown() throws JyroException {
+		logger.debug("shutdown()");
+		IO.close(lock);
+		lock = null;
 		return;
 	}
 

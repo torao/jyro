@@ -9,13 +9,14 @@
  */
 package org.koiroha.jyro.webapp;
 
-import java.io.IOException;
+import java.io.*;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.Jyro;
+import org.koiroha.jyro.*;
+import org.koiroha.jyro.util.IO;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // ConsoleServlet: Console Servlet
@@ -73,6 +74,7 @@ public class ConsoleServlet extends HttpServlet {
 	public void init() throws ServletException {
 		super.init();
 
+		// retrieve jyro.home
 		String dir = getInitParameter("jyro.home");
 		if(dir == null){
 			dir = getServletContext().getInitParameter("jyro.home");
@@ -83,8 +85,49 @@ public class ConsoleServlet extends HttpServlet {
 				}
 			}
 		}
+
+		// resolve relative path
+		File d = new File(dir);
+		if(! d.isAbsolute()){
+			dir = getServletContext().getRealPath("/") + dir;
+		}
 		logger.info("jyro.home=" + dir);
 
+		// build jyro instance
+		InputStream in = null;
+		try {
+			this.jyro = JyroFactory.createInstance(in);
+
+			// startup jyro
+			this.jyro.startup();
+		} catch(JyroException ex){
+			throw new ServletException(ex);
+		} finally {
+			IO.close(in);
+		}
+		return;
+	}
+
+	// ======================================================================
+	// Destroy Servlet
+	// ======================================================================
+	/**
+	 *
+	 * <p>
+	*/
+	@Override
+	public void destroy() {
+
+		// shutdown jyro
+		try {
+			if(this.jyro != null){
+				this.jyro.shutdown();
+			}
+		} catch(JyroException ex){
+			logger.fatal("fail to shutdown jyro", ex);
+		}
+
+		super.destroy();
 		return;
 	}
 
