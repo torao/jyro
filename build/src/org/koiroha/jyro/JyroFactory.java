@@ -160,26 +160,16 @@ public class JyroFactory {
 	/**
 	 * Parse xml configuration specified in constructor.
 	 *
+	 * @param elem node element
+	 * @param parent default class loader of this node
 	 * @return Jyro instance
+	 * @throws JyroException fail to build node
 	 * @throws XPathException invalid xpath (bug?)
 	 */
-	private Node buildNode(Element elem) throws XPathException {
-		String task = f(elem.getAttribute("task"));
-		return;
-	}
+	private Node buildNode(Element elem, ClassLoader parent) throws JyroException, XPathException {
 
-	// ======================================================================
-	// Build Worker Adapter
-	// ======================================================================
-	/**
-	 * Build worker adapter.
-	 *
-	 * @param elem worker element
-	 * @param parent default class loader of this worker
-	 * @return worker
-	 * @throws XPathException invalid xpath
-	 */
-	private Worker buildWorker(Element elem, ClassLoader parent) throws XPathException {
+		// retrieve task name
+		String task = f(elem.getAttribute("task"));
 
 		// retrieve node-scope class loader
 		String classpath = elem.getAttribute("classpath");
@@ -187,14 +177,45 @@ public class JyroFactory {
 		ClassLoader loader = getLibextLoader(classpath, extdirs, parent);
 
 		// build worker
-		String type = elem.getAttribyte("type");
+		Worker worker = null;
+		Element wk = (Element)xpath.evaluate("j:worker", elem, XPathConstants.NODE);
+		if(wk.hasAttribute("class")){
+			worker = createWorker(wk.getAttribute("class"), loader);
+		}
+
+		// create node implementation
+		NodeImpl node = new NodeImpl(task, loader, worker);
+
 		// set minimum thread-pool size
-		if(elem.hasAttribute("min")){
+		if(wk.hasAttribute("min")){
 
 		}
-		int min = toInt("min", f(elem.getAttribute("min")));
-		int max = toInt("max", f(elem.getAttribute("max")));
-		return;
+		return node;
+	}
+
+	// ======================================================================
+	// Create Worker
+	// ======================================================================
+	/**
+	 * Create worker for specified Java class.
+	 *
+	 * @param clazz class name of worker
+	 * @param loader class loader to create worker
+	 * @return worker instance
+	 * @throws JyroException if fail to create worker instance
+	 */
+	private Worker createWorker(String clazz, ClassLoader loader) throws JyroException {
+		try {
+			return (Worker)Class.forName(clazz, true, loader).newInstance();
+		} catch(ClassCastException ex){
+			throw new JyroException(clazz + " is not subclass of " + Worker.class.getName(), ex);
+		} catch(ClassNotFoundException ex){
+			throw new JyroException("specified class " + clazz + " not found in this context", ex);
+		} catch(IllegalAccessException ex){
+			throw new JyroException("cannot access to default constructor of " + clazz, ex);
+		} catch(InstantiationException ex){
+			throw new JyroException("fail to instantiate for " + clazz, ex);
+		}
 	}
 
 	// ======================================================================
@@ -252,6 +273,15 @@ public class JyroFactory {
 		String classpath = "";
 		String libext = new File(dir, DIR_LIB).toString();
 		ClassLoader loader = getLibextLoader(classpath, libext, parent);
+
+		try {
+			JyroFactory factory = new JyroFactory(root, prop);
+			return factory.parse();
+		} catch(XPathException ex){
+			logger.error("unexpected exception, this maybe bug; " + ex);
+			throw new IllegalStateException(ex);
+		}
+		return null;
 
 		// create Jyro instance
 		return new Jyro(dir, loader);

@@ -50,12 +50,12 @@ public class NodeImpl implements Node {
 	private final ClassLoader loader;
 
 	// ======================================================================
-	// Process
+	// Worker
 	// ======================================================================
 	/**
-	 * Task name of this node.
+	 * Worker to execute parallel.
 	 */
-	private final Worker process;
+	private final Worker worker;
 
 	// ======================================================================
 	// Job Queue
@@ -71,7 +71,7 @@ public class NodeImpl implements Node {
 	/**
 	 * Thread pool to run workers.
 	 */
-	private final ThreadPoolExecutor workers;
+	private final ThreadPoolExecutor threads;
 
 	// ======================================================================
 	// Constructor
@@ -84,8 +84,8 @@ public class NodeImpl implements Node {
 	public NodeImpl(String taskName, ClassLoader loader, Worker proc) {
 		this.taskName = taskName;
 		this.loader = loader;
-		this.process = proc;
-		this.workers = new ThreadPoolExecutor(5, 10, 10, TimeUnit.SECONDS, queue);
+		this.worker = proc;
+		this.threads = new ThreadPoolExecutor(5, 10, 10, TimeUnit.SECONDS, queue);
 		return;
 	}
 
@@ -124,7 +124,7 @@ public class NodeImpl implements Node {
 	 * @return max workers
 	*/
 	public int getMinimumWorkers(){
-		return workers.getCorePoolSize();
+		return threads.getCorePoolSize();
 	}
 
 	// ======================================================================
@@ -137,7 +137,7 @@ public class NodeImpl implements Node {
 	 * @param min number of minimum workers
 	*/
 	public void setMinimumWorkers(int min){
-		workers.setCorePoolSize(min);
+		threads.setCorePoolSize(min);
 		return;
 	}
 
@@ -150,7 +150,7 @@ public class NodeImpl implements Node {
 	 * @return max workers
 	*/
 	public int getMaximumWorkers(){
-		return workers.getMaximumPoolSize();
+		return threads.getMaximumPoolSize();
 	}
 
 	// ======================================================================
@@ -163,7 +163,7 @@ public class NodeImpl implements Node {
 	 * @param max number of maximum workers
 	*/
 	public void setMaximumWorkers(int max){
-		workers.setMaximumPoolSize(max);
+		threads.setMaximumPoolSize(max);
 		return;
 	}
 
@@ -174,10 +174,10 @@ public class NodeImpl implements Node {
 	 *
 	*/
 	public void post() {
-		workers.execute(new Runnable(){
+		threads.execute(new Runnable(){
 			@Override
 			public void run(){
-				process.exec();
+				worker.exec();
 			}
 		});
 		return;
