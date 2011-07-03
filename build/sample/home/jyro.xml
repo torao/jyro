@@ -4,7 +4,14 @@
 	<property name="classpath" value="/var/lib/java"/>
 
 	<node task="URL取得" classpath="${classpath}/hoge.jar">
-		<worker min="5" max="10" type="application/java">
+		<worker min="5" max="10" class="org.koiroha.jyro.SampleWorker">
+		<![CDATA[
+		]]>
+		</worker>
+	</node>
+
+	<node task="URL取得" classpath="${classpath}/hoge.jar">
+		<worker min="5" max="10" type="application/javascript">
 		<![CDATA[
 		]]>
 		</worker>
