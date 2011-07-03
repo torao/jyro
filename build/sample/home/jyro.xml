@@ -3,8 +3,8 @@
 	<property name="a.b.c" value="foo"/>
 	<property name="classpath" value="/var/lib/java"/>
 
-	<node task="URL取得">
-		<worker min="5" max="10" type="application/java" classpath="${classpath}/hoge.jar">
+	<node task="URL取得" classpath="${classpath}/hoge.jar">
+		<worker min="5" max="10" type="application/java">
 		<![CDATA[
 		]]>
 		</worker>
