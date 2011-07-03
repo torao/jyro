@@ -74,6 +74,30 @@ public class Node {
 	private final ThreadPoolExecutor threads;
 
 	// ======================================================================
+	// Thread Group
+	// ======================================================================
+	/**
+	 * Thread group of this worker threads.
+	 */
+	private final ThreadGroup threadGroup;
+
+	// ======================================================================
+	// Stack Size
+	// ======================================================================
+	/**
+	 * Stack size as bytes of new worker thread.
+	 */
+	private int stackSize = -1;
+
+	// ======================================================================
+	// Daemon
+	// ======================================================================
+	/**
+	 * Whether worker thread run as daemon.
+	 */
+	private boolean daemon = false;
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -89,6 +113,25 @@ public class Node {
 		this.loader = loader;
 		this.worker = proc;
 		this.threads = new ThreadPoolExecutor(5, 10, 10, TimeUnit.SECONDS, queue);
+
+		this.threadGroup = new ThreadGroup(taskName);
+		this.threads.setThreadFactory(new ThreadFactory() {
+			private volatile int seq = 0;
+			@Override
+			public Thread newThread(Runnable r) {
+				int num = seq;
+				seq = Math.abs(seq+1);
+				String name = Node.this.taskName + "-" + num;
+				Thread thread = null;
+				if(stackSize >= 0){
+					thread = new Thread(threadGroup, r, name, stackSize);
+				} else {
+					thread = new Thread(threadGroup, r, name);
+				}
+				thread.setDaemon(daemon);
+				return thread;
+			}
+		});
 		return;
 	}
 
@@ -166,6 +209,57 @@ public class Node {
 	*/
 	public void setMaximumWorkers(int max){
 		threads.setMaximumPoolSize(max);
+		return;
+	}
+
+	// ======================================================================
+	// Retrieve Daemon
+	// ======================================================================
+	/**
+	 * Retrieve whether worker thread on this node is daemon or not.
+	 *
+	 * @return true if worker is daemon
+	 */
+	public boolean isDaemon() {
+		return daemon;
+	}
+
+	// ======================================================================
+	// Set Daemon
+	// ======================================================================
+	/**
+	 * Set daemon flag of worker thread. This should be call before start.
+	 *
+	 * @param daemon true if worker will be daemon
+	 */
+	public void setDaemon(boolean daemon) {
+		this.daemon = daemon;
+		return;
+	}
+
+	// ======================================================================
+	// Retrieve Stack Size
+	// ======================================================================
+	/**
+	 * Retrieve stack size for worker thread on this node.
+	 *
+	 * @return stack size (bytes)
+	 */
+	public int getStackSize() {
+		return stackSize;
+	}
+
+	// ======================================================================
+	// Set Stack Size
+	// ======================================================================
+	/**
+	 * Set staci size of worker thread. This should be call before start.
+	 * if negative value specified, runtime default stack size used.
+	 *
+	 * @param stackSize stack size (bytes)
+	 */
+	public void setStackSize(int stackSize) {
+		this.stackSize = stackSize;
 		return;
 	}
 
