@@ -97,7 +97,7 @@ final class Configurator {
 	 *
 	 * @param parent parent class loader
 	 * @return jyro instance scope class loader
-	 * @throws JyroException
+	 * @throws JyroException fail to create class loader
 	 */
 	public ClassLoader getJyroClassLoader(ClassLoader parent) throws JyroException {
 
@@ -254,13 +254,13 @@ final class Configurator {
 	}
 
 	// ======================================================================
-	// Create Worker
+	// Create Script Worker
 	// ======================================================================
 	/**
-	 * Create worker for specified Java class.
+	 * Create script worker for specified element.
 	 *
-	 * @param clazz class name of worker
 	 * @param loader class loader to create worker
+	 * @param elem script element
 	 * @return worker instance
 	 * @throws JyroException if fail to create worker instance
 	 */

@@ -62,7 +62,7 @@ public class ScriptWorker implements Worker {
 	 * @param type MIME-Type or script name
 	 * @param includes included script files
 	 * @param charsets character set for each include files
-	 * @throws JyroException
+	 * @throws JyroException fail to load script
 	 */
 	public ScriptWorker(ClassLoader loader, String type, File[] includes, String[] charsets) throws JyroException {
 
@@ -128,15 +128,17 @@ public class ScriptWorker implements Worker {
 	 * multi-thread environment.
 	 *
 	 * @param args arguments
-	 * @return result
-	 * @throws WorkerException
+	 * @return script result
+	 * @throws WorkerException fail to execute script
 	*/
 	@Override
 	public Object exec(Object... args) throws WorkerException {
 		try {
 			return engine.invokeFunction(function, args);
-		} catch(Exception ex){
-			throw new WorkerException(ex);
+		} catch(NoSuchMethodException ex){
+			throw new WorkerException("function " + function + " not defined in script", ex);
+		} catch(ScriptException ex){
+			throw new WorkerException("invalid script", ex);
 		}
 	}
 

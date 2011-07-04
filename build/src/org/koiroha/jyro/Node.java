@@ -9,9 +9,11 @@
  */
 package org.koiroha.jyro;
 
+import java.text.NumberFormat;
+import java.util.Arrays;
 import java.util.concurrent.*;
 
-import org.apache.log4j.Logger;
+import org.apache.log4j.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Node:
@@ -98,6 +100,14 @@ public class Node {
 	private boolean daemon = false;
 
 	// ======================================================================
+	// Load Average
+	// ======================================================================
+	/**
+	 * Load average calculator for worker process queue.
+	 */
+	private final LoadAverage loadAverage;
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -113,6 +123,9 @@ public class Node {
 		this.loader = loader;
 		this.worker = proc;
 		this.threads = new ThreadPoolExecutor(5, 10, 10, TimeUnit.SECONDS, queue);
+
+		// create load average calculator
+		this.loadAverage = new LoadAverage(queue);
 
 		this.threadGroup = new ThreadGroup(taskName);
 		this.threads.setThreadFactory(new ThreadFactory() {
@@ -146,6 +159,18 @@ public class Node {
 	*/
 	public String getTaskName(){
 		return taskName;
+	}
+
+	// ======================================================================
+	// Retrieve Class Loader
+	// ======================================================================
+	/**
+	 * Retrieve default class loader of this node.
+	 *
+	 * @return class loader
+	*/
+	public ClassLoader getClassLoader(){
+		return loader;
 	}
 
 	// ======================================================================
@@ -264,6 +289,19 @@ public class Node {
 	}
 
 	// ======================================================================
+	// Retrieve Load Average
+	// ======================================================================
+	/**
+	 * Retrieve load average of this node. The return values are 3 load
+	 * average for 1, 5 and 15 minutes.
+	 *
+	 * @return load average (1, 5, 15min)
+	 */
+	public double[] getLoadAverage(){
+		return loadAverage.getLoadAverage();
+	}
+
+	// ======================================================================
 	// Start Node
 	// ======================================================================
 	/**
@@ -271,6 +309,7 @@ public class Node {
 	*/
 	public void start(){
 		logger.debug("start node " + getTaskName());
+		loadAverage.start();
 		threads.prestartAllCoreThreads();
 		return;
 	}
@@ -284,6 +323,7 @@ public class Node {
 	public void stop(){
 		logger.debug("stop node " + getTaskName());
 		threads.shutdown();
+		loadAverage.stop();
 		return;
 	}
 
@@ -297,10 +337,44 @@ public class Node {
 		threads.execute(new Runnable(){
 			@Override
 			public void run(){
-				worker.exec();
+				exec();
 			}
 		});
 		return;
+	}
+
+	// ======================================================================
+	// Execute Worker
+	// ======================================================================
+	/**
+	 * Execute worker process.
+	 *
+	 * @param args arguments for worker
+	 * @return result
+	 *
+	*/
+	private Object exec(Object... args){
+		NDC.push(getTaskName());
+		long start = System.currentTimeMillis();
+		Object result = null;
+		try {
+			result = worker.exec(args);
+		} catch(WorkerException ex){
+			logger.error("", ex);
+		} catch(Throwable ex){
+			if(ex instanceof ThreadDeath){
+				throw (ThreadDeath)ex;
+			}
+			logger.fatal("unexpected exception in worker", ex);
+		} finally {
+			if(logger.isDebugEnabled()){
+				long end = System.currentTimeMillis();
+				NumberFormat nf = NumberFormat.getNumberInstance();
+				logger.debug("exec(" + Arrays.toString(args) + ") := " + result + " " + nf.format(end-start) + "ms");
+			}
+			NDC.pop();
+		}
+		return result;
 	}
 
 }

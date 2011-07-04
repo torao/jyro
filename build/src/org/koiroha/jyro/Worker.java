@@ -13,7 +13,7 @@ package org.koiroha.jyro;
 // Worker: Node Worker
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- *
+ * Worker process bound to node.
  * <p>
  * @version $Revision:$ $Date:$
  * @author torao
@@ -30,7 +30,7 @@ public interface Worker {
 	 *
 	 * @param args arguments
 	 * @return result
-	 * @throws WorkerException
+	 * @throws WorkerException if error in worker
 	*/
 	public Object exec(Object... args) throws WorkerException;
 

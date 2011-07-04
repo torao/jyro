@@ -18,9 +18,10 @@ import org.apache.log4j.Logger;
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// JMSQueue:
+// JMSQueue: JMS Queue
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * Queue implementation by JMS.
  *
  * <p>
  * @version $Revision:$

@@ -10,10 +10,10 @@
 package org.koiroha.jyro;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// JyroException: 
+// JyroException:
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * 
+ *
  * <p>
  * @version $Revision:$ $Date:$
  * @author torao
@@ -30,54 +30,53 @@ public class JyroException extends Exception {
 	private static final long serialVersionUID = 1L;
 
 	// ======================================================================
-	// コンストラクタ
+	// Constructor
 	// ======================================================================
 	/**
-	 * コンストラクタは何も行いません。
-	 * <p>
+	 * Create exception with no message.
 	 */
 	public JyroException() {
-		// TODO Auto-generated constructor stub
+		return;
 	}
 
 	// ======================================================================
-	// コンストラクタ
+	// Constructor
 	// ======================================================================
 	/**
-	 * コンストラクタは何も行いません。
-	 * <p>
-	 * @param arg0
+	 * Create exception with specified message.
+	 *
+	 * @param msg exception message
 	 */
-	public JyroException(String arg0) {
-		super(arg0);
-		// TODO Auto-generated constructor stub
+	public JyroException(String msg) {
+		super(msg);
+		return;
 	}
 
 	// ======================================================================
-	// コンストラクタ
+	// Constructor
 	// ======================================================================
 	/**
-	 * コンストラクタは何も行いません。
-	 * <p>
-	 * @param arg0
+	 * Create exception with parent cause exception.
+	 *
+	 * @param ex cause exception
 	 */
-	public JyroException(Throwable arg0) {
-		super(arg0);
-		// TODO Auto-generated constructor stub
+	public JyroException(Throwable ex) {
+		super(ex);
+		return;
 	}
 
 	// ======================================================================
-	// コンストラクタ
+	// Constructor
 	// ======================================================================
 	/**
-	 * コンストラクタは何も行いません。
-	 * <p>
-	 * @param arg0
-	 * @param arg1
+	 * Create exception with specified message and cause exception.
+	 *
+	 * @param msg exception message
+	 * @param ex cause exception
 	 */
-	public JyroException(String arg0, Throwable arg1) {
-		super(arg0, arg1);
-		// TODO Auto-generated constructor stub
+	public JyroException(String msg, Throwable ex) {
+		super(msg, ex);
+		return;
 	}
 
 }
