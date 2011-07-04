@@ -5,8 +5,16 @@
 		<xsd:complexType>
 			<xsd:sequence>
 				<xsd:element ref="property" minOccurs="0" maxOccurs="unbounded"/>
+				<xsd:element ref="queue" minOccurs="0" maxOccurs="unbounded"/>
 				<xsd:element ref="node" minOccurs="0" maxOccurs="unbounded"/>
 			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="queue">
+		<xsd:complexType>
+			<xsd:attribute name="id" type="xsd:ID" use="required">
+			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
 
@@ -17,6 +25,8 @@
 				<xsd:element ref="script" minOccurs="1" maxOccurs="1"/>
 			</xsd:choice>
 			<xsd:attribute name="task" type="xsd:string" use="required">
+			</xsd:attribute>
+			<xsd:attribute name="queue" type="xsd:IDREF" use="required">
 			</xsd:attribute>
 			<xsd:attribute name="classpath" type="xsd:string" use="optional">
 			</xsd:attribute>

@@ -89,7 +89,7 @@ public class JMSQueue {
 	// ======================================================================
 	/**
 	 */
-	public void close() {
+	public void send() {
 		receiver.close();
 		sender.close();
 		session.close();
@@ -101,7 +101,19 @@ public class JMSQueue {
 	// ======================================================================
 	/**
 	 */
-	public void send() {
+	public void receive() {
+		receiver.close();
+		sender.close();
+		session.close();
+		return;
+	}
+
+	// ======================================================================
+	// Constructor
+	// ======================================================================
+	/**
+	 */
+	public void close() {
 		receiver.close();
 		sender.close();
 		session.close();
