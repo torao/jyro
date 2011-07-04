@@ -8,11 +8,9 @@
  *                                                       http://www.moyo.biz/
  * $Id:$
 */
-package org.koiroha.jyro.snapshot;
+package org.koiroha.jyro.webapp;
 
 import java.io.Serializable;
-
-
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Snapshot:
@@ -35,7 +33,7 @@ public final class Snapshot implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	// ======================================================================
-	// Server Name
+	//
 	// ======================================================================
 	/**
 	 * Server name.
@@ -43,7 +41,7 @@ public final class Snapshot implements Serializable {
 	private final String server;
 
 	// ======================================================================
-	// コンストラクタ
+	//
 	// ======================================================================
 	/**
 	 * コンストラクタは何も行いません。
