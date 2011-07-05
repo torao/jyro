@@ -21,6 +21,7 @@ import org.koiroha.jyro.AbstractJyroTest;
 // IOTest:
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * TestUnit for Class {@link IO}
  *
  * @author takami torao
  */
@@ -54,28 +55,22 @@ public class IOTest extends AbstractJyroTest{
 			// empty directory
 
 			// empty stream treat
-			Iterator<File> it = IO.fileSet(dir, "").iterator();
-			assertTrue("some file exists", ! it.hasNext());
+			shouldDetect(dir, "");
 
 			// unix-like separator
-			it = IO.fileSet(dir, "/").iterator();
-			assertTrue("some file exists", ! it.hasNext());
+			shouldDetect(dir, "/");
 
 			// sequence of separator
-			it = IO.fileSet(dir, "////").iterator();
-			assertTrue("some file exists", ! it.hasNext());
+			shouldDetect(dir, "////");
 
 			// envronment-depend separetor
-			it = IO.fileSet(dir, "\\").iterator();
-			assertTrue("some file exists", ! it.hasNext());
+			shouldDetect(dir, "\\");
 
 			// sequence of envronment-depend separetor
-			it = IO.fileSet(dir, "\\\\\\\\").iterator();
-			assertTrue("some file exists", ! it.hasNext());
+			shouldDetect(dir, "\\\\\\\\");
 
 			// no file matches for empty directory
-			it = IO.fileSet(dir, "*").iterator();
-			assertTrue("some file exists", ! it.hasNext());
+			shouldDetect(dir, "*");
 
 			// --------------------------------------------------------------
 			// only subdirectory exists
@@ -83,77 +78,81 @@ public class IOTest extends AbstractJyroTest{
 			assertTrue(subdir.mkdir());
 
 			// not matches for empty string
-			it = IO.fileSet(dir, "").iterator();
-			assertTrue("some file exists", ! it.hasNext());
+			shouldDetect(dir, "");
 
 			// not matches for directory
-			it = IO.fileSet(dir, "temp.dir").iterator();
-			assertTrue("some file exists", ! it.hasNext());
+			shouldDetect(dir, "temp.dir");
 
 			// wildcard not matches for directory
-			it = IO.fileSet(dir, "*.dir").iterator();
-			assertTrue("some file exists", ! it.hasNext());
+			shouldDetect(dir, "*.dir");
 
 			// wildcard not matches for directory
-			it = IO.fileSet(dir, "*").iterator();
-			assertTrue("some file exists", ! it.hasNext());
+			shouldDetect(dir, "*");
 
 			// wildcard not matches for directory
-			it = IO.fileSet(dir, "**").iterator();
-			assertTrue("some file exists", ! it.hasNext());
+			shouldDetect(dir, "**");
 
 			// wildcard not matches for directory
-			it = IO.fileSet(dir, "**/*").iterator();
-			assertTrue("some file exists", ! it.hasNext());
+			shouldDetect(dir, "**/*");
 
 			// --------------------------------------------------------------
-			// some files exists under base directory
+			// one file exists under base directory
 			File file1 = new File(dir, "temp1.file");
 			assertTrue(file1.createNewFile());
 
 			// not matches for empty string
-			it = IO.fileSet(dir, "").iterator();
-			assertFalse("some file exists", it.hasNext());
+			shouldDetect(dir, "");
 
 			// not matches for directory
-			it = IO.fileSet(dir, "temp.dir").iterator();
-			assertFalse("some file exists", it.hasNext());
+			shouldDetect(dir, "temp.dir");
 
 			// not matches for subdirectory files
-			it = IO.fileSet(dir, "temp.dir/*").iterator();
-			assertFalse("some file exists", it.hasNext());
+			shouldDetect(dir, "temp.dir/*");
 
 			// not matches for directory wildcard
-			it = IO.fileSet(dir, "**").iterator();
-			assertFalse("some file exists", it.hasNext());
+			shouldDetect(dir, "**");
 
 			// not matches for directory
-			it = IO.fileSet(dir, "**/*").iterator();
-			assertFalse("some file exists", it.hasNext());
+			shouldDetect(dir, "**/*", file1);
 
 			// matches directly specified path
-			it = IO.fileSet(dir, "temp1.file").iterator();
-			assertTrue("some file exists", it.hasNext());
-			assertEquals(file1.getCanonicalPath(), it.next().getCanonicalPath());
-			assertFalse(it.hasNext());
+			shouldDetect(dir, "temp1.file", file1);
 
 			// matches wildcard specified path
-			it = IO.fileSet(dir, "*").iterator();
-			assertTrue("some file exists", it.hasNext());
-			assertEquals(file1.getCanonicalPath(), it.next().getCanonicalPath());
-			assertFalse(it.hasNext());
+			shouldDetect(dir, "*", file1);
 
 			// matches wildcard specified path
-			it = IO.fileSet(dir, "*.file").iterator();
-			assertTrue("some file exists", it.hasNext());
-			assertEquals(file1.getCanonicalPath(), it.next().getCanonicalPath());
-			assertFalse(it.hasNext());
+			shouldDetect(dir, "*.file", file1);
 
 			// matches wildcard specified path
-			it = IO.fileSet(dir, "temp*.file").iterator();
-			assertTrue("some file exists", it.hasNext());
-			assertEquals(file1.getCanonicalPath(), it.next().getCanonicalPath());
-			assertFalse(it.hasNext());
+			shouldDetect(dir, "temp*.file", file1);
+
+			// matches wildcard specified path
+			shouldDetect(dir, "*1*", file1);
+
+			// matches wildcard specified path
+			shouldDetect(dir, "t*1*.file", file1);
+
+			// matches wildcard specified path
+			shouldDetect(dir, "*temp1.file", file1);
+
+			// matches wildcard specified path
+			shouldDetect(dir, "temp1*.file", file1);
+
+			// matches wildcard specified path
+			shouldDetect(dir, "temp1.file*", file1);
+
+			// name not matches
+			shouldDetect(dir, "temp2.file");
+
+			// name not matches
+			shouldDetect(dir, "*.dir");
+
+			// name not matches
+			shouldDetect(dir, "temp2.*");
+
+			// name not matches
+			shouldDetect(dir, "t*2*.file");
 
 			// --------------------------------------------------------------
 			// some files exists under base directory
@@ -161,59 +160,63 @@ public class IOTest extends AbstractJyroTest{
 			assertTrue(file2.createNewFile());
 
 			// matches directly specified path
-			it = IO.fileSet(dir, "temp2.file").iterator();
-			assertTrue("some file exists", it.hasNext());
-			assertEquals(file2.getCanonicalPath(), it.next().getCanonicalPath());
-			assertFalse(it.hasNext());
+			shouldDetect(dir, "temp2.file", file2);
 
 			// matches wildcard specified path
-			Iterable<File> itf = IO.fileSet(dir, "*");
-			Set<String> expected = new HashSet<String>();
-			expected.add(file1.getCanonicalPath());
-			expected.add(file2.getCanonicalPath());
-			for(File f: itf){
-				assertTrue(expected.contains(f.getCanonicalPath()));
-				expected.remove(f.getCanonicalPath());
-			}
-			assertTrue(expected.isEmpty());
+			shouldDetect(dir, "*", file1, file2);
 
 			// matches wildcard specified path
-			it = IO.fileSet(dir, "*.file").iterator();
-			expected.add(file1.getCanonicalPath());
-			expected.add(file2.getCanonicalPath());
-			for(File f: itf){
-				assertTrue(expected.contains(f.getCanonicalPath()));
-				expected.remove(f.getCanonicalPath());
-			}
-			assertTrue(expected.isEmpty());
+			shouldDetect(dir, "*.file", file1, file2);
 
 			// matches wildcard specified path
-			it = IO.fileSet(dir, "temp*.file").iterator();
-			expected.add(file1.getCanonicalPath());
-			expected.add(file2.getCanonicalPath());
-			for(File f: itf){
-				assertTrue(expected.contains(f.getCanonicalPath()));
-				expected.remove(f.getCanonicalPath());
-			}
-			assertTrue(expected.isEmpty());
+			shouldDetect(dir, "temp*.file", file1, file2);
+
+			// matches wildcard specified path
+			shouldDetect(dir, "*2*", file2);
+
+			// name not matches
+			shouldDetect(dir, "**/*.file", file1, file2);
 
 			// --------------------------------------------------------------
 			// only subdirectory exists
-			File file3 = new File(subdir, "temp.file");
+			File file3 = new File(subdir, "temp3.file");
 			assertTrue(file3.createNewFile());
 
 			// not matches for empty string
-			it = IO.fileSet(dir, "").iterator();
-			assertTrue("some file exists", ! it.hasNext());
+			shouldDetect(dir, "");
 
 			// not matches for directory
-			it = IO.fileSet(dir, "temp.dir").iterator();
-			assertTrue("some file exists", ! it.hasNext());
+			shouldDetect(dir, "temp.dir");
 
 			// wildcard not matches for directory
-			it = IO.fileSet(dir, "temp.dir/temp.file").iterator();
-			assertTrue("some file exists", it.hasNext());
-			assertEquals(file3.getCanonicalPath(), it.next().getCanonicalPath());
+			shouldDetect(dir, "temp.dir/temp3.file", file3);
+
+			// wildcard not matches for directory
+			shouldDetect(dir, "temp.dir\\temp3.file", file3);
+
+			// wildcard not matches for directory
+			shouldDetect(dir, "temp.dir/*", file3);
+
+			// wildcard not matches for directory
+			shouldDetect(dir, "temp.dir/*.file", file3);
+
+			// wildcard not matches for directory
+			shouldDetect(dir, "temp.dir/temp3.*", file3);
+
+			// wildcard not matches for directory
+			shouldDetect(dir, "temp.dir/temp*.file", file3);
+
+			// wildcard not matches for directory
+			shouldDetect(dir, "*/temp3.file", file3);
+
+			// wildcard not matches for directory
+			shouldDetect(dir, "**/temp3.file", file3);
+
+			// wildcard not matches for directory
+			shouldDetect(dir, "**/*.file", file1, file2, file3);
+
+			// wildcard not matches for directory
+			shouldDetect(dir, "**/*", file1, file2, file3);
 
 		} finally {
 			deleteAll(dir);
@@ -261,17 +264,31 @@ public class IOTest extends AbstractJyroTest{
 		return;
 	}
 
-	private static void equals(Iterable<File> it, File... files){
+	/**
+	 * Detect specified files from dir and test matches expected files.
+	 * @param dir directory
+	 * @param path file pattern
+	 * @param files files to compare
+	 * @throws IOException if filename is invalid
+	 */
+	private static void shouldDetect(File dir, String path, File... files) throws IOException {
+		Iterable<File> it = IO.fileSet(dir, path);
 
-		// build expected
+		// build expected filename set
 		Set<String> expected = new HashSet<String>();
-		expected.add(file1.getCanonicalPath());
-		expected.add(file2.getCanonicalPath());
-		for(File f: itf){
-			assertTrue(expected.contains(f.getCanonicalPath()));
+		for(File f: files){
+			expected.add(f.getCanonicalPath());
+		}
+
+		// consider that the filename contained specified filenames and remove
+		for(File f: it){
+			assertTrue("unexpected file detected: " + f, expected.contains(f.getCanonicalPath()));
 			expected.remove(f.getCanonicalPath());
 		}
-		assertTrue(expected.isEmpty());
+
+		// expected filename should be empty
+		assertTrue("file not detected: " + expected, expected.isEmpty());
+		return;
 	}
 
 }

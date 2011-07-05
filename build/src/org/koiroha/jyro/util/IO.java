@@ -54,6 +54,10 @@ public final class IO {
 	/**
 	 * Retrieve fileset for specified wildcard. The path parameter may
 	 * contains "*" as sequence of any character, and "**" as subdirectories.
+	 * <p>
+	 * For example, if the files "f1", "f2", "d/f3" exists in base directory,
+	 * pattern "f2" matches "f2", "f*" matches "f1" and "f2", "**<!---->/f*"
+	 * matches "f1", "f2" and "d/f3".
 	 *
 	 * @param base base directory
 	 * @param path path that may contains wildcard
@@ -128,17 +132,19 @@ public final class IO {
 
 		// directory wildcard specified
 		if(name.equals("**")){
+			if(index+1 < components.length){
+				fileSet(list, dir, components, index+1);
+			}
+
+			// retrieve subdirectories
 			File[] subdirs = dir.listFiles(new FileFilter() {
 				@Override
 				public boolean accept(File f) { return f.isDirectory(); }
 			});
+
+			// recursive execute to subdirectories
 			for(File d: subdirs){
 				fileSet(list, d, components, index);
-			}
-			if(index+1 < components.length){
-				for(File d: subdirs){
-					fileSet(list, d, components, index+1);
-				}
 			}
 			return;
 		}
