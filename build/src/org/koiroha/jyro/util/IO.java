@@ -11,7 +11,6 @@
 package org.koiroha.jyro.util;
 
 import java.io.*;
-import java.net.URI;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -20,11 +19,11 @@ import org.apache.log4j.Logger;
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// IO:
+// IO: I/O Utility
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * Utility class for I/O operation
  *
- * <p>
  * @version $Revision:$
  * @author torao
  * @since 2011/07/03 Java SE 6
@@ -53,32 +52,61 @@ public final class IO {
 	// Retrieve File Set
 	// ======================================================================
 	/**
-	 * Retrieve "foo\bar\**\*.js" style file set of base directory.
+	 * Retrieve fileset for specified wildcard. The path parameter may
+	 * contains "*" as sequence of any character, and "**" as subdirectories.
 	 *
 	 * @param base base directory
 	 * @param path path that may contains wildcard
 	 * @return iterable of file
+	 * @throws IOException if invalid path
 	 */
 	public static Iterable<File> fileSet(File base, String path) throws IOException{
-		URI b = base.toURI();
-		URI uri = b.resolve(path).normalize();
-		path = uri.getPath().replace('/', File.separatorChar);
+
+		// if path does'nt contain wildcard
+		int wc = path.indexOf('*');
+		if(wc < 0){
+			File file = new File(base, path);
+			if(! file.isFile()){
+				return Collections.emptyList();
+			}
+			return Arrays.asList(file);
+		}
+
+		// find most near separator position from wildcard
+		int sep = 0;
+		for(int i=0; i<wc; i++){
+			char ch = path.charAt(wc - 1 - i);
+			if(ch == '/' || ch == '\\' || ch == File.separatorChar){
+				sep = wc - i;
+				break;
+			}
+		}
+
+		// retrieve prefix directory to find files shortly
+		String prefix = path.substring(0, sep);
+		String search = path.substring(sep);
+		File start = new File(base, prefix).getCanonicalFile();
+		if(! start.isDirectory()){
+			return Collections.emptyList();
+		}
 
 		// split path to components
-		StringTokenizer tk = new StringTokenizer(path, File.separator);
-		String[] cmp = new String[tk.countTokens()];
-		for(int i=0; tk.hasMoreTokens(); i++){
-			cmp[i] = tk.nextToken();
+		List<String> cmp = new ArrayList<String>();
+		for(String c: search.split("[/\\\\]+")){
+			if(c.length() == 0){
+				/* do nothing */
+			} else if(c.equals("**") && cmp.size()!=0 && cmp.get(cmp.size()-1).equals("**")){
+				/* do nothing */
+			} else {
+				cmp.add(c);
+			}
+		}
+		if(logger.isDebugEnabled()){
+			logger.trace("\"" + path + "\" separeted to: " + start + File.separator + cmp);
 		}
 
 		List<File> list = new ArrayList<File>();
-		for(File root: File.listRoots()){
-			if(root.toString().equals(File.separator)				// unix style "/"
-			|| root.toString().equals(cmp[0] + File.separator))		// windows style "C:\"
-			{
-				fileSet(list, root, cmp, 1);
-			}
-		}
+		fileSet(list, start, cmp.toArray(new String[cmp.size()]), 0);
 		return list;
 	}
 
@@ -88,15 +116,17 @@ public final class IO {
 	/**
 	 * Retrieve "foo\bar\**\*.js" style file set of base directory.
 	 *
-	 * @param base base directory
-	 * @param path path that may contains wildcard
-	 * @return iterable of file
+	 * @param list container to add match file
+	 * @param dir directory
+	 * @param components split path components
+	 * @param index index of components
 	 */
 	private static void fileSet(List<File> list, File dir, String[] components, int index){
 		assert(dir.isDirectory());
 		String name = components[index];
 		boolean last = (index+1 == components.length);
 
+		// directory wildcard specified
 		if(name.equals("**")){
 			File[] subdirs = dir.listFiles(new FileFilter() {
 				@Override
@@ -105,8 +135,10 @@ public final class IO {
 			for(File d: subdirs){
 				fileSet(list, d, components, index);
 			}
-			for(File d: subdirs){
-				fileSet(list, d, components, index+1);
+			if(index+1 < components.length){
+				for(File d: subdirs){
+					fileSet(list, d, components, index+1);
+				}
 			}
 			return;
 		}
@@ -125,12 +157,15 @@ public final class IO {
 
 		// retrieve match files or recursive call if directory
 		Pattern pattern = Pattern.compile(regex.toString());
-		for(File f: dir.listFiles()){
-			if(pattern.matcher(f.getName()).matches()){
-				if(!last && f.isDirectory()){
-					fileSet(list, f, components, index+1);
-				} else if(last && f.isFile()){
-					list.add(f);
+		File[] files = dir.listFiles();
+		if(files != null){
+			for(File f: files){
+				if(pattern.matcher(f.getName()).matches()){
+					if(!last && f.isDirectory()){
+						fileSet(list, f, components, index+1);
+					} else if(last && f.isFile()){
+						list.add(f);
+					}
 				}
 			}
 		}
@@ -141,16 +176,17 @@ public final class IO {
 	// Close Stream
 	// ======================================================================
 	/**
-	 * Close specified stream quietly.
+	 * Close specified stream quietly. Only error level log will be output if
+	 * fail to close stream.
 	 *
-	 * @param o stream to close
+	 * @param o stream to close, or nothing to do in case null
 	 */
 	public static void close(Closeable o){
 		if(o != null){
 			try {
 				o.close();
 			} catch(IOException ex){
-				logger.warn("fail to close stream", ex);
+				logger.error("fail to close stream", ex);
 			}
 		}
 		return;
