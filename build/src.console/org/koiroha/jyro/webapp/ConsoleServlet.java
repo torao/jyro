@@ -139,4 +139,25 @@ public class ConsoleServlet extends HttpServlet {
 		return;
 	}
 
+	// ======================================================================
+	//
+	// ======================================================================
+	/**
+	 *
+	 * @param request HTTP request
+	 * @param response HTTP response
+	 * @throws ServletException
+	 * @throws IOException if fail to output
+	 */
+	private void status(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		response.setContentType("text/javascript+json; charset=utf-8");
+		response.setHeader("Cache-Control", "no-cache");
+
+		PrintWriter out = response.getWriter();
+		out.write('[');
+		out.write(']');
+		out.flush();
+		return;
+	}
+
 }

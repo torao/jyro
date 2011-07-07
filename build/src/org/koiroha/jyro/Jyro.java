@@ -86,6 +86,8 @@ public class Jyro {
 		ID = res.getString("id");
 		VERSION = res.getString("version");
 		BUILD = res.getString("build");
+
+		assert(VERSION.matches("\\d+\\.\\d+\\.\\d+"));
 	}
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

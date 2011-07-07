@@ -3,6 +3,7 @@
 body {
 	margin: 0px;
 	padding: 0px;
+	background-color: white;
 }
 
 h1 {
@@ -17,14 +18,14 @@ h1 {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
 }
 
-.main {
+#main {
     background-color: #EEE;
+    height: 100%;
 }
 
 .tabcontainer {
     margin: 0px;
-    padding: 0.3em 0em 0em 3em;
-    border: solid 1px black;
+    padding: 0.8em 0em 0em 3em;
     position: absolute:
     top: 0px;
     left: 0px;
@@ -40,4 +41,10 @@ h1 {
     font-family: Verdana, sans-serif;
     font-weight: bold;
     font-size: 0.9em;
+}
+
+.tab.focus {
+    border-top: solid 1px #E8E8E8;
+    border-left: solid 1px white;
+    border-right: solid 1px gray;
 }

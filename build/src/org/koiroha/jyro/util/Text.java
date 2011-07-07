@@ -9,6 +9,7 @@
  */
 package org.koiroha.jyro.util;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.regex.*;
 
@@ -77,6 +78,53 @@ public final class Text {
 			buffer.append(fmt, begin, fmt.length());
 		}
 		return buffer.toString();
+	}
+
+	// ======================================================================
+	// Literize JavaScript String
+	// ======================================================================
+	/**
+	 * Literize specified text as JavaScript string. If null pass as text,
+	 * string "null" will append to out.
+	 *
+	 * @param out appendable to output
+	 * @param text text
+	 * @return instance of out parameter
+	 * @throws IOException if fail to output
+	 */
+	public static Appendable literize(Appendable out, String text) throws IOException {
+
+		// append null if null specified
+		if(text == null){
+			out.append("null");
+			return out;
+		}
+
+		out.append('\"');
+		for(int i=0; i<text.length(); i++){
+			char ch = text.charAt(i);
+			switch(ch){
+			case '\b':		out.append("\\b");		break;
+			case '\f':		out.append("\\f");		break;
+			case '\n':		out.append("\\n");		break;
+			case '\r':		out.append("\\r");		break;
+			case '\t':		out.append("\\t");		break;
+			case '\u000B':	out.append("\\v");		break;
+			case '\"':		out.append("\\\"");		break;
+			case '\'':		out.append("\\\'");		break;
+			case '\\':		out.append("\\\\");		break;
+			default:
+				if(Character.isDefined(ch) && !Character.isISOControl(ch)){
+					out.append(ch);
+				} else {
+					out.append("\\u");
+					out.append(String.format("%04X", (int)ch));
+				}
+				break;
+			}
+		}
+		out.append('\"');
+		return out;
 	}
 
 }
