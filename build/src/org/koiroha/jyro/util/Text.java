@@ -30,7 +30,7 @@ public final class Text {
 	/**
 	 * Placeholder pattern to format string.
 	 */
-	private static final Pattern PLACEHOLDER = Pattern.compile("\\$\\{([\\w\\.]+)(:[^\\}]*)\\}");
+	private static final Pattern PLACEHOLDER = Pattern.compile("\\$\\{([\\w\\.]+)(:[^\\}]*)?\\}");
 
 	// ======================================================================
 	// Constructor
@@ -49,7 +49,7 @@ public final class Text {
 	 * Replace ${foo.bar} with specified parameter map. "$$" can escape
 	 * single dollar sign.
 	 * ${name:default} or $name
-	 * 
+	 *
 	 * @param fmt format
 	 * @param param format parameters
 	 * @return formatted string
@@ -64,7 +64,7 @@ public final class Text {
 			String def = matcher.group(2);
 			if(param.containsKey(name)){
 				buffer.append(param.get(name));
-			} else if(def != null && def.length() != 0){
+			} else if(def != null){
 				buffer.append(def.substring(1));
 			} else {
 				buffer.append(matcher.group(0));

@@ -12,14 +12,14 @@ package org.koiroha.jyro;
 import java.util.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// LoadAverage:
+// LoadAverage: Unix-like Load Average Calculator
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Calculate unix-like load average for specified job queue.
+ * Calculate unix-like load average for specified queue.
  *
  * @author takami torao
  */
-public class LoadAverage {
+class LoadAverage extends TimerTask {
 
 	// ======================================================================
 	// Calculation Timer
@@ -27,34 +27,31 @@ public class LoadAverage {
 	/**
 	 * Calculation timer for all load average in system.
 	 */
-	private static final Timer TIMER = new Timer("LoadAverage Calculation", true);
-
-	// ======================================================================
-	// Timer Task
-	// ======================================================================
-	/**
-	 * Called per 1 second and store current size of enqueued jobs.
-	 */
-	private final TimerTask task = new TimerTask(){
-		@Override
-		public void run() { store(); }
-	};
+	private static final Timer TIMER = new Timer("LoadAverage", true);
 
 	// ======================================================================
 	// Queue
 	// ======================================================================
 	/**
-	 * Job queue.
+	 * Job queue to calculate load average.
 	 */
-	private final Collection<Object> queue;
+	private final Collection<?> queue;
 
 	// ======================================================================
 	// Load Value
 	// ======================================================================
 	/**
-	 * Load values per second.
+	 * The number of enqueued jobs per second.
 	 */
 	private final int[] load = new int[15 * 60];
+
+	// ======================================================================
+	// Time
+	// ======================================================================
+	/**
+	 * The timestamp for each load array.
+	 */
+	private final long[] time = new long[load.length];
 
 	// ======================================================================
 	// Constructor
@@ -64,8 +61,25 @@ public class LoadAverage {
 	 *
 	 * @param queue job queue
 	 */
-	public LoadAverage(Collection<Object> queue) {
+	public LoadAverage(Collection<?> queue) {
 		this.queue = queue;
+		return;
+	}
+
+	// ======================================================================
+	// Sampling Load Average
+	// ======================================================================
+	/**
+	 * Sampling current size of enqueued jobs to internal load array.
+	 */
+	@Override
+	public void run(){
+		synchronized(load){
+			System.arraycopy(load, 0, load, 1, load.length-1);
+			System.arraycopy(time, 0, time, 1, time.length-1);
+			time[0] = System.currentTimeMillis();
+			load[0] = queue.size();
+		}
 		return;
 	}
 
@@ -76,7 +90,7 @@ public class LoadAverage {
 	 * Start to calculate enqueued size of jobs.
 	 */
 	public void start(){
-		TIMER.scheduleAtFixedRate(task, 0, 1000);
+		TIMER.scheduleAtFixedRate(this, 0, 1000);
 		return;
 	}
 
@@ -87,7 +101,7 @@ public class LoadAverage {
 	 * Stop to calculate enqueued size of jobs.
 	 */
 	public void stop(){
-		task.cancel();
+		this.cancel();
 		return;
 	}
 
@@ -97,44 +111,38 @@ public class LoadAverage {
 	/**
 	 * Retrieve load averages per 1, 5, and 15 minutes.
 	 *
-	 * @return load average
+	 * @return load average (1min, 5min, 15min)
 	 */
-	public double[] get(){
-		int s1 = 0;
-		int s5 = 0;
-		int s15 = 0;
-		int count = 0;
+	public double[] getLoadAverage(){
+		int sum1 = 0;
+		int cnt1 = 0;
+		int sum5 = 0;
+		int cnt5 = 0;
+		int sum15 = 0;
+		int cnt15 = 0;
 		synchronized(load){
+			long now = System.currentTimeMillis();
 			for(int i=0; i<load.length && load[i]>=0; i++){
-				if(i < 60){
-					s1 += load[i];
+				long diff = now - time[i];
+				if(diff < 1 * 60 * 1000){
+					sum1 += load[i];
+					cnt1 ++;
 				}
-				if(i < 5 * 60){
-					s5 += load[i];
+				if(diff < 5 * 60 * 1000){
+					sum5 += load[i];
+					cnt5 ++;
 				}
-				s15 += load[i];
-				count ++;
+				if(diff < 15 * 60 * 1000){
+					sum15 += load[i];
+					cnt15 ++;
+				}
 			}
 		}
-		if(count == 0){
-			return new double[]{ 0.0, 0.0, 0.0 };
-		}
-		return new double[]{ s1 / count, s5 / count, s15 / count };
-
-	}
-
-	// ======================================================================
-	// Calculate Load Average
-	// ======================================================================
-	/**
-	 * Store current size of enqueued jobs to load array.
-	 */
-	private void store(){
-		synchronized(load){
-			System.arraycopy(load, 0, load, 1, load.length-1);
-			load[0] = queue.size();
-		}
-		return;
+		return new double[]{
+			(cnt1==0)? Double.NaN: ((double)sum1 / cnt1),
+			(cnt5==0)? Double.NaN: ((double)sum5 / cnt5),
+			(cnt15==0)? Double.NaN: ((double)sum15 / cnt15)
+		};
 	}
 
 }
