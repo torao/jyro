@@ -71,6 +71,14 @@ public class JMSQueue {
 	private final QueueReceiver receiver;
 
 	// ======================================================================
+	// Close Flag
+	// ======================================================================
+	/**
+	 *
+	 */
+	private boolean closed = false;
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -108,15 +116,40 @@ public class JMSQueue {
 		return;
 	}
 
+
 	// ======================================================================
-	// Constructor
+	// Close Queue
 	// ======================================================================
 	/**
-	 */
-	public void close() {
-		receiver.close();
-		sender.close();
-		session.close();
+	 * Close queue messaging and release resources.
+	 *
+	 * @throws JyroException if fail to close queue
+	*/
+	public void close() throws JyroException{
+
+		// set closed status first because normally exit should detect in receive()
+		this.closed = true;
+
+		// close sender
+		try {
+			sender.close();
+		} catch(JMSException ex){
+			logger.error("fail to close JMS queue sender, try to continue", ex);
+		}
+
+		// close receiver
+		try {
+			receiver.close();
+		} catch(JMSException ex){
+			logger.error("fail to close JMS queue receiver, try to continue", ex);
+		}
+
+		// close session
+		try {
+			session.close();
+		} catch(JMSException ex){
+			throw new JyroException("fail to close JMS session", ex);
+		}
 		return;
 	}
 
