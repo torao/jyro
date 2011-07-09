@@ -10,39 +10,21 @@
 */
 package org.koiroha.jyro;
 
-import java.util.*;
 import java.util.concurrent.*;
 
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// MemoryQueue: Memory Queue
+// LocalJobQueue: Local Job Queue
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Queue implementation for to use heap memory of Java VM.
+ * Queue implementation for local Java VM.
  * <p>
  * @version $Revision:$
  * @author torao
  * @since 2011/07/06 Java SE 6
  */
-public class MemoryQueue implements JobQueue{
-
-	// ======================================================================
-	// Queue
-	// ======================================================================
-	/**
-	 * Queue map of current Java VM.
-	*/
-	private static final Map<String,BlockingQueue<Job>> QUEUES
-		= new HashMap<String,BlockingQueue<Job>>();
-
-	// ======================================================================
-	// Name
-	// ======================================================================
-	/**
-	 * Name of this queue.
-	 */
-	private final String name;
+public class LocalJobQueue extends JobQueueImpl {
 
 	// ======================================================================
 	// Queue
@@ -58,16 +40,8 @@ public class MemoryQueue implements JobQueue{
 	/**
 	 * @param name name of this queue.
 	 */
-	public MemoryQueue(String name) {
-		this.name = name;
-		synchronized(QUEUES){
-			BlockingQueue<Job> queue = QUEUES.get(name);
-			if(queue == null){
-				queue = new LinkedBlockingQueue<Job>();
-				QUEUES.put(name, queue);
-			}
-			this.queue = queue;
-		}
+	public LocalJobQueue() {
+		this.queue = new LinkedBlockingQueue<Job>();
 		return;
 	}
 
@@ -78,7 +52,7 @@ public class MemoryQueue implements JobQueue{
 	 * Post specified job to this queue.
 	*/
 	@Override
-	public void send(Job job) {
+	public void post(Job job) {
 		queue.offer(job);
 		return;
 	}

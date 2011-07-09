@@ -5,9 +5,9 @@
       version="3.0"> 
       
   <servlet>
-   <display-name>Console</display-name>
-   <servlet-name>Console</servlet-name>
-   <servlet-class>org.koiroha.jyro.webapp.ConsoleServlet</servlet-class>
+   <display-name>Jyro Servlet</display-name>
+   <servlet-name>JyroAPI</servlet-name>
+   <servlet-class>org.koiroha.jyro.webapp.JyroServlet</servlet-class>
    <init-param>
      <param-name>jyro.home</param-name>
      <param-value>WEB-INF/jyro</param-value>
@@ -16,8 +16,8 @@
  </servlet>
 
  <servlet-mapping>
-   <servlet-name>Console</servlet-name>
-   <url-pattern>/console</url-pattern>
+   <servlet-name>JyroAPI</servlet-name>
+   <url-pattern>/api/*</url-pattern>
  </servlet-mapping>
 
 </web-app>

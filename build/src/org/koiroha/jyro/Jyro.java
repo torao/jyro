@@ -15,10 +15,10 @@ import java.util.*;
 import org.apache.log4j.Logger;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Jyro: Node Container
+// Jyro: Jyro Container
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Parallel processing container class.
+ * Jyro container to host multi instance.
  *
  * @author takami torao
  */
@@ -90,70 +90,13 @@ public class Jyro {
 		assert(VERSION.matches("\\d+\\.\\d+\\.\\d+"));
 	}
 
-	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	// Const:
-	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	/**
-	 *
-	 */
-	public interface Const {
-
-		// ==================================================================
-		// XML Namespace
-		// ==================================================================
-		/**
-		 * XML Namespace of Jyro configuration xml.
-		 */
-		public static final String XMLNS10 = "http://www.koiroha.org/xmlns/jyro/configuration_1.0";
-
-		// ==================================================================
-		// Default Library Directory
-		// ==================================================================
-		/**
-		 * Library directory name to load as default. ${jyro.home}/{@value}
-		 */
-		public static final String DIR_LIB = "lib";
-
-		// ==================================================================
-		// Temporary Directory
-		// ==================================================================
-		/**
-		 * Temporary directory to place some work files. ${jyro.home}/{@value}
-		 */
-		public static final String DIR_TMP = "tmp";
-
-		// ==================================================================
-		// Configuration File Name
-		// ==================================================================
-		/**
-		 * Configuration file name of jyro instance. ${jyro.home}/{@value}
-		 */
-		public static final String FILE_CONF = "jyro.xml";
-
-		// ==================================================================
-		// Lock Filename
-		// ==================================================================
-		/**
-		 * Lock filename that will be placed in temporary directory.
-		 */
-		public static final String FILE_LOCK = ".lock";
-	}
-
 	// ======================================================================
-	// Queues
+	// Core Instance Map
 	// ======================================================================
 	/**
-	 * Queue in this context.
+	 * The map of all JyroCore instance.
 	 */
-	private final Map<String,Queue> queues;
-
-	// ======================================================================
-	// Nodes
-	// ======================================================================
-	/**
-	 * Nodes in this context.
-	 */
-	private final Map<String,List<Node>> nodes;
+	private final Map<String,JyroCore> cores = new HashMap<String,JyroCore>();
 
 	// ======================================================================
 	// Directory
@@ -162,14 +105,6 @@ public class Jyro {
 	 * Home directory of this jyro instance.
 	 */
 	private final File dir;
-
-	// ======================================================================
-	// Class Loader
-	// ======================================================================
-	/**
-	 * Class loader for instance-scope classes.
-	 */
-	private final ClassLoader loader;
 
 	// ======================================================================
 	// Constructor
@@ -182,11 +117,34 @@ public class Jyro {
 	 */
 	public Jyro(File dir, ClassLoader parent, Properties prop) throws JyroException{
 		logger.debug("initializing Jyro on directory: " + dir);
-		this.dir = dir;
 
-		Configurator config = new Configurator(dir);
-		this.loader = config.getJyroClassLoader(parent);
-		this.nodes = config.createNodes(loader, prop);
+		// check directory existance
+		this.dir = dir;
+		if(! dir.isDirectory()){
+			logger.warn("specified parameter is not directory: " + dir);
+			return;
+		}
+
+		// build jyro cores
+		String[] names = dir.list();
+		for(int i=0; names!=null && i<names.length; i++){
+			File file = new File(dir, names[i]);
+			if(file.isDirectory()){
+				if(names[i].startsWith(".")){
+					logger.debug(". directory ignored: " + names[i]);
+					continue;
+				}
+				JyroCore core = new JyroCore(names[i], file, parent, prop);
+				cores.put(names[i], core);
+			}
+		}
+
+		// logging stuations
+		if(cores.size() == 0){
+			logger.warn("no jyro core load from: " + dir);
+		} else {
+			logger.debug("load " + cores.size() + " cores: " + dir);
+		}
 		return;
 	}
 
@@ -213,11 +171,14 @@ public class Jyro {
 	public void startup() throws JyroException {
 		logger.debug("startup()");
 
-		// start all nodes
-		for(List<Node> l: nodes.values()){
-			for(Node n: l){
-				n.start();
-			}
+		// boot with alphanumeric sequence
+		List<String> names = new ArrayList<String>(cores.keySet());
+		Collections.sort(names);
+
+		// startup all cores
+		for(String name: names){
+			JyroCore core = cores.get(name);
+			core.startup();
 		}
 		return;
 	}
@@ -233,11 +194,14 @@ public class Jyro {
 	public void shutdown() throws JyroException {
 		logger.debug("shutdown()");
 
-		// stop all nodes
-		for(List<Node> l: nodes.values()){
-			for(Node n: l){
-				n.stop();
-			}
+		// shutdown with reverse alphanumeric sequence
+		List<String> names = new ArrayList<String>(cores.keySet());
+		Collections.sort(names, Collections.reverseOrder());
+
+		// shutdown all cores.
+		for(String name: names){
+			JyroCore core = cores.get(name);
+			core.shutdown();
 		}
 
 		return;

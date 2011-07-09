@@ -25,7 +25,7 @@ import org.koiroha.jyro.*;
  *
  * @author takami torao
  */
-public class ConsoleServlet extends HttpServlet {
+public class JyroServlet extends HttpServlet {
 
 	// ======================================================================
 	// Serial Version
@@ -41,7 +41,7 @@ public class ConsoleServlet extends HttpServlet {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(ConsoleServlet.class);
+	private static final Logger logger = Logger.getLogger(JyroServlet.class);
 
 	// ======================================================================
 	// Jyro
@@ -57,7 +57,7 @@ public class ConsoleServlet extends HttpServlet {
 	/**
 	 *
 	 */
-	public ConsoleServlet() {
+	public JyroServlet() {
 		return;
 	}
 
@@ -74,13 +74,13 @@ public class ConsoleServlet extends HttpServlet {
 		super.init();
 
 		// retrieve jyro.home
-		String dirName = getInitParameter("jyro.home");
+		String dirName = getInitParameter(Jyro.JYRO_HOME);
 		if(dirName == null){
-			dirName = getServletContext().getInitParameter("jyro.home");
+			dirName = getServletContext().getInitParameter(Jyro.JYRO_HOME);
 			if(dirName == null){
-				dirName = System.getProperty("jyro.home");
+				dirName = System.getProperty(Jyro.JYRO_HOME);
 				if(dirName == null){
-					throw new ServletException("jyro.home not specified in servlet or context paramter, system property");
+					throw new ServletException(Jyro.JYRO_HOME + " not specified in servlet or context paramter, system property");
 				}
 			}
 		}
@@ -91,7 +91,7 @@ public class ConsoleServlet extends HttpServlet {
 			dirName = getServletContext().getRealPath(dirName);
 			dir = new File(dirName);
 		}
-		logger.info("jyro.home=" + dirName);
+		logger.info(Jyro.JYRO_HOME + "=" + dirName);
 
 		try {
 			// build jyro instance
@@ -109,8 +109,7 @@ public class ConsoleServlet extends HttpServlet {
 	// Destroy Servlet
 	// ======================================================================
 	/**
-	 *
-	 * <p>
+	 * Destroy this servlet.
 	*/
 	@Override
 	public void destroy() {
@@ -129,20 +128,43 @@ public class ConsoleServlet extends HttpServlet {
 	}
 
 	// ======================================================================
-	//
+	// Serve GET Request
 	// ======================================================================
 	/**
 	 *
+	 * @param request HTTP request
+	 * @param response HTTP response
+	 * @throws ServletException
+	 * @throws IOException if fail to output
 	 */
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+		// redirect to top page if no PATH_INFO specified
+		String pathInfo = request.getPathInfo();
+		if(pathInfo == null || pathInfo.length() == 0 || pathInfo.equals("/")){
+			logger.debug("redirecting top page: pathInfo=" + pathInfo);
+			response.sendRedirect(request.getContextPath() + "/");
+			return;
+		}
+
+		// send status for jyro
+		if(pathInfo.equals("/status")){
+			status(request, response);
+			return;
+		}
+
+		// send 404 Not Found if unrecognized pathinfo sent
+		logger.debug("pathinfo not found: " + pathInfo);
+		response.sendError(HttpServletResponse.SC_NOT_FOUND);
 		return;
 	}
 
 	// ======================================================================
-	//
+	// Send Status
 	// ======================================================================
 	/**
+	 * Send status of Jyro.
 	 *
 	 * @param request HTTP request
 	 * @param response HTTP response

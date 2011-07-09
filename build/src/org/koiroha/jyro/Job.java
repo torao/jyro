@@ -13,9 +13,10 @@ import java.io.Serializable;
 import java.util.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Job:
+// Job: Job
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * The job class to send or receive between {@link JobQueue}.
  *
  * @author takami torao
  */

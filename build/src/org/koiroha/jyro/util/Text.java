@@ -10,7 +10,7 @@
 package org.koiroha.jyro.util;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -55,6 +55,24 @@ public final class Text {
 	 * @param param format parameters
 	 * @return formatted string
 	 */
+	public static String format(String fmt, Properties param){
+		@SuppressWarnings("unchecked")
+		Map<String,String> map = (Map<String,String>)((Map<?,?>)param);
+		return format(fmt, map);
+	}
+
+	// ======================================================================
+	// Format String
+	// ======================================================================
+	/**
+	 * Replace ${foo.bar} with specified parameter map. "$$" can escape
+	 * single dollar sign.
+	 * ${name:default} or $name
+	 *
+	 * @param fmt format
+	 * @param param format parameters
+	 * @return formatted string
+	 */
 	public static String format(String fmt, Map<String,String> param){
 		StringBuffer buffer = new StringBuffer();
 		Matcher matcher = PLACEHOLDER.matcher(fmt);
@@ -76,6 +94,28 @@ public final class Text {
 		// append left characters
 		if(begin != fmt.length()){
 			buffer.append(fmt, begin, fmt.length());
+		}
+		return buffer.toString();
+	}
+
+	// ======================================================================
+	// Literize JavaScript String
+	// ======================================================================
+	/**
+	 * Literize specified text as JavaScript string. If null pass as text,
+	 * string "null" will append to out.
+	 *
+	 * @param out appendable to output
+	 * @param text text
+	 * @return instance of out parameter
+	 * @throws IOException if fail to output
+	 */
+	public static String literize(String text){
+		StringBuilder buffer = new StringBuilder();
+		try {
+			literize(buffer, text);
+		} catch(IOException ex){
+			throw new IllegalStateException("unexpected exception; this probably bug!: " + text, ex);
 		}
 		return buffer.toString();
 	}

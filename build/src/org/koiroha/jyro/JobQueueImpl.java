@@ -39,17 +39,6 @@ public abstract class JobQueueImpl implements JobQueue {
 	}
 
 	// ======================================================================
-	// Post Job
-	// ======================================================================
-	/**
-	 * Post specified job to this queue.
-	 *
-	 * @param job job to post
-	 * @throws JyroException if fail to post job
-	 */
-	public abstract void post(Job job) throws JyroException;
-
-	// ======================================================================
 	// Add Listener
 	// ======================================================================
 	/**
@@ -89,5 +78,13 @@ public abstract class JobQueueImpl implements JobQueue {
 		}
 		return;
 	}
+
+	// ======================================================================
+	// Receive Job
+	// ======================================================================
+	/**
+	 * Receive job from this queue.
+	*/
+	protected abstract Job receive();
 
 }
