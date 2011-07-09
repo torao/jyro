@@ -1,26 +1,20 @@
 /* **************************************************************************
- * Copyright (C) 2008 BJoRFUAN. All Right Reserved
+ * Copyright (C) 2011 BJoRFUAN. All Rights Reserved
  * **************************************************************************
- * This module, contains source code, binary and documentation, is in the
- * BSD License, and comes with NO WARRANTY.
+ * This module, contains source code, binary and documentation, is in the Apache
+ * License Ver. 2.0, and comes with NO WARRANTY.
  *
- *                                                 torao <torao@bjorfuan.com>
- *                                                       http://www.moyo.biz/
- * $Id:$
-*/
+ * takami torao <koiroha@gmail.com> http://www.bjorfuan.com/
+ */
 package org.koiroha.jyro;
-
-
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // JobQueue: Job Queue
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * The interface for job queue.
  *
- * <p>
- * @version $Revision:$
- * @author torao
- * @since 2011/07/06 Java SE 6
+ * @author takami torao
  */
 public interface JobQueue {
 
@@ -29,25 +23,30 @@ public interface JobQueue {
 	// ======================================================================
 	/**
 	 * Post specified job to this queue.
-	*/
-	public void send(Job job) throws JyroException;
-
-	// ======================================================================
-	// Receive Job
-	// ======================================================================
-	/**
-	 * Receive job from this queue.
-	*/
-	public Job receive() throws JyroException;
-
-	// ======================================================================
-	// Close Queue
-	// ======================================================================
-	/**
-	 * Close queue messaging and release resources.
 	 *
-	 * @throws JyroException if fail to close queue
-	*/
-	public void close() throws JyroException;
+	 * @param job job to post
+	 * @throws JyroException if fail to post job
+	 */
+	public abstract void post(Job job) throws JyroException;
+
+	// ======================================================================
+	// Add Listener
+	// ======================================================================
+	/**
+	 * Add specified listener to this queue.
+	 *
+	 * @param l listener
+	 */
+	public abstract void addJobQueueListener(JobListener l);
+
+	// ======================================================================
+	// Remove Listener
+	// ======================================================================
+	/**
+	 * Remove specified listener from this queue.
+	 *
+	 * @param l listener
+	 */
+	public abstract void removeJobQueueListener(JobListener l);
 
 }
