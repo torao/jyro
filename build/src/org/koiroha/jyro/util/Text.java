@@ -165,4 +165,63 @@ public final class Text {
 		return out;
 	}
 
+	// ======================================================================
+	// Literize JavaScript String
+	// ======================================================================
+	/**
+	 * Literize specified text as JavaScript string. If null pass as text,
+	 * string "null" will append to out.
+	 *
+	 * @param text text
+	 * @return instance of out parameter
+	 */
+	public static String escapeHtml(String text){
+		StringBuilder buffer = new StringBuilder();
+		try {
+			escapeHtml(buffer, text);
+		} catch(IOException ex){
+			throw new IllegalStateException("unexpected exception; this probably bug!: " + text, ex);
+		}
+		return buffer.toString();
+	}
+
+	// ======================================================================
+	// Escape to HTML String
+	// ======================================================================
+	/**
+	 * Literize specified text as JavaScript string. If null pass as text,
+	 * string "null" will append to out.
+	 *
+	 * @param out appendable to output
+	 * @param text text
+	 * @return instance of out parameter
+	 * @throws IOException if fail to output
+	 */
+	public static Appendable escapeHtml(Appendable out, String text) throws IOException {
+
+		// append null if null specified
+		if(text == null){
+			return out;
+		}
+
+		for(int i=0; i<text.length(); i++){
+			char ch = text.charAt(i);
+			switch(ch){
+			case '<':		out.append("&lt;");		break;
+			case '>':		out.append("&gt;");		break;
+			case '&':		out.append("&amp;");	break;
+			case '\"':		out.append("&quot;");	break;
+			default:
+				if(Character.isDefined(ch) && !Character.isISOControl(ch)){
+					out.append(ch);
+				} else {
+					out.append("&#x");
+					out.append(String.format("%04X;", (int)ch));
+				}
+				break;
+			}
+		}
+		return out;
+	}
+
 }

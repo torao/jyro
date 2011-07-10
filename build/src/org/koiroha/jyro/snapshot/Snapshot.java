@@ -10,10 +10,14 @@
 */
 package org.koiroha.jyro.snapshot;
 
-import java.io.Serializable;
+import java.text.*;
 import java.util.*;
 
-import org.koiroha.jyro.Jyro;
+import javax.xml.parsers.*;
+
+import org.koiroha.jyro.*;
+import org.koiroha.jyro.Node;
+import org.w3c.dom.*;
 
 
 
@@ -21,119 +25,201 @@ import org.koiroha.jyro.Jyro;
 // Snapshot: Snapshot Utility
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Utility class to retrieve system snapshot of {@link Jyro}.
+ * Utility class to build snapshot XML of {@link Jyro}.
  * <p>
  * @version $Revision:$
  * @author torao
  * @since 2011/07/04 Java SE 6
  */
-public final class Snapshot implements Serializable {
+public final class Snapshot {
 
 	// ======================================================================
-	// Serial Version
+	// Document
 	// ======================================================================
 	/**
-	 * Serial version UID of this class.
+	 * The XML document that this instance building.
 	 */
-	private static final long serialVersionUID = 1L;
+	private Document doc = null;
+
+	// ======================================================================
+	// Number Format
+	// ======================================================================
+	/**
+	 */
+	private final NumberFormat nf;
 
 	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
 	 * The default constructor is hidden in class.
+	 *
+	 * @param locale user locale
 	 */
-	private Snapshot() {
+	public Snapshot(Locale locale) {
+		this.nf = NumberFormat.getNumberInstance(locale);
 		return;
 	}
 
 	// ======================================================================
-	// Retrieve Snapshot
+	// Make Snapshot
 	// ======================================================================
 	/**
-	 * Retrieve system graph of specified Jyro instance.
+	 * Make snapshot for specified jyro instance.
 	 *
-	 * @param jyro Jyro instance
-	 * @return system graph
+	 * @param jyro jyro instance
+	 * @return snapshot xml document
 	 */
-	public static Iterable<Server> getGraph(Jyro jyro){
-		return null;
-	}
+	public synchronized Document makeSnapshot(Jyro jyro){
 
-	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	// Server: Server Info
-	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	/**
-	 *
-	 */
-	public static class Server implements Serializable {
-		/** Serial version UID of this class. */
-		private static final long serialVersionUID = 1L;
-
-		/**
-		 * Name of this server. This value may specify the hostname or IP
-		 * address.
-		 */
-		public final String name;
-
-		/**
-		 * The number of server port.
-		 */
-		public final int port;
-
-		/**
-		 * Jyro instances working on this server.
-		 */
-		public final List<Instance> instances = new ArrayList<Instance>();
-
-		/**
-		 * @param name server name
-		 * @param port server port
-		 */
-		public Server(String name, int port) {
-			this.name = name;
-			this.port = port;
-			return;
+		// create new document
+		try {
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			this.doc = builder.newDocument();
+		} catch(ParserConfigurationException ex){
+			throw new IllegalStateException(ex);
 		}
 
+		// append root
+		Element root = doc.createElement("jyro");
+		root.appendChild(createProperty("location", jyro.getDirectory().getAbsolutePath()));
+		doc.appendChild(root);
+
+		// append cores
+		for(JyroCore core: jyro.getCores()){
+			root.appendChild(createCore(core));
+		}
+		return this.doc;
 	}
 
-	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	// Instance: Jyro Instance
-	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// ======================================================================
+	// Create JyroCore Element
+	// ======================================================================
 	/**
-	 * The instance of jyro.
+	 * Create and return JyroCore element.
+	 *
+	 * @param core jyro core
+	 * @return core element
 	 */
-	public static class Instance implements Serializable {
-		/** Serial version UID of this class. */
-		private static final long serialVersionUID = 1L;
-
-		/**
-		 * Home directory of this Jyro instance.
-		 */
-		public final File home;
-
-		/**
-		 * Name of this server. This value may specify the hostname or IP
-		 * address.
-		 */
-		public final String name;
-
-		/**
-		 * The number of server port.
-		 */
-		public final int port;
-
-		/**
-		 * @param name server name
-		 * @param port server port
-		 */
-		public Instance(String name, int port) {
-			this.name = name;
-			this.port = port;
-			return;
+	private Element createCore(JyroCore core){
+		Element elem = doc.createElement("core");
+		elem.appendChild(createProperty("name", core.getName()));
+		elem.appendChild(createUptimeProperty("uptime", core.getUptime()));
+		for(Node node: core.getNodes()){
+			elem.appendChild(createNode(node));
 		}
+		return elem;
+	}
 
+	// ======================================================================
+	// Create Node Element
+	// ======================================================================
+	/**
+	 * Create and return Node element.
+	 *
+	 * @param node Node instance
+	 * @return node element
+	 */
+	private Element createNode(Node node){
+		Element elem = doc.createElement("node");
+		elem.appendChild(createProperty("id", node.getId()));
+		elem.appendChild(createProperty("minimumWorkers", node.getMinimumWorkers()));
+		elem.appendChild(createProperty("maximumWorkers", node.getMaximumWorkers()));
+		elem.appendChild(createProperty("activeWorkers", node.getActiveWorkers()));
+		elem.appendChild(createProperty("stackSize", node.getStackSize()));
+		elem.appendChild(createProperty("waitingJobs", node.getWaitingJobs()));
+		elem.appendChild(createProperty("loadAverage", node.getLoadAverage()));
+		elem.appendChild(createProperty("totalJobCount", node.getTotalJobCount()));
+		elem.appendChild(createProperty("totalJobTime", node.getTotalJobTime()));
+		return elem;
+	}
+
+	// ======================================================================
+	// Create Property Element
+	// ======================================================================
+	/**
+	 * Create and return property element.
+	 *
+	 * @param name property name
+	 * @param num property value
+	 * @return property element
+	 */
+	private Element createProperty(String name, double... num){
+		StringBuilder pf = new StringBuilder();
+		StringBuilder hf = new StringBuilder();
+		for (double value : num) {
+			if(pf.length() != 0){
+				pf.append(' ');
+				hf.append(' ');
+			}
+			pf.append(value);
+			hf.append(nf.format(value));
+		}
+		return createProperty(name, pf.toString(), hf.toString());
+	}
+
+	// ======================================================================
+	// Create Property Element
+	// ======================================================================
+	/**
+	 * Create and return property element.
+	 *
+	 * @param name property name
+	 * @param num property value
+	 * @return property element
+	 */
+	private Element createProperty(String name, long num){
+		return createProperty(name, String.valueOf(num), nf.format(num));
+	}
+
+	// ======================================================================
+	// Create Property Element
+	// ======================================================================
+	/**
+	 * Create and return property element.
+	 *
+	 * @param name property name
+	 * @param num property value
+	 * @return property element
+	 */
+	private Element createUptimeProperty(String name, long num){
+		DateFormat df = new SimpleDateFormat("HH:mm:ss.SSS");
+		df.setTimeZone(TimeZone.getTimeZone("GMT"));
+		return createProperty(name, String.valueOf(num), df.format(new Date(num)));
+	}
+
+	// ======================================================================
+	// Create Property Element
+	// ======================================================================
+	/**
+	 * Create and return property element.
+	 *
+	 * @param name property name
+	 * @param value property value
+	 * @return property element
+	 */
+	private Element createProperty(String name, String value){
+		return createProperty(name, String.valueOf(value), value);
+	}
+
+	// ======================================================================
+	// Create Property Element
+	// ======================================================================
+	/**
+	 * Create and return property element.
+	 *
+	 * @param name property name
+	 * @param value property value
+	 * @param text human readable text for value
+	 * @return property element
+	 */
+	private Element createProperty(String name, String value, String text){
+		Element elem = doc.createElement("property");
+		elem.setAttribute("name", name);
+		elem.setAttribute("value", value);
+		elem.appendChild(doc.createTextNode(text));
+		return elem;
 	}
 
 }

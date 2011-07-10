@@ -170,11 +170,10 @@ final class Config {
 	// ======================================================================
 	/**
 	 *
-	 * @param id ID of queue
-	 * @return home directory
+	 * @return nodes
 	 */
-	public Iterable<String> getNodeId() {
-		return new ArrayList<String>(nodes.keySet());
+	public Iterable<Node> getNodes() {
+		return new ArrayList<Node>(nodes.values());
 	}
 
 	// ======================================================================

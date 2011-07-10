@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="Shift_JIS"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja">
 <head>
@@ -6,6 +6,7 @@
 <title>Jyro Console</title>
 <link rel="stylesheet" href="style.css" type="text/css" charset="UTF-8"/>
 <script type="text/javascript" src="jquery-1.6.2.min.js" charset="UTF-8"></script>
+<script type="text/javascript" src="script.js" charset="UTF-8"></script>
 </head>
 <body>
 <h1>Jyro::Console</h1>
@@ -16,37 +17,21 @@
 <li class="tab"><a href="">Queue</a></li>
 </ul>
 
-<div id="main">
+<form action="" onsubmit="post_job({'node':this.node.options[this.node.selectedIndex].value,'job':this.job.value});return false;">
+<select name="node">
+<option value=""></option>
+<option value="URL取得Script">URL取得Script</option>
+<option value="URL取得Java">URL取得Java</option>
+</select>
+<textarea name="job">jobname:
+  attr1: value1
+  attr2: value2
+  attr3: value3
+</textarea>
+<input type="submit" value="post"/>
+</form>
 
-<dl class="server">
-<dt>Server1</dt>
-<dd>
-	<dl class="instance">
-	<dt>Instance1</dt>
-	<dd>
-		<dl class="queue">
-		<dt>Queye1</dt>
-		<dd></dd>
-		<dt>Queye2</dt>
-		<dd></dd>
-		</dl>
-		<dl class="node">
-		<dt>Node1</dt>
-		<dd>
-			<dl class="worker">
-			<dt>Worker1</dt>
-			<dd></dd>
-			</dl>
-		</dd>
-		</dl>
-	</dd>
-	</dl>
-</dd>
-<dt>Server2</dt>
-<dd></dd>
-<dt>Server3</dt>
-<dd></dd>
-</dl>
+<div id="main">
 
 </div>
 </body>

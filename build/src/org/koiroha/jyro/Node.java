@@ -9,6 +9,7 @@
  */
 package org.koiroha.jyro;
 
+import java.lang.management.*;
 import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.concurrent.*;
@@ -108,18 +109,42 @@ public class Node {
 	private final LoadAverage loadAverage;
 
 	// ======================================================================
+	// Job Count
+	// ======================================================================
+	/**
+	 * The number of jobs that this node finish.
+	 */
+	private final RuntimeMXBean rb = ManagementFactory.getRuntimeMXBean();
+
+	// ======================================================================
+	// Job Count
+	// ======================================================================
+	/**
+	 * The number of jobs that this node finish.
+	 */
+	private volatile long totalJobCount = 0;
+
+	// ======================================================================
+	// Total Time
+	// ======================================================================
+	/**
+	 * Total time this node transact.
+	 */
+	private volatile long totalJobTime = 0;
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
 	 * @param proc process to execute on this node
-	 * @param taskName task name of this node
+	 * @param id task name of this node
 	 * @param loader class loader of this node
 	 */
-	public Node(String taskName, ClassLoader loader, Worker proc) {
-		assert(taskName != null);
+	public Node(String id, ClassLoader loader, Worker proc) {
+		assert(id != null);
 		assert(loader != null);
 		assert(proc != null);
-		this.id = taskName;
+		this.id = id;
 		this.loader = loader;
 		this.worker = proc;
 		this.threads = new ThreadPoolExecutor(5, 10, 10, TimeUnit.SECONDS, queue);
@@ -127,7 +152,7 @@ public class Node {
 		// create load average calculator
 		this.loadAverage = new LoadAverage(queue);
 
-		this.threadGroup = new ThreadGroup(taskName);
+		this.threadGroup = new ThreadGroup(id);
 		this.threads.setThreadFactory(new ThreadFactory() {
 			private volatile int seq = 0;
 			@Override
@@ -183,6 +208,18 @@ public class Node {
 	 */
 	public int getWaitingJobs(){
 		return queue.size();
+	}
+
+	// ======================================================================
+	// Active Worker Count
+	// ======================================================================
+	/**
+	 * Retrieve the number of active worker threads to execute.
+	 *
+	 * @return active workers
+	*/
+	public int getActiveWorkers(){
+		return threads.getActiveCount();
 	}
 
 	// ======================================================================
@@ -302,6 +339,30 @@ public class Node {
 	}
 
 	// ======================================================================
+	//
+	// ======================================================================
+	/**
+	 * Retrieve total job count that this node successfully execute.
+	 *
+	 * @return total job count
+	 */
+	public long getTotalJobCount(){
+		return totalJobCount;
+	}
+
+	// ======================================================================
+	//
+	// ======================================================================
+	/**
+	 * Retrieve total job time that this node successfully execute.
+	 *
+	 * @return total job time
+	 */
+	public long getTotalJobTime(){
+		return totalJobTime;
+	}
+
+	// ======================================================================
 	// Start Node
 	// ======================================================================
 	/**
@@ -355,10 +416,12 @@ public class Node {
 	*/
 	private Object exec(Object... args){
 		NDC.push(getId());
-		long start = System.currentTimeMillis();
+		long start = rb.getUptime();
 		Object result = null;
 		try {
 			result = worker.exec(args);
+			totalJobCount ++;
+			totalJobTime += rb.getUptime() - start;
 		} catch(WorkerException ex){
 			logger.error("", ex);
 		} catch(Throwable ex){
@@ -368,7 +431,7 @@ public class Node {
 			logger.fatal("unexpected exception in worker", ex);
 		} finally {
 			if(logger.isDebugEnabled()){
-				long end = System.currentTimeMillis();
+				long end = rb.getUptime();
 				NumberFormat nf = NumberFormat.getNumberInstance();
 				logger.debug("exec(" + Arrays.toString(args) + ") := " + result + " " + nf.format(end-start) + "ms");
 			}

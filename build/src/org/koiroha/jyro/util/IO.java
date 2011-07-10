@@ -62,6 +62,39 @@ public final class IO {
 	 * @return iterable of file
 	 * @throws IOException if invalid path
 	 */
+	public static String getExtension(String path){
+		int sep = path.lastIndexOf('/');
+		if(sep >= 0){
+			path = path.substring(sep + 1);
+		}
+		sep = path.lastIndexOf(File.separatorChar);
+		if(sep >= 0){
+			path = path.substring(sep + 1);
+		}
+
+		sep = path.lastIndexOf('.');
+		if(sep < 0){
+			return "";
+		}
+		return path.substring(sep + 1);
+	}
+
+	// ======================================================================
+	// Retrieve File Set
+	// ======================================================================
+	/**
+	 * Retrieve fileset for specified wildcard. The path parameter may
+	 * contains "*" as sequence of any character, and "**" as subdirectories.
+	 * <p>
+	 * For example, if the files "f1", "f2", "d/f3" exists in base directory,
+	 * pattern "f2" matches "f2", "f*" matches "f1" and "f2", "**<!---->/f*"
+	 * matches "f1", "f2" and "d/f3".
+	 *
+	 * @param base base directory
+	 * @param path path that may contains wildcard
+	 * @return iterable of file
+	 * @throws IOException if invalid path
+	 */
 	public static Iterable<File> fileSet(File base, String path) throws IOException{
 
 		// if path does'nt contain wildcard

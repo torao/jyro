@@ -161,6 +161,31 @@ public class Jyro {
 	}
 
 	// ======================================================================
+	// Retrieve Jyro Cores
+	// ======================================================================
+	/**
+	 * Retrieve Jyro cores as iterable.
+	 *
+	 * @return jyro cores
+	 */
+	public Iterable<JyroCore> getCores(){
+		return new ArrayList<JyroCore>(cores.values());
+	}
+
+	// ======================================================================
+	// Retrieve Jyro Core
+	// ======================================================================
+	/**
+	 * Retrieve Jyro core by specified name. Null will return is not found.
+	 *
+	 * @param name core name
+	 * @return jyro core
+	 */
+	public JyroCore getCore(String name){
+		return cores.get(name);
+	}
+
+	// ======================================================================
 	// Startup Services
 	// ======================================================================
 	/**

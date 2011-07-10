@@ -37,7 +37,7 @@
 					<xsd:element ref="script" minOccurs="1" maxOccurs="1"/>
 				</xsd:choice>
 			</xsd:sequence>
-			<xsd:attribute name="name" type="xsd:string" use="optional">
+			<xsd:attribute name="id" type="xsd:ID" use="required">
 			</xsd:attribute>
 			<xsd:attribute name="queue" type="xsd:IDREF" use="required">
 			</xsd:attribute>

@@ -48,6 +48,7 @@ public class SampleWorker implements Worker {
 		for(Object o: args){
 			sum += ((Long)o);
 		}
+		try { Thread.sleep(100); } catch(InterruptedException e){/* */}
 		return sum;
 	}
 

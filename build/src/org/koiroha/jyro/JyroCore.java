@@ -10,6 +10,7 @@
 package org.koiroha.jyro;
 
 import java.io.File;
+import java.lang.management.ManagementFactory;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
@@ -89,6 +90,14 @@ public class JyroCore {
 	private final Config config;
 
 	// ======================================================================
+	// Start Time
+	// ======================================================================
+	/**
+	 * The JavaVM uptime in startup this instance.
+	 */
+	private long startTime = -1;
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -108,8 +117,7 @@ public class JyroCore {
 		this.name = name;
 		this.config = new Config(dir, parent, prop);
 
-		for(String id: config.getNodeId()){
-			Node node = config.getNode(id);
+		for(Node node: config.getNodes()){
 		}
 		return;
 	}
@@ -124,6 +132,31 @@ public class JyroCore {
 	 */
 	public String getName() {
 		return name;
+	}
+
+	// ======================================================================
+	// Retrieve Nodes
+	// ======================================================================
+	/**
+	 * Retrieve nodes on this core.
+	 *
+	 * @return iterable nodes
+	 */
+	public Iterable<Node> getNodes(){
+		return config.getNodes();
+	}
+
+	// ======================================================================
+	// Retrieve Node
+	// ======================================================================
+	/**
+	 * Retrieve node of specified id.
+	 *
+	 * @param id ID of node
+	 * @return node
+	 */
+	public Node getNode(String id){
+		return config.getNode(id);
 	}
 
 	// ======================================================================
@@ -152,6 +185,21 @@ public class JyroCore {
 	}
 
 	// ======================================================================
+	// Retrieve Home Directory
+	// ======================================================================
+	/**
+	 * Retrieve home directory of this jyro instance.
+	 *
+	 * @return home directory
+	 */
+	public long getUptime(){
+		if(startTime < 0){
+			return -1;
+		}
+		return ManagementFactory.getRuntimeMXBean().getUptime() - startTime;
+	}
+
+	// ======================================================================
 	// Startup Services
 	// ======================================================================
 	/**
@@ -162,6 +210,7 @@ public class JyroCore {
 	public void startup() throws JyroException {
 		logger.debug("startup()");
 		config.startup();
+		this.startTime = ManagementFactory.getRuntimeMXBean().getUptime();
 		return;
 	}
 
@@ -176,6 +225,7 @@ public class JyroCore {
 	public void shutdown() throws JyroException {
 		logger.debug("shutdown()");
 		config.shutdown();
+		this.startTime = -1;
 		return;
 	}
 

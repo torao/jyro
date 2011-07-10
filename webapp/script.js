@@ -1,4 +1,5 @@
 
+
 function update(){
     $.ajax({
         type: "GET",
@@ -18,3 +19,18 @@ function update(){
     });
     return;
 }
+
+function reload(){
+	$.get("api/status.html", function(html){
+		$("#main").empty();
+		$("#main").append(html);
+	});
+}
+
+function post_job(job){
+	$.post("api/post", job, function(){
+		reload();
+	});
+}
+
+$(window).load(reload);
