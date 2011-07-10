@@ -18,17 +18,16 @@ import org.apache.log4j.Logger;
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// JMSQueue: JMS Queue
+// JMSJobQueue: JMS Job Queue
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Queue implementation by JMS.
+ * Job queue implementation by JMS.
  *
- * <p>
  * @version $Revision:$
  * @author torao
  * @since 2011/07/04 Java SE 6
  */
-public class JMSQueue {
+public class JMSJobQueue extends JobQueueImpl {
 
 	// ======================================================================
 	// Log Output
@@ -36,7 +35,7 @@ public class JMSQueue {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(JMSQueue.class);
+	private static final Logger logger = Logger.getLogger(JMSJobQueue.class);
 
 	// ======================================================================
 	// Queue Session
@@ -82,13 +81,37 @@ public class JMSQueue {
 	// Constructor
 	// ======================================================================
 	/**
+	 * @param id ID of this queue
 	 * @param con JMS Queue Connection
+	 * @throws JyroException fail to connect queue
 	 */
-	public JMSQueue(QueueConnection con, String name) {
-		this.session = con.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
-		this.queue = session.createQueue(name);
-		this.sender = session.createSender(queue);
-		this.receiver = session.createReceiver(queue);
+	public JMSJobQueue(String id, QueueConnection con) throws JyroException {
+		super(id);
+		try {
+			this.session = con.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
+			this.queue = session.createQueue(id);
+			this.sender = session.createSender(queue);
+			this.receiver = session.createReceiver(queue);
+		} catch(JMSException ex){
+			throw new JyroException(ex);
+		}
+		return;
+	}
+
+	// ======================================================================
+	// Post Job
+	// ======================================================================
+	/**
+	 * Post specified job to this queue.
+	 */
+	@Override
+	public void post(Job job) throws JyroException {
+		try {
+			Message msg = session.createObjectMessage(job);
+			sender.send(msg);
+		} catch(JMSException ex){
+			throw new JyroException(ex);
+		}
 		return;
 	}
 
@@ -97,23 +120,14 @@ public class JMSQueue {
 	// ======================================================================
 	/**
 	 */
-	public void send() {
-		receiver.close();
-		sender.close();
-		session.close();
-		return;
-	}
-
-	// ======================================================================
-	// Constructor
-	// ======================================================================
-	/**
-	 */
-	public void receive() {
-		receiver.close();
-		sender.close();
-		session.close();
-		return;
+	@Override
+	public Job receive() throws JyroException {
+		try {
+			ObjectMessage msg = (ObjectMessage)receiver.receive();
+			return (Job)msg.getObject();
+		} catch(JMSException ex){
+			throw new JyroException(ex);
+		}
 	}
 
 
@@ -125,6 +139,7 @@ public class JMSQueue {
 	 *
 	 * @throws JyroException if fail to close queue
 	*/
+	@Override
 	public void close() throws JyroException{
 
 		// set closed status first because normally exit should detect in receive()
@@ -150,6 +165,8 @@ public class JMSQueue {
 		} catch(JMSException ex){
 			throw new JyroException("fail to close JMS session", ex);
 		}
+
+		super.close();
 		return;
 	}
 

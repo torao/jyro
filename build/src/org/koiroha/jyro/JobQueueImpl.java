@@ -11,6 +11,8 @@ package org.koiroha.jyro;
 
 import java.util.*;
 
+import org.apache.log4j.*;
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // JobQueueImpl: Job Queue Implementation
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -20,6 +22,38 @@ import java.util.*;
  * @author takami torao
  */
 public abstract class JobQueueImpl implements JobQueue {
+
+	// ======================================================================
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output of this class.
+	 */
+	private static final Logger logger = Logger.getLogger(JobQueueImpl.class);
+
+	// ======================================================================
+	// Interval Time to Wait
+	// ======================================================================
+	/**
+	 * The interval in millis to wait stop receiver thread.
+	 */
+	private static final long STOP_WAITING_INTERVAL = 3 * 1000;
+
+	// ======================================================================
+	// ID
+	// ======================================================================
+	/**
+	 * ID of this job queue.
+	*/
+	private final String id;
+
+	// ======================================================================
+	// Receiver Thread
+	// ======================================================================
+	/**
+	 * The thread to receive subclass specified queue implementation.
+	*/
+	private Receiver receiver = null;
 
 	// ======================================================================
 	// Listeners
@@ -33,8 +67,58 @@ public abstract class JobQueueImpl implements JobQueue {
 	// Constructor
 	// ======================================================================
 	/**
+	 * @param id ID of this queue
 	*/
-	protected JobQueueImpl(){
+	protected JobQueueImpl(String id){
+		this.id = id;
+		return;
+	}
+
+	// ======================================================================
+	// Retrieve ID
+	// ======================================================================
+	/**
+	 * Retrieve ID of this job queue.
+	 *
+	 * @return queue id
+	 */
+	public String getId() {
+		return id;
+	}
+
+	// ======================================================================
+	// Start Queuing
+	// ======================================================================
+	/**
+	 * Start queuing.
+	 */
+	public synchronized void start(){
+		stop();
+		receiver = new Receiver();
+		receiver.start();
+		return;
+	}
+
+	// ======================================================================
+	// Start Queuing
+	// ======================================================================
+	/**
+	 * Start queuing.
+	 */
+	public synchronized void stop(){
+		if(receiver != null){
+
+			// stop receiver thread
+			org.koiroha.jyro.util.Thread.kill(receiver, STOP_WAITING_INTERVAL);
+			receiver = null;
+
+			// close queue
+			try {
+				close();
+			} catch(JyroException ex){
+				logger.error("fail to close queue: " + getId(), ex);
+			}
+		}
 		return;
 	}
 
@@ -65,26 +149,101 @@ public abstract class JobQueueImpl implements JobQueue {
 	}
 
 	// ======================================================================
-	// Notify Job Received
-	// ======================================================================
-	/**
-	 * Notify all job listeners to receive specified job.
-	 *
-	 * @param job received job
-	*/
-	protected void fireJobQueueListener(Job job){
-		for(JobListener l: listeners){
-			l.received(job);
-		}
-		return;
-	}
-
-	// ======================================================================
 	// Receive Job
 	// ======================================================================
 	/**
 	 * Receive job from this queue.
+	 *
+	 * @return received job
+	 * @throws InterruptedException if interrupted while waiting queue
+	 * @throws JyroException fail to receive
 	*/
-	protected abstract Job receive();
+	protected abstract Job receive() throws InterruptedException, JyroException ;
+
+	// ======================================================================
+	// Close Queue
+	// ======================================================================
+	/**
+	 * Close this queue.
+	 *
+	 * @throws JyroException if fail to close queue
+	*/
+	protected void close() throws JyroException{
+		logger.debug("job queue closed: " + getId());
+		return;
+	}
+
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// Receiver: Queue Receiver
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	/**
+	 * Queue receiver thread.
+	 */
+	private class Receiver extends Thread {
+
+		// ==================================================================
+		// Constructor
+		// ==================================================================
+		/**
+		 */
+		public Receiver(){
+			setName("JobQueueReceiver[" + JobQueueImpl.this.getId() + ":" + getId() + "]");
+			return;
+		}
+
+		// ==================================================================
+		// Start Queuing
+		// ==================================================================
+		/**
+		 * Start queuing.
+		 */
+		@Override
+		public void run(){
+			NDC.push(JobQueueImpl.this.getId());
+			try {
+				logger.debug("start job receiver thread");
+				while(! Thread.currentThread().isInterrupted()){
+					dispatch();
+				}
+			} catch(InterruptedException ex){
+				// ignore
+			} finally {
+				logger.debug("end job receiver thread");
+				NDC.pop();
+			}
+			return;
+		}
+
+		// ==================================================================
+		// Dispatch Job
+		// ==================================================================
+		/**
+		 * Receive job and dispatch.
+		 *
+		 * @throws InterruptedException
+		 */
+		private void dispatch() throws InterruptedException {
+			try {
+
+				// receive job from subclass implementation
+				Job job = receive();
+
+				// notify all listeners
+				for(JobListener l: listeners){
+					try {
+						l.received(job);
+					} catch(Exception ex){
+						logger.fatal("fail to dispatch job " + job + " to listener " + l, ex);
+					}
+				}
+
+			} catch(JyroException ex){
+				logger.fatal("", ex);
+				Thread.sleep(3 * 1000);
+			}
+			return;
+		}
+
+	}
 
 }

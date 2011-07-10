@@ -16,7 +16,6 @@ import java.net.*;
 import java.util.*;
 
 import javax.xml.parsers.*;
-import javax.xml.xpath.*;
 
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.util.*;
@@ -61,6 +60,22 @@ final class Config {
 	private final Properties param;
 
 	// ======================================================================
+	// Queues
+	// ======================================================================
+	/**
+	 * Queue map.
+	 */
+	private final Map<String,JobQueueImpl> queues = new HashMap<String,JobQueueImpl>();
+
+	// ======================================================================
+	// Nodes
+	// ======================================================================
+	/**
+	 * Node map.
+	 */
+	private final Map<String,Node> nodes = new HashMap<String,Node>();
+
+	// ======================================================================
 	// ClassLoader
 	// ======================================================================
 	/**
@@ -93,7 +108,7 @@ final class Config {
 
 		// determine default class loader if specified value is null
 		if(parent == null){
-			parent = Thread.currentThread().getContextClassLoader();
+			parent = java.lang.Thread.currentThread().getContextClassLoader();
 			if(parent == null){
 				parent = ClassLoader.getSystemClassLoader();
 			}
@@ -114,6 +129,15 @@ final class Config {
 		}
 		this.param = jyroConfig.getProperties(init);
 
+		// build queues on this core
+		for(JobQueueImpl queue: jyroConfig.getQueues()){
+			queues.put(queue.getId(), queue);
+		}
+
+		// build nodes on this core
+		for(Node node: jyroConfig.getNodes()){
+			nodes.put(node.getId(), node);
+		}
 		return;
 	}
 
@@ -130,6 +154,42 @@ final class Config {
 	}
 
 	// ======================================================================
+	//
+	// ======================================================================
+	/**
+	 *
+	 * @param id ID of queue
+	 * @return home directory
+	 */
+	public JobQueueImpl getQueue(String id) {
+		return queues.get(id);
+	}
+
+	// ======================================================================
+	//
+	// ======================================================================
+	/**
+	 *
+	 * @param id ID of queue
+	 * @return home directory
+	 */
+	public Iterable<String> getNodeId() {
+		return new ArrayList<String>(nodes.keySet());
+	}
+
+	// ======================================================================
+	//
+	// ======================================================================
+	/**
+	 *
+	 * @param id ID of queue
+	 * @return home directory
+	 */
+	public Node getNode(String id) {
+		return nodes.get(id);
+	}
+
+	// ======================================================================
 	// Retrieve ClassLoader
 	// ======================================================================
 	/**
@@ -142,71 +202,45 @@ final class Config {
 	}
 
 	// ======================================================================
-	// Create All Nodes
+	// Startup Services
 	// ======================================================================
 	/**
-	 * Create all nodes in this configuration.
+	 * Start all services in this instance.
 	 *
-	 * @param init initial property replaced by ${...}
-	 * @return taskname-node map
-	 * @throws JyroException in case fail to configure
+	 * @throws JyroException if fail to startup jyro
 	 */
-	public Map<String,List<Node>> createNodes(Properties init) throws JyroException {
-		ClassLoader parent = getLoader();
-		param.clear();	// init parameter
+	public void startup() throws JyroException {
+		logger.debug("startup()");
 
-		if(init == null){
-			init = new Properties();
+		// start all queues
+		for(JobQueueImpl n: queues.values()){
+			n.start();
 		}
 
-		// read jyro configuration xml
-		File file = new File(dir, FILE_CONF);
-		logger.debug("loading configuration: " + file);
-		Document doc = null;
-		try {
-			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-			factory.setNamespaceAware(true);
-			factory.setXIncludeAware(true);
-			DocumentBuilder builder = factory.newDocumentBuilder();
-			doc = builder.parse(file);
-		} catch(ParserConfigurationException ex){
-			throw new IllegalStateException("bad xml parser environment", ex);
-		} catch(IOException ex){
-			throw new JyroException("fail to read jyro configuration: " + file, ex);
-		} catch(SAXException ex){
-			throw new JyroException("fail to read jyro configuration: " + file, ex);
+		// start all nodes
+		for(Node n: nodes.values()){
+			n.start();
+		}
+		return;
+	}
+
+	// ======================================================================
+	// Shutdown Services
+	// ======================================================================
+	/**
+	 * Shutdown all services in this instance.
+	 *
+	 * @throws JyroException if fail to shutdown jyro
+	 */
+	public void shutdown() throws JyroException {
+		logger.debug("shutdown()");
+
+		// stop all nodes
+		for(Node n: nodes.values()){
+			n.stop();
 		}
 
-		// retrieve all system properties
-		for(Map.Entry<Object,Object> e: System.getProperties().entrySet()){
-			param.put(e.getKey().toString(), e.getValue().toString());
-		}
-
-		// retrieve all specified properties
-		for(Map.Entry<Object,Object> e: init.entrySet()){
-			param.put(e.getKey().toString(), e.getValue().toString());
-		}
-
-		// retrieve all property settings in configuration
-		Element root = doc.getDocumentElement();
-		for(Element elem: elemset("j:property", root)){
-			String name = elem.getAttribute("name");
-			String value = f(elem.getAttribute("value"));
-			param.put(name, value);
-		}
-
-		// build all nodes and taskname mapping
-		Map<String,List<Node>> map = new HashMap<String,List<Node>>();
-		for(Element elem: elemset("j:node", root)){
-			Node node = buildNode(elem, parent);
-			List<Node> list = map.get(node.getTaskName());
-			if(list == null){
-				list = new ArrayList<Node>();
-				map.put(node.getTaskName(), list);
-			}
-			list.add(node);
-		}
-		return map;
+		return;
 	}
 
 	// ======================================================================
@@ -239,112 +273,6 @@ final class Config {
 	}
 
 	// ======================================================================
-	// Build Node
-	// ======================================================================
-	/**
-	 * Build node instance from specified element.
-	 *
-	 * @param elem node element
-	 * @param parent default class loader of this node
-	 * @return Jyro instance
-	 * @throws JyroException fail to build node
-	 */
-	private Node buildNode(Element elem, ClassLoader parent) throws JyroException {
-
-		// retrieve task name
-		String task = f(elem.getAttribute("task"));
-
-		// retrieve node-scope class loader
-		String classpath = f(elem.getAttribute("classpath"));
-		String extdirs = f(elem.getAttribute("extdirs"));
-		ClassLoader loader = getLibextLoader(classpath, extdirs, parent);
-
-		// retrieve worker element
-		Worker worker = null;
-		Element wk = elem("j:worker", elem);
-		if(wk != null){
-			worker = createWorker(f(wk.getAttribute("class")), loader);
-		} else {
-			wk = elem("j:script", elem);
-			if(wk != null){
-				worker = createScript(loader, wk);
-			} else {
-				throw new JyroException("no worker found in node definition: " + task);
-			}
-		}
-
-		// create node implementation
-		Node node = new Node(task, loader, worker);
-
-		// set minimum thread-pool size
-		if(wk.hasAttribute("min")){
-
-		}
-		return node;
-	}
-
-	// ======================================================================
-	// Create Worker
-	// ======================================================================
-	/**
-	 * Create worker for specified Java class.
-	 *
-	 * @param clazz class name of worker
-	 * @param loader class loader to create worker
-	 * @return worker instance
-	 * @throws JyroException if fail to create worker instance
-	 */
-	private Worker createWorker(String clazz, ClassLoader loader) throws JyroException {
-		try {
-			return (Worker)Class.forName(clazz, true, loader).newInstance();
-		} catch(ClassCastException ex){
-			throw new JyroException(clazz + " is not subclass of " + Worker.class.getName(), ex);
-		} catch(ClassNotFoundException ex){
-			throw new JyroException("specified class " + clazz + " not found in this context", ex);
-		} catch(IllegalAccessException ex){
-			throw new JyroException("cannot access to default constructor of " + clazz, ex);
-		} catch(InstantiationException ex){
-			throw new JyroException("fail to instantiate for " + clazz, ex);
-		}
-	}
-
-	// ======================================================================
-	// Create Script Worker
-	// ======================================================================
-	/**
-	 * Create script worker for specified element.
-	 *
-	 * @param loader class loader to create worker
-	 * @param elem script element
-	 * @return worker instance
-	 * @throws JyroException if fail to create worker instance
-	 */
-	private Worker createScript(ClassLoader loader, Element elem) throws JyroException {
-		String type = f(elem.getAttribute("type"));
-		String includes = f(elem.getAttribute("includes"));
-		String charset = f(elem.getAttribute("charset"));
-
-		// parse include files
-		List<File> files = new ArrayList<File>();
-		StringTokenizer tk = new StringTokenizer(includes, File.pathSeparator);
-		while(tk.hasMoreTokens()){
-			String path = tk.nextToken();
-			try {
-				for(File f: IO.fileSet(dir, path)){
-					files.add(f);
-				}
-			} catch(IOException ex){
-				logger.warn("invalid include path: " + path + "; " + ex);
-			}
-		}
-
-		File[] fs = files.toArray(new File[files.size()]);
-		String[] cs = new String[fs.length];
-		Arrays.fill(cs, charset);
-		return new ScriptWorker(loader, type, fs, cs);
-	}
-
-	// ======================================================================
 	// Format String
 	// ======================================================================
 	/**
@@ -355,64 +283,6 @@ final class Config {
 	 */
 	private String f(String value){
 		return Text.format(value, param);
-	}
-
-	// ======================================================================
-	// Format String
-	// ======================================================================
-	/**
-	 * Format specified string value with variable.
-	 *
-	 * @param value string to format
-	 * @return formatted string
-	 */
-	private int toInt(String name, String value) throws JyroException{
-		try {
-			return Integer.parseInt(value);
-		} catch(NumberFormatException ex){
-			throw new JyroException(name + " must be integer: " + value);
-		}
-	}
-
-	// ======================================================================
-	// Retrieve Element
-	// ======================================================================
-	/**
-	 * Retrieve element for specified xpath expression.
-	 *
-	 * @param expr xpath expression
-	 * @param elem base node
-	 * @return element
-	 */
-	private Element elem(String expr, Object elem){
-		Iterator<Element> it = elemset(expr, elem).iterator();
-		if(it.hasNext()){
-			return it.next();
-		}
-		return null;
-	}
-
-	// ======================================================================
-	// Retrieve Nodeset
-	// ======================================================================
-	/**
-	 * Retrieve nodeset for specified element.
-	 *
-	 * @param expr xpath expression
-	 * @param elem base node
-	 * @return iterable of elements
-	 */
-	private Iterable<Element> elemset(String expr, Object elem){
-		List<Element> list = new ArrayList<Element>();
-		try {
-			NodeList nl = (NodeList)xpath.evaluate(expr, elem, XPathConstants.NODESET);
-			for(int i=0; i<nl.getLength(); i++){
-				list.add((Element)nl.item(i));
-			}
-		} catch(XPathException ex){
-			throw new IllegalStateException("invalid xpath expression (this maybe bug): " + expr, ex);
-		}
-		return list;
 	}
 
 	// ======================================================================
@@ -489,7 +359,7 @@ final class Config {
 	/**
 	 * XML configuration for {@code jyro.xml}.
 	 */
-	private static class JyroConfig extends XmlBeanAdapter {
+	private class JyroConfig extends XmlBeanAdapter {
 
 		// ==================================================================
 		// Constructor
@@ -532,21 +402,143 @@ final class Config {
 		}
 
 		// ==================================================================
-		// Retrieve Properties
+		// Retrieve Queues
 		// ==================================================================
 		/**
-		 * Retrieve core-specified properties.
+		 * Retrieve queues defined in this confugration.
 		 *
-		 * @param init initial properties
-		 * @return core-specified properties
+		 * @return list of queues
 		 */
-		public Iterable<JobQueue> getQueue(){
-			List<JobQueue> list = new ArrayList<JobQueue>();
+		public Iterable<JobQueueImpl> getQueues(){
+			List<JobQueueImpl> list = new ArrayList<JobQueueImpl>();
 			for(Element elem: elemset("j:jyro/j:queue")){
-				String id = elem.getAttribute("id");
-				JobQueue queue = new MemoryJobQueue();
+				String id = f(elem.getAttribute("id"));
+				JobQueueImpl queue = new LocalJobQueue(id);
+				list.add(queue);
 			}
 			return list;
+		}
+
+		// ==================================================================
+		// Retrieve Queues
+		// ==================================================================
+		/**
+		 * Retrieve queues defined in this configuration.
+		 *
+		 * @return list of queues
+		 */
+		public Iterable<Node> getNodes() throws JyroException {
+			List<Node> list = new ArrayList<Node>();
+			for(Element elem: elemset("j:jyro/j:node")){
+				Node node = buildNode(elem);
+				list.add(node);
+			}
+			return list;
+		}
+
+		// ==================================================================
+		// Build Node
+		// ==================================================================
+		/**
+		 * Build node instance from specified element.
+		 *
+		 * @param elem node element
+		 * @return Jyro instance
+		 * @throws JyroException fail to build node
+		 */
+		private Node buildNode(Element elem) throws JyroException {
+
+			// retrieve task name
+			String id = f(elem.getAttribute("id"));
+
+			// retrieve node-scope class loader
+			String classpath = f(elem.getAttribute("classpath"));
+			String extdirs = f(elem.getAttribute("extdirs"));
+			ClassLoader loader = getLibextLoader(classpath, extdirs, getLoader());
+
+			// retrieve worker element
+			Worker worker = null;
+			Element wk = elem(elem, "j:worker");
+			if(wk != null){
+				worker = createWorker(f(wk.getAttribute("class")), loader);
+			} else {
+				wk = elem(elem, "j:script");
+				if(wk != null){
+					worker = createScript(loader, wk);
+				} else {
+					throw new JyroException("no worker found in node definition: " + id);
+				}
+			}
+
+			// create node implementation
+			Node node = new Node(id, loader, worker);
+
+			// set minimum thread-pool size
+			if(wk.hasAttribute("min")){
+				// node.setMinimumWorkers();
+			}
+			return node;
+		}
+
+		// ==================================================================
+		// Create Worker
+		// ==================================================================
+		/**
+		 * Create worker for specified Java class.
+		 *
+		 * @param clazz class name of worker
+		 * @param loader class loader to create worker
+		 * @return worker instance
+		 * @throws JyroException if fail to create worker instance
+		 */
+		private Worker createWorker(String clazz, ClassLoader loader) throws JyroException {
+			try {
+				return (Worker)Class.forName(clazz, true, loader).newInstance();
+			} catch(ClassCastException ex){
+				throw new JyroException(clazz + " is not subclass of " + Worker.class.getName(), ex);
+			} catch(ClassNotFoundException ex){
+				throw new JyroException("specified class " + clazz + " not found in this context", ex);
+			} catch(IllegalAccessException ex){
+				throw new JyroException("cannot access to default constructor of " + clazz, ex);
+			} catch(InstantiationException ex){
+				throw new JyroException("fail to instantiate for " + clazz, ex);
+			}
+		}
+
+		// ==================================================================
+		// Create Script Worker
+		// ==================================================================
+		/**
+		 * Create script worker for specified element.
+		 *
+		 * @param loader class loader to create worker
+		 * @param elem script element
+		 * @return worker instance
+		 * @throws JyroException if fail to create worker instance
+		 */
+		private Worker createScript(ClassLoader loader, Element elem) throws JyroException {
+			String type = f(elem.getAttribute("type"));
+			String includes = f(elem.getAttribute("includes"));
+			String charset = f(elem.getAttribute("charset"));
+
+			// parse include files
+			List<File> files = new ArrayList<File>();
+			StringTokenizer tk = new StringTokenizer(includes, File.pathSeparator);
+			while(tk.hasMoreTokens()){
+				String path = tk.nextToken();
+				try {
+					for(File f: IO.fileSet(dir, path)){
+						files.add(f);
+					}
+				} catch(IOException ex){
+					logger.warn("invalid include path: " + path + "; " + ex);
+				}
+			}
+
+			File[] fs = files.toArray(new File[files.size()]);
+			String[] cs = new String[fs.length];
+			Arrays.fill(cs, charset);
+			return new ScriptWorker(loader, type, fs, cs);
 		}
 
 	}

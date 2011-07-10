@@ -10,7 +10,7 @@
 package org.koiroha.jyro;
 
 import java.io.File;
-import java.util.*;
+import java.util.Properties;
 
 import org.apache.log4j.Logger;
 
@@ -89,22 +89,6 @@ public class JyroCore {
 	private final Config config;
 
 	// ======================================================================
-	// Queues
-	// ======================================================================
-	/**
-	 * Queue in this context.
-	 */
-	private final Map<String,JobQueue> queues = new HashMap<String,JobQueue>();
-
-	// ======================================================================
-	// Nodes
-	// ======================================================================
-	/**
-	 * Nodes in this context.
-	 */
-	private final Map<String,List<Node>> nodes;
-
-	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -118,12 +102,15 @@ public class JyroCore {
 
 		// set core-depend context parameters
 		prop = new Properties(prop);
-		prop.setProperty("jyro.core", name);
+		prop.setProperty("jyro.name", name);
 
 		// set instance properties
 		this.name = name;
 		this.config = new Config(dir, parent, prop);
-		this.nodes = config.createNodes(prop);
+
+		for(String id: config.getNodeId()){
+			Node node = config.getNode(id);
+		}
 		return;
 	}
 
@@ -145,11 +132,11 @@ public class JyroCore {
 	/**
 	 * Retrieve specified queue of this core.
 	 *
-	 * @param queue name
+	 * @param id name
 	 * @return job queue
 	 */
-	public JobQueue getQueue(String name){
-		return queues.get(name);
+	public JobQueue getQueue(String id){
+		return config.getQueue(id);
 	}
 
 	// ======================================================================
@@ -174,13 +161,7 @@ public class JyroCore {
 	 */
 	public void startup() throws JyroException {
 		logger.debug("startup()");
-
-		// start all nodes
-		for(List<Node> l: nodes.values()){
-			for(Node n: l){
-				n.start();
-			}
-		}
+		config.startup();
 		return;
 	}
 
@@ -194,14 +175,7 @@ public class JyroCore {
 	 */
 	public void shutdown() throws JyroException {
 		logger.debug("shutdown()");
-
-		// stop all nodes
-		for(List<Node> l: nodes.values()){
-			for(Node n: l){
-				n.stop();
-			}
-		}
-
+		config.shutdown();
 		return;
 	}
 

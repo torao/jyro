@@ -29,24 +29,4 @@ public interface JobQueue {
 	 */
 	public abstract void post(Job job) throws JyroException;
 
-	// ======================================================================
-	// Add Listener
-	// ======================================================================
-	/**
-	 * Add specified listener to this queue.
-	 *
-	 * @param l listener
-	 */
-	public abstract void addJobQueueListener(JobListener l);
-
-	// ======================================================================
-	// Remove Listener
-	// ======================================================================
-	/**
-	 * Remove specified listener from this queue.
-	 *
-	 * @param l listener
-	 */
-	public abstract void removeJobQueueListener(JobListener l);
-
 }

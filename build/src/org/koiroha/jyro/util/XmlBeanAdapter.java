@@ -66,7 +66,7 @@ public class XmlBeanAdapter {
 	// Constructor
 	// ======================================================================
 	/**
-	 *
+	 * @param node node of this instance
 	 */
 	public XmlBeanAdapter(Node node) {
 		this.node = node;
@@ -94,15 +94,29 @@ public class XmlBeanAdapter {
 	/**
 	 * Retrieve node for specified xpath expression.
 	 *
+	 * @param node
 	 * @param expr xpath expression
 	 * @return node
 	 */
-	protected Node node(String expr){
+	protected Node node(Node node, String expr){
 		try {
 			return (Node)xpath.evaluate(expr, node, XPathConstants.NODE);
 		} catch(XPathException ex){
 			throw new IllegalStateException("invalid xpath expression (this maybe bug): " + expr, ex);
 		}
+	}
+
+	// ======================================================================
+	// Retrieve Node
+	// ======================================================================
+	/**
+	 * Retrieve node for specified xpath expression.
+	 *
+	 * @param expr xpath expression
+	 * @return node
+	 */
+	protected Node node(String expr){
+		return node(node, expr);
 	}
 
 	// ======================================================================
@@ -133,6 +147,20 @@ public class XmlBeanAdapter {
 	/**
 	 * Retrieve element for specified xpath expression.
 	 *
+	 * @param node base node
+	 * @param expr xpath expression
+	 * @return element
+	 */
+	protected Element elem(Node node, String expr){
+		return (Element)node(node, expr);
+	}
+
+	// ======================================================================
+	// Retrieve Element
+	// ======================================================================
+	/**
+	 * Retrieve element for specified xpath expression.
+	 *
 	 * @param expr xpath expression
 	 * @return element
 	 */
@@ -147,7 +175,6 @@ public class XmlBeanAdapter {
 	 * Retrieve nodeset for specified element.
 	 *
 	 * @param expr xpath expression
-	 * @param elem base node
 	 * @return iterable of elements
 	 */
 	protected Iterable<Element> elemset(String expr){
@@ -198,6 +225,7 @@ public class XmlBeanAdapter {
 	 * when node not found.
 	 *
 	 * @param expr xpath expression
+	 * @param type return type
 	 * @return text string
 	 */
 	private Object get(String expr, Class<?> type){
@@ -238,8 +266,7 @@ public class XmlBeanAdapter {
 	/**
 	 * Retrieve nodeset for specified element.
 	 *
-	 * @param expr xpath expression
-	 * @param elem base node
+	 * @param clazz return type
 	 * @return iterable of elements
 	 */
 	public <T> T wrap(Class<T> clazz){

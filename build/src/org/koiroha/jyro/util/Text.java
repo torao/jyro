@@ -105,10 +105,8 @@ public final class Text {
 	 * Literize specified text as JavaScript string. If null pass as text,
 	 * string "null" will append to out.
 	 *
-	 * @param out appendable to output
 	 * @param text text
 	 * @return instance of out parameter
-	 * @throws IOException if fail to output
 	 */
 	public static String literize(String text){
 		StringBuilder buffer = new StringBuilder();

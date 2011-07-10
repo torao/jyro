@@ -38,9 +38,10 @@ public class LocalJobQueue extends JobQueueImpl {
 	// Constructor
 	// ======================================================================
 	/**
-	 * @param name name of this queue.
+	 * @param id id of this queue.
 	 */
-	public LocalJobQueue() {
+	public LocalJobQueue(String id) {
+		super(id);
 		this.queue = new LinkedBlockingQueue<Job>();
 		return;
 	}
@@ -62,21 +63,12 @@ public class LocalJobQueue extends JobQueueImpl {
 	// ======================================================================
 	/**
 	 * Receive job from this queue.
+	 *
+	 * @throws InterruptedException thread interrupted while waiting job
 	*/
 	@Override
-	public Job receive(){
+	public Job receive() throws InterruptedException {
 		return queue.take();
-	}
-
-	// ======================================================================
-	// Close Queue
-	// ======================================================================
-	/**
-	 * Close queue messaging and release resources.
-	*/
-	@Override
-	public void close() {
-		return;
 	}
 
 }

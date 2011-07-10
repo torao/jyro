@@ -41,7 +41,7 @@ public class Node {
 	/**
 	 * Task name of this node.
 	 */
-	private final String taskName;
+	private final String id;
 
 	// ======================================================================
 	// Class Loader
@@ -119,7 +119,7 @@ public class Node {
 		assert(taskName != null);
 		assert(loader != null);
 		assert(proc != null);
-		this.taskName = taskName;
+		this.id = taskName;
 		this.loader = loader;
 		this.worker = proc;
 		this.threads = new ThreadPoolExecutor(5, 10, 10, TimeUnit.SECONDS, queue);
@@ -134,7 +134,7 @@ public class Node {
 			public Thread newThread(Runnable r) {
 				int num = seq;
 				seq = Math.abs(seq+1);
-				String name = Node.this.taskName + "-" + num;
+				String name = Node.this.id + "-" + num;
 				Thread thread = null;
 				if(stackSize >= 0){
 					thread = new Thread(threadGroup, r, name, stackSize);
@@ -157,8 +157,8 @@ public class Node {
 	 *
 	 * @return name of this node
 	*/
-	public String getTaskName(){
-		return taskName;
+	public String getId(){
+		return id;
 	}
 
 	// ======================================================================
@@ -308,7 +308,7 @@ public class Node {
 	 * Start workers on this node.
 	*/
 	public void start(){
-		logger.debug("start node " + getTaskName());
+		logger.debug("start node " + getId());
 		loadAverage.start();
 		threads.prestartAllCoreThreads();
 		return;
@@ -321,7 +321,7 @@ public class Node {
 	 * Stop workers on this node.
 	*/
 	public void stop(){
-		logger.debug("stop node " + getTaskName());
+		logger.debug("stop node " + getId());
 		threads.shutdown();
 		loadAverage.stop();
 		return;
@@ -354,7 +354,7 @@ public class Node {
 	 *
 	*/
 	private Object exec(Object... args){
-		NDC.push(getTaskName());
+		NDC.push(getId());
 		long start = System.currentTimeMillis();
 		Object result = null;
 		try {

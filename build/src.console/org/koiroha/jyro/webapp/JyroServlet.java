@@ -18,7 +18,7 @@ import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// ConsoleServlet: Console Servlet
+// JyroServlet: Jyro Servlet
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  * The servlet for web console of Jyro.
