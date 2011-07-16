@@ -166,6 +166,118 @@ public final class Text {
 	}
 
 	// ======================================================================
+	// Unliterize JavaScript String
+	// ======================================================================
+	/**
+	 * Unliterize specified JavaScript string to normal text. If "null" pass,
+	 * return null
+	 *
+	 * @param text text
+	 * @return unliterized string
+	 * @throws ParseException fail to parse
+	 */
+	public static String unliterize(String text) throws ParseException{
+		StringBuilder buffer = new StringBuilder();
+		try {
+			unliterize(buffer, text);
+		} catch(IOException ex){
+			throw new IllegalStateException("unexpected exception; this probably bug!: " + text, ex);
+		}
+		return buffer.toString();
+	}
+
+	// ======================================================================
+	// Unliterize JavaScript String
+	// ======================================================================
+	/**
+	 * Unliterize specified JavaScript string to normal text. If "null" pass,
+	 * return null
+	 *
+	 * @param out appendable to output
+	 * @param text text
+	 * @return instance of out parameter
+	 * @throws ParseException fail to parse
+	 * @throws IOException if fail to output
+	 */
+	public static Appendable unliterize(Appendable out, String text) throws ParseException, IOException {
+
+		// append null if null specified
+		if(text.equals("null")){
+			return null;
+		}
+
+		if(text.length() < 2){
+			throw new ParseException();
+		}
+
+		char start = text.charAt(0);
+		char end = text.charAt(text.length()-1);
+		if(start != end || (start != '\"' && start != '\'')){
+			throw new ParseException();
+		}
+		text = text.substring(1, text.length()-1);
+
+		for(int i=0; i<text.length(); i++){
+			char ch = text.charAt(i);
+
+			// unescaped character
+			if(ch != '\\'){
+
+				// if raw control or undefined character detected
+				if(! Character.isDefined(ch) || Character.isISOControl(ch)){
+					throw new ParseException("control or undefined unicode character: \\u" + String.format("%04X", (int)ch));
+				}
+
+				// append character to buffer
+				out.append(ch);
+				continue;
+			}
+
+			// escaped character
+			i ++;
+			if(i==text.length()){
+				throw new ParseException("string literal ends with '\\'");
+			}
+
+			ch = text.charAt(i);
+			switch(ch){
+			case 'b':	out.append('\b');	break;
+			case 'f':	out.append('\f');	break;
+			case 'n':	out.append('\n');	break;
+			case 'r':	out.append('\r');	break;
+			case 't':	out.append('\t');	break;
+			case 'v':	out.append('\u000B');	break;
+			case '\"':	out.append('\"');	break;
+			case '\'':	out.append('\'');	break;
+			case '\\':	out.append('\\');	break;
+			case 'u':
+
+				// length missing
+				if(i+4>=text.length()){
+					throw new ParseException("unexpected end of literal: " + text.substring(i-1));
+				}
+
+				// hex to character code
+				String hex = text.substring(i+1, i+5);
+				try {
+					int num = Integer.parseInt(hex, 16);
+					if(num < 0 || num > 0xFFFF){
+						throw new NumberFormatException("out of character code range: \\u" + hex);
+					}
+					out.append((char)num);
+				} catch(NumberFormatException ex){
+					throw new ParseException("invalid unicode escape character: \\u" + hex, ex);
+				}
+				i += 4;
+				break;
+			default:
+				throw new ParseException("unexpected escaping literal: \\" + ch);
+			}
+		}
+		return out;
+	}
+
+	// ======================================================================
 	// Literize JavaScript String
 	// ======================================================================
 	/**

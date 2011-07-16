@@ -392,9 +392,9 @@ public class Node {
 	//
 	// ======================================================================
 	/**
-	 *
+	 * @param job job to execute
 	*/
-	public void post() {
+	public void post(Job job) {
 		threads.execute(new Runnable(){
 			@Override
 			public void run(){

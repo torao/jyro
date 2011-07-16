@@ -20,6 +20,7 @@ import javax.xml.transform.stream.*;
 
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
+import org.koiroha.jyro.jmx.JyroMXBeanImpl;
 import org.koiroha.jyro.snapshot.Snapshot;
 import org.koiroha.jyro.util.IO;
 import org.w3c.dom.Document;
@@ -109,15 +110,28 @@ public class JyroServlet extends HttpServlet {
 		}
 		logger.info(Jyro.JYRO_HOME + "=" + dirName);
 
+		// build jyro instance
+		String contextPath = getServletContext().getContextPath();
 		try {
-			// build jyro instance
-			this.jyro = new Jyro(dir, null, null);
+			this.jyro = new Jyro(contextPath, dir, null, null);
+		} catch(JyroException ex){
+			throw new ServletException(ex);
+		}
 
-			// startup jyro
+		// setup JMX
+		try {
+			JyroMXBeanImpl.register(jyro);
+		} catch (Exception ex) {
+			throw new ServletException(ex);
+		}
+
+		// startup jyro service
+		try {
 			this.jyro.startup();
 		} catch(JyroException ex){
 			throw new ServletException(ex);
 		}
+
 		return;
 	}
 
@@ -137,6 +151,13 @@ public class JyroServlet extends HttpServlet {
 			}
 		} catch(JyroException ex){
 			logger.fatal("fail to shutdown jyro", ex);
+		}
+
+		// unregister MXBean for Jyro
+		try {
+			JyroMXBeanImpl.unregister(jyro);
+		} catch (Exception ex) {
+			logger.error("fail to unregist MXBean for Jyro", ex);
 		}
 
 		super.destroy();
@@ -203,7 +224,7 @@ public class JyroServlet extends HttpServlet {
 			Job job = new Job(j);
 			JyroCore core = jyro.getCore("default");
 			Node node = core.getNode(n);
-			node.post();
+			node.post(job);
 			response.setStatus(HttpServletResponse.SC_NO_CONTENT);
 			return;
 		}
