@@ -91,6 +91,14 @@ public class Jyro {
 	}
 
 	// ======================================================================
+	// Name
+	// ======================================================================
+	/**
+	 * Human readable name of this instance.
+	 */
+	private final String name;
+
+	// ======================================================================
 	// Core Instance Map
 	// ======================================================================
 	/**
@@ -110,13 +118,15 @@ public class Jyro {
 	// Constructor
 	// ======================================================================
 	/**
+	 * @param name name of this instance
 	 * @param dir home directory of this instance
 	 * @param parent parent class loader
 	 * @param prop init property replace with placeholder such as ${foo.bar}
 	 * @throws JyroException if cannot configure instance
 	 */
-	public Jyro(File dir, ClassLoader parent, Properties prop) throws JyroException{
+	public Jyro(String name, File dir, ClassLoader parent, Properties prop) throws JyroException{
 		logger.debug("initializing Jyro on directory: " + dir);
+		this.name = name;
 
 		// check directory existance
 		this.dir = dir;
@@ -146,6 +156,18 @@ public class Jyro {
 			logger.debug("load " + cores.size() + " cores: " + dir);
 		}
 		return;
+	}
+
+	// ======================================================================
+	// Refer Name
+	// ======================================================================
+	/**
+	 * Refer human-readable name of this instance.
+	 *
+	 * @return name
+	 */
+	public String getName() {
+		return name;
 	}
 
 	// ======================================================================
@@ -229,6 +251,7 @@ public class Jyro {
 			core.shutdown();
 		}
 
+		logger.debug("shutdown complete");
 		return;
 	}
 

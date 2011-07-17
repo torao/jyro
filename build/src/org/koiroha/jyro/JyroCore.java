@@ -101,6 +101,7 @@ public class JyroCore {
 	// Constructor
 	// ======================================================================
 	/**
+	 * @param name core name
 	 * @param dir home directory of this instance
 	 * @param parent parent class loader
 	 * @param prop init property replace with placeholder such as ${foo.bar}
@@ -111,14 +112,11 @@ public class JyroCore {
 
 		// set core-depend context parameters
 		prop = new Properties(prop);
-		prop.setProperty("jyro.name", name);
+		prop.setProperty("core.name", name);
 
 		// set instance properties
 		this.name = name;
 		this.config = new Config(dir, parent, prop);
-
-		for(Node node: config.getNodes()){
-		}
 		return;
 	}
 

@@ -1,13 +1,12 @@
 /* **************************************************************************
- * Copyright (C) 2008 BJoRFUAN. All Right Reserved
+ * Copyright (C) 2011 BJoRFUAN. All Rights Reserved
  * **************************************************************************
  * This module, contains source code, binary and documentation, is in the
- * BSD License, and comes with NO WARRANTY.
+ * Apache License Ver. 2.0, and comes with NO WARRANTY.
  *
- *                                                 torao <torao@bjorfuan.com>
- *                                                       http://www.moyo.biz/
- * $Id:$
-*/
+ *                                           takami torao <koiroha@gmail.com>
+ *                                                   http://www.bjorfuan.com/
+ */
 package org.koiroha.jyro.util;
 
 import java.io.*;
@@ -47,20 +46,13 @@ public final class IO {
 	}
 
 	// ======================================================================
-	// Retrieve File Set
+	// Retrieve Filename Extension
 	// ======================================================================
 	/**
-	 * Retrieve fileset for specified wildcard. The path parameter may
-	 * contains "*" as sequence of any character, and "**" as subdirectories.
-	 * <p>
-	 * For example, if the files "f1", "f2", "d/f3" exists in base directory,
-	 * pattern "f2" matches "f2", "f*" matches "f1" and "f2", "**<!---->/f*"
-	 * matches "f1", "f2" and "d/f3".
+	 * Retrieve extension part of specified filename.
 	 *
-	 * @param base base directory
-	 * @param path path that may contains wildcard
-	 * @return iterable of file
-	 * @throws IOException if invalid path
+	 * @param path path of file
+	 * @return file extension
 	 */
 	public static String getExtension(String path){
 		int sep = path.lastIndexOf('/');

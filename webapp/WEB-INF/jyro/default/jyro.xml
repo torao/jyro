@@ -13,15 +13,6 @@
 
 	<node id="URL取得Script" queue="hoge" classpath="${classpath}/hoge.jar">
 		<script min="5" max="10" type="application/javascript" includes="scripts/**/*.js">
-		<![CDATA[
-		]]>
-		</script>
-	</node>
-
-	<node id="" queue="hoge" classpath="${classpath}/hoge.jar">
-		<script min="5" max="10" type="application/javascript" includes="scripts/**/*.js">
-		<![CDATA[
-		]]>
 		</script>
 	</node>
 

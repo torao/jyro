@@ -92,6 +92,14 @@ final class Config {
 	private final JyroConfig jyroConfig;
 
 	// ======================================================================
+	// Dependency
+	// ======================================================================
+	/**
+	 * File dependency to reload automatically.
+	 */
+	private final Dependency dependency = new Dependency();
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -425,6 +433,7 @@ final class Config {
 		 * Retrieve queues defined in this configuration.
 		 *
 		 * @return list of queues
+		 * @throws JyroException if fail to build node
 		 */
 		public Iterable<Node> getNodes() throws JyroException {
 			List<Node> list = new ArrayList<Node>();
@@ -474,6 +483,7 @@ final class Config {
 
 			// set minimum thread-pool size
 			if(wk.hasAttribute("min")){
+				// TODO
 				// node.setMinimumWorkers();
 			}
 			return node;
@@ -496,7 +506,7 @@ final class Config {
 			} catch(ClassCastException ex){
 				throw new JyroException(clazz + " is not subclass of " + Worker.class.getName(), ex);
 			} catch(ClassNotFoundException ex){
-				throw new JyroException("specified class " + clazz + " not found in this context", ex);
+				throw new JyroException("specified class " + clazz + " not found in this context: " + loader, ex);
 			} catch(IllegalAccessException ex){
 				throw new JyroException("cannot access to default constructor of " + clazz, ex);
 			} catch(InstantiationException ex){
@@ -519,6 +529,9 @@ final class Config {
 			String type = f(elem.getAttribute("type"));
 			String includes = f(elem.getAttribute("includes"));
 			String charset = f(elem.getAttribute("charset"));
+			if(charset.length() == 0){
+				charset = null;
+			}
 
 			// parse include files
 			List<File> files = new ArrayList<File>();
@@ -528,6 +541,7 @@ final class Config {
 				try {
 					for(File f: IO.fileSet(dir, path)){
 						files.add(f);
+						dependency.add(f);
 					}
 				} catch(IOException ex){
 					logger.warn("invalid include path: " + path + "; " + ex);
@@ -537,7 +551,7 @@ final class Config {
 			File[] fs = files.toArray(new File[files.size()]);
 			String[] cs = new String[fs.length];
 			Arrays.fill(cs, charset);
-			return new ScriptWorker(loader, type, fs, cs);
+			return new ScriptWorker(loader, type, fs, cs, elem.getTextContent());
 		}
 
 	}

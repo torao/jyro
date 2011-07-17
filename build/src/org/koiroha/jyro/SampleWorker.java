@@ -39,16 +39,13 @@ public class SampleWorker implements Worker {
 	/**
 	 *
 	 * <p>
-	 * @param args
+	 * @param job job argument
 	 * @return result
 	 */
 	@Override
-	public Object exec(Object... args) {
+	public Object exec(Job job) {
 		long sum = 0;
-		for(Object o: args){
-			sum += ((Long)o);
-		}
-		try { Thread.sleep(100); } catch(InterruptedException e){/* */}
+		try { Thread.sleep(10000); } catch(InterruptedException e){/* */}
 		return sum;
 	}
 
