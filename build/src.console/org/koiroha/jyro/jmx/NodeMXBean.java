@@ -12,8 +12,6 @@ package org.koiroha.jyro.jmx;
 
 import javax.management.MXBean;
 
-import org.koiroha.jyro.util.ParseException;
-
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -156,8 +154,7 @@ public interface NodeMXBean {
 	 * Post specified job to node.
 	 *
 	 * @param text job to post
-	 * @throws ParseException invalid job text
 	*/
-	public void post(String text) throws ParseException;
+	public void post(String text);
 
 }

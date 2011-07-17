@@ -10,6 +10,7 @@
 */
 package org.koiroha.jyro.jmx;
 
+import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
 import org.koiroha.jyro.util.ParseException;
 
@@ -26,6 +27,14 @@ import org.koiroha.jyro.util.ParseException;
  * @since 2011/07/17 Java SE 6
  */
 public class NodeMXBeanImpl implements NodeMXBean {
+
+	// ======================================================================
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output of this class.
+	 */
+	private static final Logger logger = Logger.getLogger(NodeMXBeanImpl.class);
 
 	// ======================================================================
 	// Node
@@ -209,12 +218,22 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 * Post specified job to node.
 	 *
 	 * @param text job to post
-	 * @throws ParseException inbalid job text
 	*/
 	@Override
-	public void post(String text) throws ParseException{
-		Job job = Job.parse(text);
-		node.post(job);
+	public void post(String text) {
+		try {
+			Job job = Job.parse(text);
+			node.post(job);
+		} catch(ParseException ex){
+			logger.error("invalid job text format: " + text, ex);
+			throw new IllegalArgumentException(ex.toString());
+		} catch(JyroException ex){
+			logger.error("fail to post job: " + text, ex);
+			throw new IllegalArgumentException(ex.toString());
+		} catch(RuntimeException ex){
+			logger.error("fail to post job: " + text, ex);
+			throw ex;
+		}
 		return;
 	}
 

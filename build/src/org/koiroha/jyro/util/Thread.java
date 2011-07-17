@@ -1,13 +1,12 @@
 /* **************************************************************************
- * Copyright (C) 2008 BJoRFUAN. All Right Reserved
+ * Copyright (C) 2011 BJoRFUAN. All Rights Reserved
  * **************************************************************************
  * This module, contains source code, binary and documentation, is in the
- * BSD License, and comes with NO WARRANTY.
+ * Apache License Ver. 2.0, and comes with NO WARRANTY.
  *
- *                                                 torao <torao@bjorfuan.com>
- *                                                       http://www.moyo.biz/
- * $Id:$
-*/
+ *                                           takami torao <koiroha@gmail.com>
+ *                                                   http://www.bjorfuan.com/
+ */
 package org.koiroha.jyro.util;
 
 import org.apache.log4j.Logger;

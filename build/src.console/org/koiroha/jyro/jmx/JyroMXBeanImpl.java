@@ -10,9 +10,9 @@
 */
 package org.koiroha.jyro.jmx;
 
-import java.io.Serializable;
+import java.io.*;
 import java.lang.management.ManagementFactory;
-import java.util.Iterator;
+import java.util.*;
 
 import javax.management.*;
 
@@ -50,21 +50,63 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	private static final Logger logger = Logger.getLogger(JyroMXBeanImpl.class);
 
 	// ======================================================================
+	// Jyro Name
+	// ======================================================================
+	/**
+	 * The name of Jyro instance.
+	 */
+	private final String name;
+
+	// ======================================================================
+	// Home Directory
+	// ======================================================================
+	/**
+	 * The home directory of Jyro.
+	 */
+	private final File dir;
+
+	// ======================================================================
+	// Class Loader
+	// ======================================================================
+	/**
+	 * Class loader.
+	 */
+	private final ClassLoader parent;
+
+	// ======================================================================
+	// Property
+	// ======================================================================
+	/**
+	 * Property
+	 */
+	private final Properties prop;
+
+	// ======================================================================
 	// Jyro Instance
 	// ======================================================================
 	/**
 	 * Jyro instance to watch on JMX.
 	 */
-	private final Jyro jyro;
+	private Jyro jyro = null;
+
+	private boolean regist = false;
 
 	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
-	 * @param jyro Jyro instance
+	 * @param name instance name
+	 * @param dir home directory
+	 * @param parent parent class loader
+	 * @param prop init properties
+	 * @throws JyroException if fail to build jyro instance
 	 */
-	public JyroMXBeanImpl(Jyro jyro) {
-		this.jyro = jyro;
+	public JyroMXBeanImpl(String name, File dir, ClassLoader parent, Properties prop) throws JyroException{
+		this.name = name;
+		this.dir = dir;
+		this.parent = parent;
+		this.prop = prop;
+		load();
 		return;
 	}
 
@@ -139,9 +181,17 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	 * Reload all cores.
 	*/
 	@Override
-	public void startup() throws JyroException{
+	public void startup() {
 		logger.debug("starting up...");
-		jyro.startup();
+		try{
+			jyro.startup();
+		} catch(JyroException ex){
+			logger.error("fail to startup Jyro instance", ex);
+			throw new IllegalStateException(ex.toString());
+		} catch(RuntimeException ex){
+			logger.error("fail to startup Jyro instance", ex);
+			throw ex;
+		}
 		return;
 	}
 
@@ -152,9 +202,17 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	 * Reload all cores.
 	*/
 	@Override
-	public void shutdown() throws JyroException{
+	public void shutdown() {
 		logger.debug("shutting down...");
-		jyro.shutdown();
+		try{
+			jyro.shutdown();
+		} catch(JyroException ex){
+			logger.error("fail to shutdown Jyro instance", ex);
+			throw new IllegalStateException(ex.toString());
+		} catch(RuntimeException ex){
+			logger.error("fail to startup Jyro instance", ex);
+			throw ex;
+		}
 		return;
 	}
 
@@ -167,28 +225,32 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	@Override
 	public void reload() {
 		logger.debug("reloading configurations...");
+		try {
+			load();
+		} catch(JyroException ex){
+			logger.error("fail to reload configuration", ex);
+			throw new IllegalStateException(ex.toString());
+		}
 		return;
 	}
 
 	// ======================================================================
-	// Register MXBean
+	// Register Instance
 	// ======================================================================
 	/**
-	 * Register MXBean for specified Jyro instance.
+	 * Register this MXBean to MBeanServer.
 	 *
-	 * @param jyro the instance to management
 	 * @throws InstanceAlreadyExistsException other instance that has same name already exists
 	 * @throws MBeanRegistrationException fail to regist
 	 * @throws NotCompliantMBeanException
 	 * @throws MalformedObjectNameException
 	 */
-	public static void register(Jyro jyro) throws InstanceAlreadyExistsException, MBeanRegistrationException, NotCompliantMBeanException, MalformedObjectNameException {
+	public void regist() throws InstanceAlreadyExistsException, MBeanRegistrationException, NotCompliantMBeanException, MalformedObjectNameException {
 
 		// register MXBean for Jyro instance
 		String name = String.format("org.koiroha.jyro:name=%s", jyro.getName());
 		MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-		JyroMXBean bean = new JyroMXBeanImpl(jyro);
-		server.registerMBean(bean, new ObjectName(name));
+		server.registerMBean(this, new ObjectName(name));
 		logger.debug("register MXBean: " + name);
 
 		// register each core instance
@@ -204,6 +266,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 				server.registerMBean(nbean, new ObjectName(nname));
 			}
 		}
+		regist = true;
 		return;
 	}
 
@@ -213,12 +276,11 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	/**
 	 * Unregister MXBean for specified Jyro instance.
 	 *
-	 * @param jyro the instance to release
 	 * @throws InstanceNotFoundException instance not found
 	 * @throws MBeanRegistrationException fail to regist
 	 * @throws MalformedObjectNameException
 	 */
-	public static void unregister(Jyro jyro) throws InstanceNotFoundException, MBeanRegistrationException, MalformedObjectNameException {
+	public void unregister() throws InstanceNotFoundException, MBeanRegistrationException, MalformedObjectNameException {
 		MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 		String name = String.format("org.koiroha.jyro:name=%s", jyro.getName());
 
@@ -238,6 +300,28 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 		// unregister jyro instance
 		server.unregisterMBean(new ObjectName(name));
 		logger.debug("unregister MXBean: " + name);
+		regist = false;
+		return;
+	}
+
+	// ======================================================================
+	// Reload Configuration
+	// ======================================================================
+	/**
+	 * Reload jyro configuration via JMX.
+	 *
+	 * @throws JyroException if fail to load configuration
+	 */
+	private void load() throws JyroException{
+
+		// shutdown jyro service
+		if(jyro != null){
+			this.jyro.shutdown();
+			this.jyro = null;
+		}
+
+		// create new jyro instance
+		this.jyro = new Jyro(name, dir, parent, prop);
 		return;
 	}
 

@@ -11,8 +11,6 @@ package org.koiroha.jyro.jmx;
 
 import javax.management.MXBean;
 
-import org.koiroha.jyro.JyroException;
-
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -73,20 +71,16 @@ public interface JyroMXBean {
 	// ======================================================================
 	/**
 	 * Startup Jyro instance.
-	 *
-	 * @throws JyroException if fail to startup instance
 	*/
-	public void startup() throws JyroException;
+	public void startup();
 
 	// ======================================================================
 	// Shutdown Instance
 	// ======================================================================
 	/**
 	 * Shutdown Jyro instance.
-	 *
-	 * @throws JyroException if fail to shutdown instance
 	*/
-	public void shutdown() throws JyroException;
+	public void shutdown();
 
 	// ======================================================================
 	// Reload Cores

@@ -11,7 +11,6 @@ package org.koiroha.jyro;
 
 import java.lang.management.*;
 import java.text.NumberFormat;
-import java.util.Arrays;
 import java.util.concurrent.*;
 
 import org.apache.log4j.*;
@@ -74,7 +73,7 @@ public class Node {
 	/**
 	 * Thread pool to run workers.
 	 */
-	private final ThreadPoolExecutor threads;
+	private ThreadPoolExecutor threads = null;
 
 	// ======================================================================
 	// Thread Group
@@ -147,29 +146,12 @@ public class Node {
 		this.id = id;
 		this.loader = loader;
 		this.worker = proc;
-		this.threads = new ThreadPoolExecutor(5, 10, 10, TimeUnit.SECONDS, queue);
 
 		// create load average calculator
 		this.loadAverage = new LoadAverage(queue);
+		this.loadAverage.start();
 
 		this.threadGroup = new ThreadGroup(id);
-		this.threads.setThreadFactory(new ThreadFactory() {
-			private volatile int seq = 0;
-			@Override
-			public Thread newThread(Runnable r) {
-				int num = seq;
-				seq = Math.abs(seq+1);
-				String name = Node.this.id + "-" + num;
-				Thread thread = null;
-				if(stackSize >= 0){
-					thread = new Thread(threadGroup, r, name, stackSize);
-				} else {
-					thread = new Thread(threadGroup, r, name);
-				}
-				thread.setDaemon(daemon);
-				return thread;
-			}
-		});
 		return;
 	}
 
@@ -370,8 +352,24 @@ public class Node {
 	*/
 	public void start(){
 		logger.debug("start node " + getId());
-		loadAverage.start();
-		threads.prestartAllCoreThreads();
+		threads = new ThreadPoolExecutor(5, 10, 10, TimeUnit.SECONDS, queue);
+		threads.setThreadFactory(new ThreadFactory() {
+			private volatile int seq = 0;
+			@Override
+			public Thread newThread(Runnable r) {
+				int num = seq;
+				seq = Math.abs(seq+1);
+				String name = Node.this.id + "-" + num;
+				Thread thread = null;
+				if(stackSize >= 0){
+					thread = new Thread(threadGroup, r, name, stackSize);
+				} else {
+					thread = new Thread(threadGroup, r, name);
+				}
+				thread.setDaemon(daemon);
+				return thread;
+			}
+		});
 		return;
 	}
 
@@ -384,7 +382,7 @@ public class Node {
 	public void stop(){
 		logger.debug("stop node " + getId());
 		threads.shutdown();
-		loadAverage.stop();
+		threads = null;
 		return;
 	}
 
@@ -393,12 +391,16 @@ public class Node {
 	// ======================================================================
 	/**
 	 * @param job job to execute
+	 * @throws JyroException if node is not running
 	*/
-	public void post(Job job) {
+	public void post(final Job job) throws JyroException{
+		if(threads == null){
+			throw new JyroException("node is not running");
+		}
 		threads.execute(new Runnable(){
 			@Override
 			public void run(){
-				exec();
+				exec(job);
 			}
 		});
 		return;
@@ -410,16 +412,15 @@ public class Node {
 	/**
 	 * Execute worker process.
 	 *
-	 * @param args arguments for worker
+	 * @param job arguments for worker
 	 * @return result
-	 *
 	*/
-	private Object exec(Object... args){
+	private Object exec(Job job){
 		NDC.push(getId());
 		long start = rb.getUptime();
 		Object result = null;
 		try {
-			result = worker.exec(args);
+			result = worker.exec(job);
 			totalJobCount ++;
 			totalJobTime += rb.getUptime() - start;
 		} catch(WorkerException ex){
@@ -433,7 +434,7 @@ public class Node {
 			if(logger.isDebugEnabled()){
 				long end = rb.getUptime();
 				NumberFormat nf = NumberFormat.getNumberInstance();
-				logger.debug("exec(" + Arrays.toString(args) + ") := " + result + " " + nf.format(end-start) + "ms");
+				logger.debug("exec(" + job + ") := " + result + " " + nf.format(end-start) + "ms");
 			}
 			NDC.pop();
 		}

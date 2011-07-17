@@ -19,7 +19,7 @@ import org.koiroha.jyro.util.*;
 // Job: Job
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * The job class to send or receive between {@link JobQueue}.
+ * The job class to send and receive between {@link JobQueue}.
  *
  * @author takami torao
  */
@@ -37,7 +37,7 @@ public final class Job implements Serializable {
 	// Name Pattern
 	// ======================================================================
 	/**
-	 * The name of this job.
+	 * Name pattern of job.
 	 */
 	private static final Pattern NAME = Pattern.compile("[^\"\'\\{\\}\\s]+");
 
@@ -117,24 +117,6 @@ public final class Job implements Serializable {
 	 */
 	public String getAttribute(String key){
 		return attributes.get(key);
-	}
-
-	// ======================================================================
-	// Set Job Attribute
-	// ======================================================================
-	/**
-	 * Set attribute value of this job. If you specify null as value, map
-	 * entry removed.
-	 *
-	 * @param key key of attribute
-	 * @param value of attribute
-	 * @return old value for key
-	 */
-	public String setAttribute(String key, String value){
-		if(value == null){
-			return attributes.remove(key);
-		}
-		return attributes.put(key, value);
 	}
 
 	// ======================================================================
@@ -227,7 +209,7 @@ public final class Job implements Serializable {
 	*/
 	@Override
 	public String toString() {
-		StringBuilder buffer = new StringBuilder(name);
+		StringBuilder buffer = new StringBuilder();
 		try {
 			export(buffer);
 		} catch(IOException ex){/* */}
@@ -244,28 +226,28 @@ public final class Job implements Serializable {
 	 * name{attr1:"value1",attr2:"value2",...}
 	 * </pre>
 	 *
-	 * @param job the job representation plain text
+	 * @param text the job representation plain text
 	 * @return job instance
 	 * @throws ParseException fail to parse
 	*/
-	public static final Job parse(String job) throws ParseException{
-		String name = job.trim();
+	public static final Job parse(String text) throws ParseException{
+		String name = text.trim();
 		Map<String,String> attr = new HashMap<String,String>();
-		int sep = job.indexOf('{');
+		int sep = text.indexOf('{');
 		if(sep >= 0){
 
 			// split name
-			name = job.substring(0, sep).trim();
+			name = text.substring(0, sep).trim();
 
 			// split attribute fields.
-			job = job.substring(sep+1).trim();
-			if(job.endsWith("}")){
-				throw new ParseException("'}' expected on end of text: " + job);
+			text = text.substring(sep+1).trim();
+			if(! text.endsWith("}")){
+				throw new ParseException("'}' expected on end of text: " + text);
 			}
-			job = job.substring(job.length()-1);
+			text = text.substring(0, text.length()-1);
 
 			// parse attribute field
-			StringBuilder buffer = new StringBuilder(job);
+			StringBuilder buffer = new StringBuilder(text);
 			while(true){
 				String id = parseIdentifier(buffer, ':');
 				if(id == null){
@@ -301,7 +283,7 @@ public final class Job implements Serializable {
 			i ++;
 		}
 		String id = buffer.substring(0, i);
-		buffer.delete(0, i);
+		buffer.delete(0, i+1);
 		return id.trim();
 	}
 
@@ -327,7 +309,7 @@ public final class Job implements Serializable {
 			}
 		}
 		String value = buffer.substring(0, i);
-		buffer.delete(0, i);
+		buffer.delete(0, i+1);
 		return Text.unliterize(value.trim());
 	}
 

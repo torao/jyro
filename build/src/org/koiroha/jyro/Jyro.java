@@ -251,6 +251,7 @@ public class Jyro {
 			core.shutdown();
 		}
 
+		logger.debug("shutdown complete");
 		return;
 	}
 

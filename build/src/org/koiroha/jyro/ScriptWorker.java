@@ -62,9 +62,10 @@ public class ScriptWorker implements Worker {
 	 * @param type MIME-Type or script name
 	 * @param includes included script files
 	 * @param charsets character set for each include files
+	 * @param content content of xml
 	 * @throws JyroException fail to load script
 	 */
-	public ScriptWorker(ClassLoader loader, String type, File[] includes, String[] charsets) throws JyroException {
+	public ScriptWorker(ClassLoader loader, String type, File[] includes, String[] charsets, String content) throws JyroException {
 
 		// log output default supported script
 		ScriptEngineManager manager = new ScriptEngineManager(loader);
@@ -117,6 +118,12 @@ public class ScriptWorker implements Worker {
 			}
 		}
 
+		try {
+			engine.eval(content);
+		} catch(Exception ex){
+			throw new JyroException("fail to evaluate script", ex);
+		}
+
 		return;
 	}
 
@@ -127,14 +134,14 @@ public class ScriptWorker implements Worker {
 	 * Execute this process with specified arguments. This method called in
 	 * multi-thread environment.
 	 *
-	 * @param args arguments
+	 * @param job job argument
 	 * @return script result
 	 * @throws WorkerException fail to execute script
 	*/
 	@Override
-	public Object exec(Object... args) throws WorkerException {
+	public Object exec(Job job) throws WorkerException {
 		try {
-			return engine.invokeFunction(function, args);
+			return engine.invokeFunction(function, job);
 		} catch(NoSuchMethodException ex){
 			throw new WorkerException("function " + function + " not defined in script", ex);
 		} catch(ScriptException ex){
