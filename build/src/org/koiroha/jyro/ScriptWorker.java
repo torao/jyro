@@ -145,7 +145,7 @@ public class ScriptWorker implements Worker {
 		} catch(NoSuchMethodException ex){
 			throw new WorkerException("function " + function + " not defined in script", ex);
 		} catch(ScriptException ex){
-			throw new WorkerException("invalid script", ex);
+			throw new WorkerException("unexpected script execution error", ex);
 		}
 	}
 

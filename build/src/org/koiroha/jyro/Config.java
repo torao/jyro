@@ -44,6 +44,14 @@ final class Config {
 	private static final Logger logger = Logger.getLogger(Config.class);
 
 	// ======================================================================
+	// Generic Use Timer
+	// ======================================================================
+	/**
+	 * The timer to detect modification and reload for cores.
+	 */
+	public static final Timer TIMER = new Timer("JyroTimer", true);
+
+	// ======================================================================
 	// Home Directory
 	// ======================================================================
 	/**

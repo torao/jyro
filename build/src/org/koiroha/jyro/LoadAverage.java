@@ -22,14 +22,6 @@ import java.util.*;
 class LoadAverage extends TimerTask {
 
 	// ======================================================================
-	// Calculation Timer
-	// ======================================================================
-	/**
-	 * Calculation timer for all load average in system.
-	 */
-	private static final Timer TIMER = new Timer("LoadAverage", true);
-
-	// ======================================================================
 	// Queue
 	// ======================================================================
 	/**
@@ -90,7 +82,7 @@ class LoadAverage extends TimerTask {
 	 * Start to calculate enqueued size of jobs.
 	 */
 	public void start(){
-		TIMER.scheduleAtFixedRate(this, 0, 1000);
+		Config.TIMER.scheduleAtFixedRate(this, 0, 1000);
 		return;
 	}
 

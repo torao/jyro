@@ -72,6 +72,7 @@ public class Dependency implements Serializable {
 	 */
 	public void add(File file){
 		dependency.put(file, file.lastModified());
+		logger.debug("add dependency: " + file);
 		return;
 	}
 
@@ -85,7 +86,7 @@ public class Dependency implements Serializable {
 	 */
 	public void add(Collection<File> file){
 		for(File f: file){
-			dependency.put(f, f.lastModified());
+			add(f);
 		}
 		return;
 	}

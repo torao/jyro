@@ -75,6 +75,14 @@ public class Jyro {
 	public static final String JYRO_HOME = "jyro.home";
 
 	// ======================================================================
+	// Generic Use Timer
+	// ======================================================================
+	/**
+	 * The timer to detect modification and reload for cores.
+	 */
+	public static final Timer TIMER = Config.TIMER;
+
+	// ======================================================================
 	// Static Initializer
 	// ======================================================================
 	/**
