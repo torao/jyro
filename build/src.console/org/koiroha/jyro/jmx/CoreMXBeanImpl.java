@@ -27,12 +27,20 @@ import org.koiroha.jyro.*;
 public class CoreMXBeanImpl implements CoreMXBean {
 
 	// ======================================================================
-	// Core
+	// JyroMXBean
 	// ======================================================================
 	/**
 	 * Core instance that this MXBean manages.
 	*/
-	private final JyroCore core;
+	private final JyroMXBeanImpl mxbean;
+
+	// ======================================================================
+	// Core Name
+	// ======================================================================
+	/**
+	 * Core name of this instance.
+	*/
+	private final String name;
 
 	// ======================================================================
 	// Constructor
@@ -40,8 +48,9 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	/**
 	 * @param core Jyro Core
 	*/
-	public CoreMXBeanImpl(JyroCore core){
-		this.core = core;
+	public CoreMXBeanImpl(JyroMXBeanImpl mxbean, String name){
+		this.mxbean = mxbean;
+		this.name = name;
 		return;
 	}
 
@@ -55,7 +64,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	*/
 	@Override
 	public String getName(){
-		return core.getName();
+		return getCore().getName();
 	}
 
 	// ======================================================================
@@ -68,7 +77,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	 */
 	@Override
 	public String getStatus(){
-		return core.getStatus().toString();
+		return getCore().getStatus().toString();
 	}
 
 	// ======================================================================
@@ -80,7 +89,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	 * @return true if one or more dependency files are modified
 	 */
 	public boolean isModified(){
-		return core.isModified();
+		return getCore().isModified();
 	}
 
 	// ======================================================================
@@ -93,7 +102,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	*/
 	@Override
 	public String getDirectory(){
-		return core.getDirectory().getAbsolutePath();
+		return getCore().getDirectory().getAbsolutePath();
 	}
 
 	// ======================================================================
@@ -106,7 +115,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	*/
 	@Override
 	public long getUptime(){
-		return core.getUptime();
+		return getCore().getUptime();
 	}
 
 	// ======================================================================
@@ -120,7 +129,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	@Override
 	public int getActiveWorkers(){
 		int count = 0;
-		for(Node node: core.getNodes()){
+		for(Node node: getCore().getNodes()){
 			count += node.getActiveWorkers();
 		}
 		return count;
@@ -132,7 +141,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	@Override
 	public double getLoadAverage1Min() {
 		double la = 0.0;
-		for(Node node: core.getNodes()){
+		for(Node node: getCore().getNodes()){
 			la += node.getLoadAverage()[0];
 		}
 		return la;
@@ -144,7 +153,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	@Override
 	public double getLoadAverage5Min() {
 		double la = 0.0;
-		for(Node node: core.getNodes()){
+		for(Node node: getCore().getNodes()){
 			la += node.getLoadAverage()[1];
 		}
 		return la;
@@ -156,10 +165,22 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	@Override
 	public double getLoadAverage15Min() {
 		double la = 0.0;
-		for(Node node: core.getNodes()){
+		for(Node node: getCore().getNodes()){
 			la += node.getLoadAverage()[2];
 		}
 		return la;
+	}
+
+	// ======================================================================
+	// Refer Core
+	// ======================================================================
+	/**
+	 * Refer core of this instance.
+	 *
+	 * @return jyro core
+	*/
+	private JyroCore getCore(){
+		return mxbean.getJyro().getCore(name);
 	}
 
 }

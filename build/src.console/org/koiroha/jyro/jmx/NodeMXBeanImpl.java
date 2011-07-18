@@ -37,12 +37,28 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	private static final Logger logger = Logger.getLogger(NodeMXBeanImpl.class);
 
 	// ======================================================================
-	// Node
+	// JyroMXBeanImpl
 	// ======================================================================
 	/**
-	 * Node instance that this MXBean manages.
+	 * JyroMXBeanImpl
 	*/
-	private final Node node;
+	private final JyroMXBeanImpl mxbean;
+
+	// ======================================================================
+	// Core Name
+	// ======================================================================
+	/**
+	 * The core name of this node belong to.
+	*/
+	private final String core;
+
+	// ======================================================================
+	// Node ID
+	// ======================================================================
+	/**
+	 * The node id of this node.
+	*/
+	private final String node;
 
 	// ======================================================================
 	// Constructor
@@ -50,7 +66,9 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	/**
 	 * @param node Jyro Node
 	*/
-	public NodeMXBeanImpl(Node node){
+	public NodeMXBeanImpl(JyroMXBeanImpl mxbean, String core, String node){
+		this.mxbean = mxbean;
+		this.core = core;
 		this.node = node;
 		return;
 	}
@@ -65,7 +83,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public String getId(){
-		return node.getId();
+		return getNode().getId();
 	}
 
 	// ======================================================================
@@ -78,7 +96,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public int getWaitingJobs(){
-		return node.getWaitingJobs();
+		return getNode().getWaitingJobs();
 	}
 
 	// ======================================================================
@@ -91,7 +109,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public int getActiveWorkers(){
-		return node.getActiveWorkers();
+		return getNode().getActiveWorkers();
 	}
 
 	// ======================================================================
@@ -104,7 +122,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public int getMinimumWorkers(){
-		return node.getMinimumWorkers();
+		return getNode().getMinimumWorkers();
 	}
 
 	// ======================================================================
@@ -117,7 +135,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public void setMinimumWorkers(int min){
-		node.setMinimumWorkers(min);
+		getNode().setMinimumWorkers(min);
 		return;
 	}
 
@@ -131,7 +149,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public int getMaximumWorkers(){
-		return node.getMaximumWorkers();
+		return getNode().getMaximumWorkers();
 	}
 
 	// ======================================================================
@@ -144,7 +162,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public void setMaximumWorkers(int max){
-		node.setMaximumWorkers(max);
+		getNode().setMaximumWorkers(max);
 		return;
 	}
 
@@ -157,7 +175,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 * @return thread priority
 	 */
 	public int getPriority(){
-		return node.getPriority();
+		return getNode().getPriority();
 	}
 
 	// ======================================================================
@@ -169,7 +187,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 * @param priority thread priority that defined in class {@link Thread}
 	 */
 	public void setPriority(int priority){
-		node.setPriority(priority);
+		getNode().setPriority(priority);
 		return;
 	}
 
@@ -183,7 +201,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public boolean isDaemon(){
-		return node.isDaemon();
+		return getNode().isDaemon();
 	}
 
 	// ======================================================================
@@ -196,7 +214,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public void setDaemon(boolean daemon){
-		node.setDaemon(true);
+		getNode().setDaemon(true);
 		return;
 	}
 
@@ -210,7 +228,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public int getStackSize(){
-		return node.getStackSize();
+		return getNode().getStackSize();
 	}
 
 	// ======================================================================
@@ -223,7 +241,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public void setStackSize(int stackSize){
-		node.setStackSize(stackSize);
+		getNode().setStackSize(stackSize);
 		return;
 	}
 
@@ -232,7 +250,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 */
 	@Override
 	public double getLoadAverage1Min() {
-		return node.getLoadAverage()[0];
+		return getNode().getLoadAverage()[0];
 	}
 
 	/** Refer load average for 5min.
@@ -240,7 +258,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 */
 	@Override
 	public double getLoadAverage5Min() {
-		return node.getLoadAverage()[1];
+		return getNode().getLoadAverage()[1];
 	}
 
 	/** Refer load average for 15min.
@@ -248,7 +266,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 */
 	@Override
 	public double getLoadAverage15Min() {
-		return node.getLoadAverage()[2];
+		return getNode().getLoadAverage()[2];
 	}
 
 	// ======================================================================
@@ -261,7 +279,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public long getTotalJobCount(){
-		return node.getTotalJobCount();
+		return getNode().getTotalJobCount();
 	}
 
 	// ======================================================================
@@ -274,7 +292,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public long getTotalJobTime(){
-		return node.getTotalJobTime();
+		return getNode().getTotalJobTime();
 	}
 
 	// ======================================================================
@@ -289,7 +307,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	public void post(String text) {
 		try {
 			Job job = Job.parse(text);
-			node.post(job);
+			getNode().post(job);
 		} catch(ParseException ex){
 			logger.error("invalid job text format: " + text, ex);
 			throw new IllegalArgumentException(ex.toString());
@@ -301,6 +319,18 @@ public class NodeMXBeanImpl implements NodeMXBean {
 			throw ex;
 		}
 		return;
+	}
+
+	// ======================================================================
+	// Retrieve Node
+	// ======================================================================
+	/**
+	 * Retrieve node for this mxbean.
+	 *
+	 * @return node
+	*/
+	private Node getNode(){
+		return mxbean.getJyro().getCore(core).getNode(node);
 	}
 
 }
