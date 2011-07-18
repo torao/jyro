@@ -89,6 +89,12 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	 */
 	private Jyro jyro = null;
 
+	// ======================================================================
+	// Regist Flag
+	// ======================================================================
+	/**
+	 * The flag whether this instance registered to MBeanServer.
+	 */
 	private boolean regist = false;
 
 	// ======================================================================
@@ -225,12 +231,34 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	@Override
 	public void reload() {
 		logger.debug("reloading configurations...");
+
+		boolean regist = this.regist;
+		if(regist){
+			try {
+				unregist();
+			} catch(Exception ex){
+				logger.error("fail to unregister JMX", ex);
+				throw new IllegalStateException(ex.toString());
+			}
+		}
+
 		try {
 			load();
 		} catch(JyroException ex){
 			logger.error("fail to reload configuration", ex);
 			throw new IllegalStateException(ex.toString());
 		}
+
+
+		if(regist){
+			try {
+				regist();
+			} catch(Exception ex){
+				logger.error("fail to unregister JMX", ex);
+				throw new IllegalStateException(ex.toString());
+			}
+		}
+
 		return;
 	}
 
@@ -280,7 +308,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	 * @throws MBeanRegistrationException fail to regist
 	 * @throws MalformedObjectNameException
 	 */
-	public void unregister() throws InstanceNotFoundException, MBeanRegistrationException, MalformedObjectNameException {
+	public void unregist() throws InstanceNotFoundException, MBeanRegistrationException, MalformedObjectNameException {
 		MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 		String name = String.format("org.koiroha.jyro:name=%s", jyro.getName());
 

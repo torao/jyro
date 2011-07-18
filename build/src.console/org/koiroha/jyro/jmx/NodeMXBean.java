@@ -68,6 +68,16 @@ public interface NodeMXBean {
 	public int getMinimumWorkers();
 
 	// ======================================================================
+	// Set Minimum Workers
+	// ======================================================================
+	/**
+	 * Set minimum workers of node.
+	 *
+	 * @param min minimum workers
+	*/
+	public void setMinimumWorkers(int min);
+
+	// ======================================================================
 	// Refer Maximum Workers
 	// ======================================================================
 	/**
@@ -76,6 +86,16 @@ public interface NodeMXBean {
 	 * @return maximum workers
 	*/
 	public int getMaximumWorkers();
+
+	// ======================================================================
+	// Set Maximum Workers
+	// ======================================================================
+	/**
+	 * Set maximum workers of node.
+	 *
+	 * @param max maximum workers
+	*/
+	public void setMaximumWorkers(int max);
 
 	// ======================================================================
 	// Refer Daemon
@@ -88,6 +108,16 @@ public interface NodeMXBean {
 	public boolean isDaemon();
 
 	// ======================================================================
+	// Set Daemon
+	// ======================================================================
+	/**
+	 * Set daemon of node.
+	 *
+	 * @param daemon true if daemon
+	*/
+	public void setDaemon(boolean daemon);
+
+	// ======================================================================
 	// Refer Stack Size
 	// ======================================================================
 	/**
@@ -98,34 +128,30 @@ public interface NodeMXBean {
 	public int getStackSize();
 
 	// ======================================================================
-	// Refer Load Average
+	// Set Stack Size
 	// ======================================================================
 	/**
-	 * Refer 1min load average of node.
+	 * Set stack size of thread in node.
 	 *
-	 * @return load average
+	 * @param stackSize stack size
 	*/
-	public double getLoadAverage1();
+	public void setStackSize(int stackSize);
 
-	// ======================================================================
-	// Refer Load Average
-	// ======================================================================
-	/**
-	 * Refer 5min load average of node.
-	 *
-	 * @return load average
-	*/
-	public double getLoadAverage5();
 
-	// ======================================================================
-	// Refer Load Average
-	// ======================================================================
-	/**
-	 * Refer 15min load average of node.
-	 *
+	/** Refer load average for 1min.
 	 * @return load average
-	*/
-	public double getLoadAverage15();
+	 */
+	public double getLoadAverage1Min();
+
+	/** Refer load average for 5min.
+	 * @return load average
+	 */
+	public double getLoadAverage5Min();
+
+	/** Refer load average for 15min.
+	 * @return load average
+	 */
+	public double getLoadAverage15Min();
 
 	// ======================================================================
 	// Refer Total Job Count

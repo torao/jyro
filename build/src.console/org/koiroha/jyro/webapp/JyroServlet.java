@@ -137,7 +137,7 @@ public class JyroServlet extends HttpServlet {
 		try {
 			if(mxbean != null){
 				mxbean.shutdown();
-				mxbean.unregister();
+				mxbean.unregist();
 			}
 		} catch(Exception ex){
 			logger.fatal("fail to shutdown jyro", ex);
