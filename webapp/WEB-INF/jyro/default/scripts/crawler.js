@@ -1,8 +1,9 @@
-importPackage(org.koiroha.jyro.lib);
+importPackage(org.koiroha.jyro);
 function main(job){
-	println("hello, world: " + job);
-	println(new java.lang.String("hello, world") + " this is a pen.");
-	var ua = new org.koiroha.jyro.lib.UserAgent.getInstance();
-	println(ua);
+	var thread = java.lang.Thread.currentThread();
+	var loader = thread.getContextClassLoader();
+	println(Jyro.VERSION);
+	println(org.koiroha.jyro.util.IO.getExtension("foo.txt"));
+	println(new org.koiroga.jyro.lib.UserAgent());
 	return;
 }

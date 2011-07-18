@@ -517,6 +517,7 @@ public class Node {
 			}
 			thread.setPriority(priority);
 			thread.setDaemon(daemon);
+			thread.setContextClassLoader(getClassLoader());
 			return thread;
 		}
 	}

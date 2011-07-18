@@ -9,8 +9,6 @@
  */
 package org.koiroga.jyro.lib;
 
-
-
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // UserAgent:
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -23,7 +21,8 @@ package org.koiroga.jyro.lib;
  */
 public class UserAgent {
 
-	public static UserAgent getInstance(){
-		return new UserAgent();
+	public void UserAgent(){
+		return;
 	}
+
 }

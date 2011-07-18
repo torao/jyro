@@ -402,7 +402,21 @@ final class Config {
 		}
 
 		// create class loader
-		return new URLClassLoader(urls.toArray(new URL[urls.size()]), parent);
+		return new URLClassLoader(urls.toArray(new URL[urls.size()]), parent){
+			@Override
+			public String toString(){
+				StringBuilder buffer = new StringBuilder();
+				buffer.append('[');
+				for(URL url: getURLs()){
+					buffer.append(url.toString());
+				}
+				if(getParent() != null){
+					buffer.append(getParent());
+				}
+				buffer.append(']');
+				return buffer.toString();
+			}
+		};
 	}
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

@@ -23,7 +23,6 @@ import org.koiroha.jyro.util.IO;
  * The worker class for variable scripts these are supported by Java Scrpting
  * API.
  *
- * <p>
  * @version $Revision:$ $Date:$
  * @author torao
  * @since 2011/07/02 Java SE 6
