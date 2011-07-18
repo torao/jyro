@@ -101,4 +101,40 @@ public class CoreMXBeanImpl implements CoreMXBean {
 		return count;
 	}
 
+	/** Refer load average for 1min.
+	 * @return load average
+	 */
+	@Override
+	public double getLoadAverage1Min() {
+		double la = 0.0;
+		for(Node node: core.getNodes()){
+			la += node.getLoadAverage()[0];
+		}
+		return la;
+	}
+
+	/** Refer load average for 5min.
+	 * @return load average
+	 */
+	@Override
+	public double getLoadAverage5Min() {
+		double la = 0.0;
+		for(Node node: core.getNodes()){
+			la += node.getLoadAverage()[1];
+		}
+		return la;
+	}
+
+	/** Refer load average for 15min.
+	 * @return load average
+	 */
+	@Override
+	public double getLoadAverage15Min() {
+		double la = 0.0;
+		for(Node node: core.getNodes()){
+			la += node.getLoadAverage()[2];
+		}
+		return la;
+	}
+
 }

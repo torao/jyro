@@ -67,4 +67,19 @@ public interface CoreMXBean {
 	*/
 	public int getActiveWorkers();
 
+	/** Refer load average for 1min.
+	 * @return load average
+	 */
+	public double getLoadAverage1Min();
+
+	/** Refer load average for 5min.
+	 * @return load average
+	 */
+	public double getLoadAverage5Min();
+
+	/** Refer load average for 15min.
+	 * @return load average
+	 */
+	public double getLoadAverage15Min();
+
 }
