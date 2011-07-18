@@ -65,13 +65,22 @@ public class JyroCore {
 	 */
 	public static final String FILE_CONF = "jyro.xml";
 
-	// ======================================================================
-	// Lock Filename
-	// ======================================================================
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// Status: Core Status
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	/**
-	 * Lock filename that will be placed in temporary directory.
+	 * The enumeration value that specify core status.
 	 */
-	public static final String FILE_LOCK = ".lock";
+	public enum Status {
+		/** */
+		BOOTING,
+		/** */
+		RUNNING,
+		/** */
+		SHUTTINGDOWN,
+		/** */
+		STOPED,
+	}
 
 	// ======================================================================
 	// Core Name
@@ -80,6 +89,14 @@ public class JyroCore {
 	 * The name of this core.
 	 */
 	private final String name;
+
+	// ======================================================================
+	// Core Status
+	// ======================================================================
+	/**
+	 * The status of this core.
+	 */
+	private Status status = Status.STOPED;
 
 	// ======================================================================
 	// Configuration
@@ -130,6 +147,18 @@ public class JyroCore {
 	 */
 	public String getName() {
 		return name;
+	}
+
+	// ======================================================================
+	// Retrieve Core Status
+	// ======================================================================
+	/**
+	 * Retrieve the status of this core.
+	 *
+	 * @return core status
+	 */
+	public Status getStatus() {
+		return status;
 	}
 
 	// ======================================================================
@@ -198,6 +227,18 @@ public class JyroCore {
 	}
 
 	// ======================================================================
+	// Retrieve Modified
+	// ======================================================================
+	/**
+	 * Retrieve that whether core-dependent files are modified or not.
+	 *
+	 * @return true if one or more dependency files are modified
+	 */
+	public boolean isModified(){
+		return config.isModified();
+	}
+
+	// ======================================================================
 	// Startup Services
 	// ======================================================================
 	/**
@@ -207,8 +248,10 @@ public class JyroCore {
 	 */
 	public void startup() throws JyroException {
 		logger.debug("startup()");
-		config.startup();
+		this.status = Status.BOOTING;
+		this.config.startup();
 		this.startTime = ManagementFactory.getRuntimeMXBean().getUptime();
+		this.status = Status.RUNNING;
 		return;
 	}
 
@@ -222,8 +265,9 @@ public class JyroCore {
 	 */
 	public void shutdown() throws JyroException {
 		logger.debug("shutdown()");
-		config.shutdown();
+		this.config.shutdown();
 		this.startTime = -1;
+		this.status = Status.STOPED;
 		return;
 	}
 

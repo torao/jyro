@@ -84,12 +84,36 @@ public class Node {
 	private final ThreadGroup threadGroup;
 
 	// ======================================================================
+	// Minimum Workers
+	// ======================================================================
+	/**
+	 * Minimum workers on this node.
+	 */
+	private int minimumWorkers = 5;
+
+	// ======================================================================
+	// Maximum Workers
+	// ======================================================================
+	/**
+	 * Maximum workers on this node.
+	 */
+	private int maximumWorkers = 10;
+
+	// ======================================================================
 	// Stack Size
 	// ======================================================================
 	/**
 	 * Stack size as bytes of new worker thread.
 	 */
 	private int stackSize = -1;
+
+	// ======================================================================
+	// Thread Priority
+	// ======================================================================
+	/**
+	 * Thread priority of new worker threads.
+	 */
+	private int priority = Thread.NORM_PRIORITY;
 
 	// ======================================================================
 	// Daemon
@@ -213,7 +237,7 @@ public class Node {
 	 * @return max workers
 	*/
 	public int getMinimumWorkers(){
-		return threads.getCorePoolSize();
+		return minimumWorkers;
 	}
 
 	// ======================================================================
@@ -226,7 +250,10 @@ public class Node {
 	 * @param min number of minimum workers
 	*/
 	public void setMinimumWorkers(int min){
-		threads.setCorePoolSize(min);
+		this.minimumWorkers = min;
+		if(threads != null){
+			threads.setCorePoolSize(min);
+		}
 		return;
 	}
 
@@ -239,7 +266,7 @@ public class Node {
 	 * @return max workers
 	*/
 	public int getMaximumWorkers(){
-		return threads.getMaximumPoolSize();
+		return maximumWorkers;
 	}
 
 	// ======================================================================
@@ -252,7 +279,38 @@ public class Node {
 	 * @param max number of maximum workers
 	*/
 	public void setMaximumWorkers(int max){
-		threads.setMaximumPoolSize(max);
+		this.maximumWorkers = max;
+		if(threads != null){
+			threads.setMaximumPoolSize(max);
+		}
+		return;
+	}
+
+	// ======================================================================
+	// Retrieve Thread Priority
+	// ======================================================================
+	/**
+	 * Retrieve priority of worker thread on this node.
+	 *
+	 * @return thread priority
+	 */
+	public int getPriority(){
+		return priority;
+	}
+
+	// ======================================================================
+	// Set Thread Priority
+	// ======================================================================
+	/**
+	 * Set priority of worker thread on this node.
+	 *
+	 * @param priority thread priority that defined in class {@link Thread}
+	 */
+	public void setPriority(int priority){
+		if(priority < Thread.MIN_PRIORITY || priority > Thread.MAX_PRIORITY){
+			throw new IllegalArgumentException("invalid thread priority: " + priority);
+		}
+		this.priority = priority;
 		return;
 	}
 
@@ -352,24 +410,8 @@ public class Node {
 	*/
 	public void start(){
 		logger.debug("start node " + getId());
-		threads = new ThreadPoolExecutor(5, 10, 10, TimeUnit.SECONDS, queue);
-		threads.setThreadFactory(new ThreadFactory() {
-			private volatile int seq = 0;
-			@Override
-			public Thread newThread(Runnable r) {
-				int num = seq;
-				seq = Math.abs(seq+1);
-				String name = Node.this.id + "-" + num;
-				Thread thread = null;
-				if(stackSize >= 0){
-					thread = new Thread(threadGroup, r, name, stackSize);
-				} else {
-					thread = new Thread(threadGroup, r, name);
-				}
-				thread.setDaemon(daemon);
-				return thread;
-			}
-		});
+		threads = new ThreadPoolExecutor(minimumWorkers, maximumWorkers, 10, TimeUnit.SECONDS, queue);
+		threads.setThreadFactory(new NodeThreadFactory());
 		return;
 	}
 
@@ -439,6 +481,44 @@ public class Node {
 			NDC.pop();
 		}
 		return result;
+	}
+
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// NodeThreadFactory
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	/**
+	 * The thread factory for this node.
+	*/
+	private class NodeThreadFactory implements ThreadFactory {
+
+		/** Sequence number for name of new thread. */
+		private int seq = 0;
+
+		/**
+		 * @param r runnable
+		 */
+		@Override
+		public Thread newThread(Runnable r) {
+
+			// issue new sequence number
+			int num = 0;
+			synchronized(this){
+				num = seq;
+				seq = Math.abs(seq+1);
+			}
+
+			// create new thread and set attributes
+			String name = Node.this.id + "-" + num;
+			Thread thread = null;
+			if(stackSize >= 0){
+				thread = new Thread(threadGroup, r, name, stackSize);
+			} else {
+				thread = new Thread(threadGroup, r, name);
+			}
+			thread.setPriority(priority);
+			thread.setDaemon(daemon);
+			return thread;
+		}
 	}
 
 }

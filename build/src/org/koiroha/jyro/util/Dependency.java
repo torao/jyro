@@ -11,7 +11,10 @@
 package org.koiroha.jyro.util;
 
 import java.io.*;
+import java.text.DateFormat;
 import java.util.*;
+
+import org.apache.log4j.Logger;
 
 
 
@@ -36,6 +39,14 @@ public class Dependency implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	// ======================================================================
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output of this class.
+	 */
+	private static final Logger logger = Logger.getLogger(Dependency.class);
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -52,13 +63,30 @@ public class Dependency implements Serializable {
 	}
 
 	// ======================================================================
-	// Constructor
+	// Add File
 	// ======================================================================
 	/**
+	 * Add specified file to this dependency.
+	 *
 	 * @param file file
 	 */
 	public void add(File file){
 		dependency.put(file, file.lastModified());
+		return;
+	}
+
+	// ======================================================================
+	// Add Files
+	// ======================================================================
+	/**
+	 * Add specified files to this dependency.
+	 *
+	 * @param files file collections
+	 */
+	public void add(Collection<File> file){
+		for(File f: file){
+			dependency.put(f, f.lastModified());
+		}
 		return;
 	}
 
@@ -70,11 +98,17 @@ public class Dependency implements Serializable {
 	 */
 	public boolean modified(){
 		for(File file: dependency.keySet()){
-			if(file.lastModified() != dependency.get(file)){
-				return false;
+			long cur = file.lastModified();
+			long att = dependency.get(file);
+			if(cur != att){
+				if(logger.isDebugEnabled()){
+					DateFormat df = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.FULL);
+					logger.debug("file modification detected: " + file + " {" + df.format(new Date(att)) + " -> " + df.format(new Date(cur)) + "}");
+				}
+				return true;
 			}
 		}
-		return true;
+		return false;
 	}
 
 }

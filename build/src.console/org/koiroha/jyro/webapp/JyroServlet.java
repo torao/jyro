@@ -115,7 +115,7 @@ public class JyroServlet extends HttpServlet {
 		ClassLoader loader = Thread.currentThread().getContextClassLoader();
 		try {
 			mxbean = new JyroMXBeanImpl(contextPath, dir, loader, null);
-			mxbean.regist();
+			mxbean.register();
 			mxbean.startup();
 		} catch (Exception ex) {
 			throw new ServletException(ex);
@@ -137,7 +137,7 @@ public class JyroServlet extends HttpServlet {
 		try {
 			if(mxbean != null){
 				mxbean.shutdown();
-				mxbean.unregist();
+				mxbean.unregister();
 			}
 		} catch(Exception ex){
 			logger.fatal("fail to shutdown jyro", ex);

@@ -229,34 +229,34 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	 * Reload jyro configuration via JMX.
 	 */
 	@Override
-	public void reload() {
+	public synchronized void reload() {
 		logger.debug("reloading configurations...");
-
-		boolean regist = this.regist;
-		if(regist){
-			try {
-				unregist();
-			} catch(Exception ex){
-				logger.error("fail to unregister JMX", ex);
-				throw new IllegalStateException(ex.toString());
-			}
-		}
-
 		try {
-			load();
-		} catch(JyroException ex){
-			logger.error("fail to reload configuration", ex);
-			throw new IllegalStateException(ex.toString());
-		}
+			boolean regist = this.regist;
+			if(jyro != null){
 
+				// shutdown currently running jyro instance
+				this.jyro.shutdown();
 
-		if(regist){
-			try {
-				regist();
-			} catch(Exception ex){
-				logger.error("fail to unregister JMX", ex);
-				throw new IllegalStateException(ex.toString());
+				// unregister mxbean if this registered
+				if(regist){
+					unregister(true);
+				}
+
+				this.jyro = null;
 			}
+
+			// load configuration and rebuild instance
+			load();
+
+			// regist mxbean
+			if(regist){
+				register(true);
+			}
+
+		} catch(Exception ex){
+			logger.error("fail to reload jyro configuration", ex);
+			throw new IllegalStateException(ex.toString());
 		}
 
 		return;
@@ -268,18 +268,55 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	/**
 	 * Register this MXBean to MBeanServer.
 	 *
+	 * @param childOnly if unregister all child without self
 	 * @throws InstanceAlreadyExistsException other instance that has same name already exists
 	 * @throws MBeanRegistrationException fail to regist
 	 * @throws NotCompliantMBeanException
 	 * @throws MalformedObjectNameException
 	 */
-	public void regist() throws InstanceAlreadyExistsException, MBeanRegistrationException, NotCompliantMBeanException, MalformedObjectNameException {
+	public synchronized void register() throws InstanceAlreadyExistsException, MBeanRegistrationException, NotCompliantMBeanException, MalformedObjectNameException {
+		register(false);
+		return;
+	}
+
+	// ======================================================================
+	// Unregister Instance
+	// ======================================================================
+	/**
+	 * Unregister this MXBean to MBeanServer.
+	 *
+	 * @param childOnly if unregister all child without self
+	 * @throws InstanceNotFoundException instance not found
+	 * @throws MBeanRegistrationException fail to regist
+	 * @throws MalformedObjectNameException
+	 */
+	public synchronized void unregister() throws InstanceNotFoundException, MBeanRegistrationException, MalformedObjectNameException {
+		unregister(false);
+		return;
+	}
+
+	// ======================================================================
+	// Register Instance
+	// ======================================================================
+	/**
+	 * Register this MXBean to MBeanServer.
+	 *
+	 * @param childOnly if unregister all child without self
+	 * @throws InstanceAlreadyExistsException other instance that has same name already exists
+	 * @throws MBeanRegistrationException fail to regist
+	 * @throws NotCompliantMBeanException
+	 * @throws MalformedObjectNameException
+	 */
+	private void register(boolean childOnly) throws InstanceAlreadyExistsException, MBeanRegistrationException, NotCompliantMBeanException, MalformedObjectNameException {
+		assert(Thread.holdsLock(this));
 
 		// register MXBean for Jyro instance
 		String name = String.format("org.koiroha.jyro:name=%s", jyro.getName());
 		MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-		server.registerMBean(this, new ObjectName(name));
-		logger.debug("register MXBean: " + name);
+		if(! childOnly){
+			server.registerMBean(this, new ObjectName(name));
+			logger.debug("register MXBean: " + name);
+		}
 
 		// register each core instance
 		for(JyroCore core: jyro.getCores()){
@@ -304,11 +341,13 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	/**
 	 * Unregister MXBean for specified Jyro instance.
 	 *
+	 * @param childOnly if unregister all child without self
 	 * @throws InstanceNotFoundException instance not found
 	 * @throws MBeanRegistrationException fail to regist
 	 * @throws MalformedObjectNameException
 	 */
-	public void unregist() throws InstanceNotFoundException, MBeanRegistrationException, MalformedObjectNameException {
+	private void unregister(boolean childOnly) throws InstanceNotFoundException, MBeanRegistrationException, MalformedObjectNameException {
+		assert(Thread.holdsLock(this));
 		MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 		String name = String.format("org.koiroha.jyro:name=%s", jyro.getName());
 
@@ -326,29 +365,24 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 		}
 
 		// unregister jyro instance
-		server.unregisterMBean(new ObjectName(name));
-		logger.debug("unregister MXBean: " + name);
+		if(! childOnly){
+			server.unregisterMBean(new ObjectName(name));
+			logger.debug("unregister MXBean: " + name);
+		}
 		regist = false;
 		return;
 	}
 
 	// ======================================================================
-	// Reload Configuration
+	// Load Configuration
 	// ======================================================================
 	/**
-	 * Reload jyro configuration via JMX.
+	 * Load jyro configuration via JMX.
 	 *
 	 * @throws JyroException if fail to load configuration
 	 */
 	private void load() throws JyroException{
-
-		// shutdown jyro service
-		if(jyro != null){
-			this.jyro.shutdown();
-			this.jyro = null;
-		}
-
-		// create new jyro instance
+		assert(this.jyro == null);
 		this.jyro = new Jyro(name, dir, parent, prop);
 		return;
 	}

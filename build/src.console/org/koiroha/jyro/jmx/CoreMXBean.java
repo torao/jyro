@@ -48,6 +48,26 @@ public interface CoreMXBean {
 	public String getDirectory();
 
 	// ======================================================================
+	// Refer Status
+	// ======================================================================
+	/**
+	 * Refer status of core.
+	 *
+	 * @return status
+	 */
+	public String getStatus();
+
+	// ======================================================================
+	// Retrieve Modified
+	// ======================================================================
+	/**
+	 * Retrieve that whether core-dependent files are modified or not.
+	 *
+	 * @return true if one or more dependency files are modified
+	 */
+	public boolean isModified();
+
+	// ======================================================================
 	// Refer Uptime
 	// ======================================================================
 	/**

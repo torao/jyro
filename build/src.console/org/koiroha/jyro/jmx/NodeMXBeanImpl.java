@@ -149,6 +149,31 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	}
 
 	// ======================================================================
+	// Retrieve Thread Priority
+	// ======================================================================
+	/**
+	 * Retrieve priority of worker thread on this node.
+	 *
+	 * @return thread priority
+	 */
+	public int getPriority(){
+		return node.getPriority();
+	}
+
+	// ======================================================================
+	// Set Thread Priority
+	// ======================================================================
+	/**
+	 * Set priority of worker thread on this node.
+	 *
+	 * @param priority thread priority that defined in class {@link Thread}
+	 */
+	public void setPriority(int priority){
+		node.setPriority(priority);
+		return;
+	}
+
+	// ======================================================================
 	// Refer Daemon
 	// ======================================================================
 	/**

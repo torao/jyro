@@ -59,6 +59,31 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	}
 
 	// ======================================================================
+	// Refer Status
+	// ======================================================================
+	/**
+	 * Refer status of core.
+	 *
+	 * @return status
+	 */
+	@Override
+	public String getStatus(){
+		return core.getStatus().toString();
+	}
+
+	// ======================================================================
+	// Retrieve Modified
+	// ======================================================================
+	/**
+	 * Retrieve that whether core-dependent files are modified or not.
+	 *
+	 * @return true if one or more dependency files are modified
+	 */
+	public boolean isModified(){
+		return core.isModified();
+	}
+
+	// ======================================================================
 	// Refer Directory
 	// ======================================================================
 	/**

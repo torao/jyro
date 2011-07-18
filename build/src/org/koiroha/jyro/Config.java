@@ -209,6 +209,18 @@ final class Config {
 	}
 
 	// ======================================================================
+	// Retrieve Modified
+	// ======================================================================
+	/**
+	 * Retrieve that whether core-dependent files are modified or not.
+	 *
+	 * @return true if one or more dependency files are modified
+	 */
+	public boolean isModified(){
+		return dependency.modified();
+	}
+
+	// ======================================================================
 	// Startup Services
 	// ======================================================================
 	/**
@@ -260,7 +272,7 @@ final class Config {
 	 * @return document
 	 * @throws JyroException if fail to read xml document
 	 */
-	private static Document load(File file) throws JyroException {
+	private Document load(File file) throws JyroException {
 		logger.debug("loading configuration: " + file);
 		Document doc = null;
 		try {
@@ -276,6 +288,10 @@ final class Config {
 		} catch(SAXException ex){
 			throw new JyroException("fail to read jyro configuration: " + file, ex);
 		}
+
+		// add xml file to dependency
+		dependency.add(file);
+
 		return doc;
 	}
 
@@ -293,6 +309,24 @@ final class Config {
 	}
 
 	// ======================================================================
+	// Format String
+	// ======================================================================
+	/**
+	 * Format specified string value with variable.
+	 *
+	 * @param value string to format
+	 * @return formatted string
+	 */
+	private static int n(Element elem, String attr) throws JyroException{
+		String value = elem.getAttribute(attr);
+		try {
+			return Integer.parseInt(value);
+		} catch(NumberFormatException ex){
+			throw new JyroException("invalid number: @" + attr + "=\"" + value + "\"");
+		}
+	}
+
+	// ======================================================================
 	// Create Libext ClassLoader
 	// ======================================================================
 	/**
@@ -303,7 +337,7 @@ final class Config {
 	 * @param parent parent class loader
 	 * @return class loader
 	 */
-	private static ClassLoader getLibextLoader(String classpath, String libext, ClassLoader parent) {
+	private ClassLoader getLibextLoader(String classpath, String libext, ClassLoader parent) {
 		// TODO Curretly, supports local filesystem only not as URL
 		List<File> libs = new ArrayList<File>();
 
@@ -345,6 +379,9 @@ final class Config {
 				logger.debug("use library: " + f.getAbsolutePath());
 			}
 		}
+
+		// add classpath/extdirs library to dependency
+		dependency.add(libs);
 
 		// create url array to library files
 		List<URL> urls = new ArrayList<URL>();
@@ -483,8 +520,22 @@ final class Config {
 
 			// set minimum thread-pool size
 			if(wk.hasAttribute("min")){
-				// TODO
-				// node.setMinimumWorkers();
+				node.setMinimumWorkers(n(wk, "min"));
+			}
+
+			// set maximum thread-pool size
+			if(wk.hasAttribute("max")){
+				node.setMaximumWorkers(n(wk, "max"));
+			}
+
+			// set priority for worker threads
+			if(wk.hasAttribute("priority")){
+				node.setPriority(n(wk, "priority"));
+			}
+
+			// set daemon flag for worker threads
+			if(wk.hasAttribute("daemon")){
+				node.setDaemon(bool(wk, "@daemon"));
 			}
 			return node;
 		}
@@ -547,6 +598,9 @@ final class Config {
 					logger.warn("invalid include path: " + path + "; " + ex);
 				}
 			}
+
+			// add included script files to dependency
+			dependency.add(files);
 
 			File[] fs = files.toArray(new File[files.size()]);
 			String[] cs = new String[fs.length];

@@ -9,8 +9,6 @@
  */
 package org.koiroha.jyro.util;
 
-import java.lang.annotation.*;
-import java.lang.reflect.*;
 import java.util.*;
 
 import javax.xml.xpath.*;
@@ -200,7 +198,9 @@ public class XmlBeanAdapter {
 		if(node == null){
 			return def;
 		}
-		return node.getTextContent();
+		String value = node.getTextContent();
+		logger.trace(expr + "=" + value);
+		return value;
 	}
 
 	// ======================================================================
@@ -218,113 +218,131 @@ public class XmlBeanAdapter {
 	}
 
 	// ======================================================================
-	// Retrieve String
+	// Retrieve Boolean
 	// ======================================================================
 	/**
-	 * Retrieve text string value for specified node. The null will return
-	 * when node not found.
+	 * Retrieve boolean value for specified node.
 	 *
+	 * @param node node
 	 * @param expr xpath expression
-	 * @param type return type
-	 * @return text string
+	 * @return boolean value
 	 */
-	private Object get(String expr, Class<?> type){
-		Node node = node(expr);
-		if(node == null){
-			return null;
+	protected boolean bool(Node node, String expr){
+		try {
+			return (Boolean)xpath.evaluate(expr, node, XPathConstants.BOOLEAN);
+		} catch(XPathException ex){
+			throw new IllegalStateException("invalid xpath expression (this maybe bug): " + expr, ex);
 		}
-
-		if(type.equals(String.class)){
-			return node.getTextContent();
-		}
-		if(type.equals(byte.class)){
-			return Byte.parseByte(node.getTextContent());
-		}
-		if(type.equals(short.class)){
-			return Short.parseShort(node.getTextContent());
-		}
-		if(type.equals(int.class)){
-			return Integer.parseInt(node.getTextContent());
-		}
-		if(type.equals(long.class)){
-			return Long.parseLong(node.getTextContent());
-		}
-		if(type.equals(float.class)){
-			return Float.parseFloat(node.getTextContent());
-		}
-		if(type.equals(double.class)){
-			return Double.parseDouble(node.getTextContent());
-		}
-
-		logger.warn("unsupported conversion type: " + type.getName());
-		return null;
 	}
 
-	// ======================================================================
-	// Retrieve Nodeset
-	// ======================================================================
-	/**
-	 * Retrieve nodeset for specified element.
-	 *
-	 * @param clazz return type
-	 * @return iterable of elements
-	 */
-	public <T> T wrap(Class<T> clazz){
-		return null;
-	}
-
-	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	//
-	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	/**
-	 * Retrieve nodeset for specified element.
-	 *
-	 * @param expr xpath expression
-	 * @param elem base node
-	 * @return iterable of elements
-	 */
-	@Target(ElementType.METHOD)
-	@Retention(RetentionPolicy.RUNTIME)
-	public @interface XPathBinding {
-		String value();
-	}
-
-	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	//
-	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	/**
-	 * Retrieve nodeset for specified element.
-	 *
-	 * @param expr xpath expression
-	 * @param elem base node
-	 * @return iterable of elements
-	 */
-	private class Invoker implements InvocationHandler {
-
-		// ==================================================================
-		//
-		// ==================================================================
-		/**
-		 *
-		 * @param proxy proxy instance
-		 * @param method called method
-		 * @param args method arguments
-		 * @return method result
-		 * @throws Throwable if fail to call method
-		 */
-		@Override
-		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-
-			XPathBinding binding = method.getAnnotation(XPathBinding.class);
-			if(binding != null){
-				String xpath = binding.value();
-				Class<?> type = method.getReturnType();
-				return get(xpath, type);
-			}
-
-			logger.warn("unbound xpath method: " + method.toGenericString());
-			return null;
-		}
-	}
+//	// ======================================================================
+//	// Retrieve String
+//	// ======================================================================
+//	/**
+//	 * Retrieve text string value for specified node. The null will return
+//	 * when node not found.
+//	 *
+//	 * @param expr xpath expression
+//	 * @param type return type
+//	 * @return text string
+//	 */
+//	private Object get(String expr, Class<?> type){
+//		Node node = node(expr);
+//		if(node == null){
+//			return null;
+//		}
+//
+//		if(type.equals(String.class)){
+//			return node.getTextContent();
+//		}
+//		if(type.equals(byte.class)){
+//			return Byte.parseByte(node.getTextContent());
+//		}
+//		if(type.equals(short.class)){
+//			return Short.parseShort(node.getTextContent());
+//		}
+//		if(type.equals(int.class)){
+//			return Integer.parseInt(node.getTextContent());
+//		}
+//		if(type.equals(long.class)){
+//			return Long.parseLong(node.getTextContent());
+//		}
+//		if(type.equals(float.class)){
+//			return Float.parseFloat(node.getTextContent());
+//		}
+//		if(type.equals(double.class)){
+//			return Double.parseDouble(node.getTextContent());
+//		}
+//
+//		logger.warn("unsupported conversion type: " + type.getName());
+//		return null;
+//	}
+//
+//	// ======================================================================
+//	// Retrieve Nodeset
+//	// ======================================================================
+//	/**
+//	 * Retrieve nodeset for specified element.
+//	 *
+//	 * @param clazz return type
+//	 * @return iterable of elements
+//	 */
+//	public <T> T wrap(Class<T> clazz){
+//		return null;
+//	}
+//
+//	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//	// @XPathBinding:
+//	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//	/**
+//	 * Retrieve nodeset for specified element.
+//	 *
+//	 * @param expr xpath expression
+//	 * @param elem base node
+//	 * @return iterable of elements
+//	 */
+//	@Target(ElementType.METHOD)
+//	@Retention(RetentionPolicy.RUNTIME)
+//	public @interface XPathBinding {
+//		String value();
+//	}
+//
+//	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//	//
+//	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//	/**
+//	 * Retrieve nodeset for specified element.
+//	 *
+//	 * @param expr xpath expression
+//	 * @param elem base node
+//	 * @return iterable of elements
+//	 */
+//	private class Invoker implements InvocationHandler {
+//
+//		// ==================================================================
+//		//
+//		// ==================================================================
+//		/**
+//		 *
+//		 * @param proxy proxy instance
+//		 * @param method called method
+//		 * @param args method arguments
+//		 * @return method result
+//		 * @throws Throwable if fail to call method
+//		 */
+//		@Override
+//		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+//
+//			XPathBinding binding = method.getAnnotation(XPathBinding.class);
+//			if(binding != null){
+//				String xpath = binding.value();
+//				Class<?> type = method.getReturnType();
+//				return get(xpath, type);
+//			}
+//
+//			logger.warn("unbound xpath method: " + method.toGenericString());
+//			return null;
+//		}
+//	}
 
 }

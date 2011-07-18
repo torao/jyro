@@ -98,6 +98,26 @@ public interface NodeMXBean {
 	public void setMaximumWorkers(int max);
 
 	// ======================================================================
+	// Retrieve Thread Priority
+	// ======================================================================
+	/**
+	 * Retrieve priority of worker thread on this node.
+	 *
+	 * @return thread priority
+	 */
+	public int getPriority();
+
+	// ======================================================================
+	// Set Thread Priority
+	// ======================================================================
+	/**
+	 * Set priority of worker thread on this node.
+	 *
+	 * @param priority thread priority that defined in class {@link Thread}
+	 */
+	public void setPriority(int priority);
+
+	// ======================================================================
 	// Refer Daemon
 	// ======================================================================
 	/**
