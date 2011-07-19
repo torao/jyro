@@ -44,6 +44,14 @@ final class Config {
 	private static final Logger logger = Logger.getLogger(Config.class);
 
 	// ======================================================================
+	// Generic Use Timer
+	// ======================================================================
+	/**
+	 * The timer to detect modification and reload for cores.
+	 */
+	public static final Timer TIMER = new Timer("JyroTimer", true);
+
+	// ======================================================================
 	// Home Directory
 	// ======================================================================
 	/**
@@ -90,6 +98,14 @@ final class Config {
 	 * The core configuration file jyro.xml.
 	 */
 	private final JyroConfig jyroConfig;
+
+	// ======================================================================
+	// Dependency
+	// ======================================================================
+	/**
+	 * File dependency to reload automatically.
+	 */
+	private final Dependency dependency = new Dependency();
 
 	// ======================================================================
 	// Constructor
@@ -201,6 +217,18 @@ final class Config {
 	}
 
 	// ======================================================================
+	// Retrieve Modified
+	// ======================================================================
+	/**
+	 * Retrieve that whether core-dependent files are modified or not.
+	 *
+	 * @return true if one or more dependency files are modified
+	 */
+	public boolean isModified(){
+		return dependency.modified();
+	}
+
+	// ======================================================================
 	// Startup Services
 	// ======================================================================
 	/**
@@ -252,7 +280,7 @@ final class Config {
 	 * @return document
 	 * @throws JyroException if fail to read xml document
 	 */
-	private static Document load(File file) throws JyroException {
+	private Document load(File file) throws JyroException {
 		logger.debug("loading configuration: " + file);
 		Document doc = null;
 		try {
@@ -268,6 +296,10 @@ final class Config {
 		} catch(SAXException ex){
 			throw new JyroException("fail to read jyro configuration: " + file, ex);
 		}
+
+		// add xml file to dependency
+		dependency.add(file);
+
 		return doc;
 	}
 
@@ -285,6 +317,24 @@ final class Config {
 	}
 
 	// ======================================================================
+	// Format String
+	// ======================================================================
+	/**
+	 * Format specified string value with variable.
+	 *
+	 * @param value string to format
+	 * @return formatted string
+	 */
+	private static int n(Element elem, String attr) throws JyroException{
+		String value = elem.getAttribute(attr);
+		try {
+			return Integer.parseInt(value);
+		} catch(NumberFormatException ex){
+			throw new JyroException("invalid number: @" + attr + "=\"" + value + "\"");
+		}
+	}
+
+	// ======================================================================
 	// Create Libext ClassLoader
 	// ======================================================================
 	/**
@@ -295,7 +345,7 @@ final class Config {
 	 * @param parent parent class loader
 	 * @return class loader
 	 */
-	private static ClassLoader getLibextLoader(String classpath, String libext, ClassLoader parent) {
+	private ClassLoader getLibextLoader(String classpath, String libext, ClassLoader parent) {
 		// TODO Curretly, supports local filesystem only not as URL
 		List<File> libs = new ArrayList<File>();
 
@@ -338,6 +388,9 @@ final class Config {
 			}
 		}
 
+		// add classpath/extdirs library to dependency
+		dependency.add(libs);
+
 		// create url array to library files
 		List<URL> urls = new ArrayList<URL>();
 		for(int i=0; i<libs.size(); i++){
@@ -349,7 +402,21 @@ final class Config {
 		}
 
 		// create class loader
-		return new URLClassLoader(urls.toArray(new URL[urls.size()]), parent);
+		return new URLClassLoader(urls.toArray(new URL[urls.size()]), parent){
+			@Override
+			public String toString(){
+				StringBuilder buffer = new StringBuilder();
+				buffer.append('[');
+				for(URL url: getURLs()){
+					buffer.append(url.toString());
+				}
+				if(getParent() != null){
+					buffer.append(getParent());
+				}
+				buffer.append(']');
+				return buffer.toString();
+			}
+		};
 	}
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -425,6 +492,7 @@ final class Config {
 		 * Retrieve queues defined in this configuration.
 		 *
 		 * @return list of queues
+		 * @throws JyroException if fail to build node
 		 */
 		public Iterable<Node> getNodes() throws JyroException {
 			List<Node> list = new ArrayList<Node>();
@@ -474,7 +542,22 @@ final class Config {
 
 			// set minimum thread-pool size
 			if(wk.hasAttribute("min")){
-				// node.setMinimumWorkers();
+				node.setMinimumWorkers(n(wk, "min"));
+			}
+
+			// set maximum thread-pool size
+			if(wk.hasAttribute("max")){
+				node.setMaximumWorkers(n(wk, "max"));
+			}
+
+			// set priority for worker threads
+			if(wk.hasAttribute("priority")){
+				node.setPriority(n(wk, "priority"));
+			}
+
+			// set daemon flag for worker threads
+			if(wk.hasAttribute("daemon")){
+				node.setDaemon(bool(wk, "@daemon"));
 			}
 			return node;
 		}
@@ -496,7 +579,7 @@ final class Config {
 			} catch(ClassCastException ex){
 				throw new JyroException(clazz + " is not subclass of " + Worker.class.getName(), ex);
 			} catch(ClassNotFoundException ex){
-				throw new JyroException("specified class " + clazz + " not found in this context", ex);
+				throw new JyroException("specified class " + clazz + " not found in this context: " + loader, ex);
 			} catch(IllegalAccessException ex){
 				throw new JyroException("cannot access to default constructor of " + clazz, ex);
 			} catch(InstantiationException ex){
@@ -519,6 +602,9 @@ final class Config {
 			String type = f(elem.getAttribute("type"));
 			String includes = f(elem.getAttribute("includes"));
 			String charset = f(elem.getAttribute("charset"));
+			if(charset.length() == 0){
+				charset = null;
+			}
 
 			// parse include files
 			List<File> files = new ArrayList<File>();
@@ -528,16 +614,20 @@ final class Config {
 				try {
 					for(File f: IO.fileSet(dir, path)){
 						files.add(f);
+						dependency.add(f);
 					}
 				} catch(IOException ex){
 					logger.warn("invalid include path: " + path + "; " + ex);
 				}
 			}
 
+			// add included script files to dependency
+			dependency.add(files);
+
 			File[] fs = files.toArray(new File[files.size()]);
 			String[] cs = new String[fs.length];
 			Arrays.fill(cs, charset);
-			return new ScriptWorker(loader, type, fs, cs);
+			return new ScriptWorker(loader, type, fs, cs, elem.getTextContent());
 		}
 
 	}

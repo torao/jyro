@@ -9,14 +9,17 @@
  */
 package org.koiroha.jyro;
 
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
+import java.util.regex.Pattern;
+
+import org.koiroha.jyro.util.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Job: Job
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * The job class to send or receive between {@link JobQueue}.
+ * The job class to send and receive between {@link JobQueue}.
  *
  * @author takami torao
  */
@@ -29,6 +32,14 @@ public final class Job implements Serializable {
 	 * Serial version UID of this class.
 	 */
 	private static final long serialVersionUID = 1L;
+
+	// ======================================================================
+	// Name Pattern
+	// ======================================================================
+	/**
+	 * Name pattern of job.
+	 */
+	private static final Pattern NAME = Pattern.compile("[^\"\'\\{\\}\\s]+");
 
 	// ======================================================================
 	// Job Name
@@ -50,12 +61,34 @@ public final class Job implements Serializable {
 	// Constructor
 	// ======================================================================
 	/**
-	 * Create job instance by to specify job name.
+	 * Create job instance by to specify job name without any attributes.
 	 *
 	 * @param name name of this job
 	 */
 	public Job(String name) {
+		this(name, null);
+		return;
+	}
+
+	// ======================================================================
+	// Constructor
+	// ======================================================================
+	/**
+	 * Create job instance by to specify job name and attributes.
+	 *
+	 * @param name name of this job
+	 * @param attrs attribute set of this job
+	 */
+	public Job(String name, Map<String,String> attrs) {
 		this.name = name;
+		if(attrs != null){
+			this.attributes.putAll(attrs);
+		}
+
+		// validate name restriction
+		if(! NAME.matcher(name).matches()){
+			throw new IllegalArgumentException("invalid job name: " + name);
+		}
 		return;
 	}
 
@@ -87,21 +120,33 @@ public final class Job implements Serializable {
 	}
 
 	// ======================================================================
-	// Set Job Attribute
+	// Export Job
 	// ======================================================================
 	/**
-	 * Set attribute value of this job. If you specify null as value, map
-	 * entry removed.
+	 * Export contentt of this job to specified output.
 	 *
-	 * @param key key of attribute
-	 * @param value of attribute
-	 * @return old value for key
-	 */
-	public String setAttribute(String key, String value){
-		if(value == null){
-			return attributes.remove(key);
+	 * @param out output to export this instance
+	 * @throws IOException if fail to output
+	 * @see #parse(String)
+	*/
+	public void export(Appendable out) throws IOException {
+		out.append(name);
+		if(! attributes.isEmpty()){
+			out.append('{');
+			Iterator<String> it = attributes.keySet().iterator();
+			while(it.hasNext()){
+				String key = it.next();
+				String value = attributes.get(key);
+				out.append(key);
+				out.append(':');
+				Text.literize(out, value);
+				if(it.hasNext()){
+					out.append(',');
+				}
+			}
+			out.append('}');
 		}
-		return attributes.put(key, value);
+		return;
 	}
 
 	// ======================================================================
@@ -152,6 +197,120 @@ public final class Job implements Serializable {
 			}
 		}
 		return true;
+	}
+
+	// ======================================================================
+	// String
+	// ======================================================================
+	/**
+	 * Refer string presentation of this job instance.
+	 *
+	 * @return string
+	*/
+	@Override
+	public String toString() {
+		StringBuilder buffer = new StringBuilder();
+		try {
+			export(buffer);
+		} catch(IOException ex){/* */}
+		return buffer.toString();
+	}
+
+	// ======================================================================
+	// Parse Text
+	// ======================================================================
+	/**
+	 * Parse specified plain text and build job instance. The plain text
+	 * must be formatted JSON-like as follows.
+	 * <pre>
+	 * name{attr1:"value1",attr2:"value2",...}
+	 * </pre>
+	 *
+	 * @param text the job representation plain text
+	 * @return job instance
+	 * @throws ParseException fail to parse
+	*/
+	public static final Job parse(String text) throws ParseException{
+		String name = text.trim();
+		Map<String,String> attr = new HashMap<String,String>();
+		int sep = text.indexOf('{');
+		if(sep >= 0){
+
+			// split name
+			name = text.substring(0, sep).trim();
+
+			// split attribute fields.
+			text = text.substring(sep+1).trim();
+			if(! text.endsWith("}")){
+				throw new ParseException("'}' expected on end of text: " + text);
+			}
+			text = text.substring(0, text.length()-1);
+
+			// parse attribute field
+			StringBuilder buffer = new StringBuilder(text);
+			while(true){
+				String id = parseIdentifier(buffer, ':');
+				if(id == null){
+					break;
+				}
+				String value = parseValue(buffer, ',');
+				attr.put(id, value);
+			}
+		}
+		return new Job(name, attr);
+	}
+
+	// ======================================================================
+	// Parse Identifier
+	// ======================================================================
+	/**
+	 * Parse and split identifier from head of buffer to delimiter.
+	 *
+	 * @param buffer buffer
+	 * @param delim delimiter character
+	 * @return identifier string, or null if buffer has no delimiter
+	*/
+	private static String parseIdentifier(StringBuilder buffer, char delim){
+		int i = 0;
+		while(true){
+			if(i == buffer.length()){
+				return null;
+			}
+			char ch = buffer.charAt(i);
+			if(ch == delim){
+				break;
+			}
+			i ++;
+		}
+		String id = buffer.substring(0, i);
+		buffer.delete(0, i+1);
+		return id.trim();
+	}
+
+	// ======================================================================
+	// Parse Identifier
+	// ======================================================================
+	/**
+	 * Parse and split identifier from head of buffer to delimiter.
+	 *
+	 * @param buffer buffer
+	 * @param delim delimiter character
+	 * @return identifier string, or null if buffer has no delimiter
+	 * @throws ParseException
+	*/
+	private static String parseValue(StringBuilder buffer, char delim) throws ParseException{
+		int i = 0;
+		for(/* */; i<buffer.length(); i++){
+			char ch = buffer.charAt(i);
+			if(ch == '\\'){
+				i ++;
+			} else if(ch == delim){
+				break;
+			}
+		}
+		String value = buffer.substring(0, i);
+		buffer.delete(0, i+1);
+		return Text.unliterize(value.trim());
 	}
 
 }

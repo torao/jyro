@@ -28,10 +28,10 @@ public interface Worker {
 	 * Execute this process with specified arguments. This method called in
 	 * multi-thread environment.
 	 *
-	 * @param args arguments
+	 * @param job job argument
 	 * @return result
 	 * @throws WorkerException if error in worker
 	*/
-	public Object exec(Object... args) throws WorkerException;
+	public Object exec(Job job) throws WorkerException;
 
 }

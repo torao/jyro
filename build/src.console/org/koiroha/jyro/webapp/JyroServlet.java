@@ -20,6 +20,7 @@ import javax.xml.transform.stream.*;
 
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
+import org.koiroha.jyro.jmx.JyroMXBeanImpl;
 import org.koiroha.jyro.snapshot.Snapshot;
 import org.koiroha.jyro.util.IO;
 import org.w3c.dom.Document;
@@ -51,12 +52,12 @@ public class JyroServlet extends HttpServlet {
 	private static final Logger logger = Logger.getLogger(JyroServlet.class);
 
 	// ======================================================================
-	// Jyro
+	// Jyro MXBean
 	// ======================================================================
 	/**
-	 * Jyro instance.
+	 * MXBean to manage Jyro instance.
 	 */
-	private Jyro jyro = null;
+	private JyroMXBeanImpl mxbean = null;
 
 	// ======================================================================
 	// Template Cache
@@ -109,15 +110,17 @@ public class JyroServlet extends HttpServlet {
 		}
 		logger.info(Jyro.JYRO_HOME + "=" + dirName);
 
+		// build and startup Jyro
+		String contextPath = getServletContext().getContextPath();
+		ClassLoader loader = Thread.currentThread().getContextClassLoader();
 		try {
-			// build jyro instance
-			this.jyro = new Jyro(dir, null, null);
-
-			// startup jyro
-			this.jyro.startup();
-		} catch(JyroException ex){
+			mxbean = new JyroMXBeanImpl(contextPath, dir, loader, null);
+			mxbean.register();
+			mxbean.startup();
+		} catch (Exception ex) {
 			throw new ServletException(ex);
 		}
+
 		return;
 	}
 
@@ -132,10 +135,11 @@ public class JyroServlet extends HttpServlet {
 
 		// shutdown jyro
 		try {
-			if(this.jyro != null){
-				this.jyro.shutdown();
+			if(mxbean != null){
+				mxbean.shutdown();
+				mxbean.unregister();
 			}
-		} catch(JyroException ex){
+		} catch(Exception ex){
 			logger.fatal("fail to shutdown jyro", ex);
 		}
 
@@ -198,13 +202,17 @@ public class JyroServlet extends HttpServlet {
 
 		// post job
 		if(pathInfo.matches("/post")){
-			String n = request.getParameter("node");
-			String j = request.getParameter("job");
-			Job job = new Job(j);
-			JyroCore core = jyro.getCore("default");
-			Node node = core.getNode(n);
-			node.post();
-			response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+			try {
+				String n = request.getParameter("node");
+				String j = request.getParameter("job");
+				Job job = Job.parse(j);
+				JyroCore core = jyro.getCore("default");
+				Node node = core.getNode(n);
+				node.post(job);
+				response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+			} catch(Exception ex){
+				throw new ServletException(ex);
+			}
 			return;
 		}
 
@@ -265,8 +273,10 @@ public class JyroServlet extends HttpServlet {
 	// ======================================================================
 	/**
 	 *
-	 * @param request HTTP request
-	 * @param response HTTP response
+	 * @param req HTTP request
+	 * @param res HTTP response
+	 * @param doc response document
+	 * @param prefix xsl prefix
 	 * @throws ServletException
 	 * @throws IOException if fail to output
 	 */
