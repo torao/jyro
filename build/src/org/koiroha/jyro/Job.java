@@ -296,7 +296,7 @@ public final class Job implements Serializable {
 	 * @param buffer buffer
 	 * @param delim delimiter character
 	 * @return identifier string, or null if buffer has no delimiter
-	 * @throws ParseException
+	 * @throws ParseException if invalid format specified
 	*/
 	private static String parseValue(StringBuilder buffer, char delim) throws ParseException{
 		int i = 0;

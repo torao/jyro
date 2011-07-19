@@ -27,7 +27,7 @@ import org.xml.sax.SAXException;
 // Config: Configuration for JyroCore
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Configuration class for {@link JyroCore}.
+ * Configuration class to build {@link JyroCore} instance.
  *
  * @version $Revision:$ $Date:$
  * @author torao
@@ -117,7 +117,7 @@ final class Config {
 	 * @param dir home directory of jyro
 	 * @param parent parent class loader
 	 * @param init init properties
-	 * @throws JyroException
+	 * @throws JyroException if fail to load configuration
 	 */
 	public Config(File dir, ClassLoader parent, Properties init) throws JyroException {
 		this.dir = dir;
@@ -225,7 +225,7 @@ final class Config {
 	 * @return true if one or more dependency files are modified
 	 */
 	public boolean isModified(){
-		return dependency.modified();
+		return dependency.isModified();
 	}
 
 	// ======================================================================
@@ -317,13 +317,15 @@ final class Config {
 	}
 
 	// ======================================================================
-	// Format String
+	// Parse Number
 	// ======================================================================
 	/**
-	 * Format specified string value with variable.
+	 * Parse int value from specified attribute.
 	 *
-	 * @param value string to format
-	 * @return formatted string
+	 * @param elem element that has attribute
+	 * @param attr attribute name
+	 * @return attribute value as int
+	 * @throws JyroException if attribute is not a valid number
 	 */
 	private static int n(Element elem, String attr) throws JyroException{
 		String value = elem.getAttribute(attr);

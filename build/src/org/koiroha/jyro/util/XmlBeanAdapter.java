@@ -92,7 +92,7 @@ public class XmlBeanAdapter {
 	/**
 	 * Retrieve node for specified xpath expression.
 	 *
-	 * @param node
+	 * @param node node of base position
 	 * @param expr xpath expression
 	 * @return node
 	 */

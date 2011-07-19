@@ -15,11 +15,13 @@ import org.koiroha.jyro.*;
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// CoreMXBeanImpl:
+// CoreMXBeanImpl: Core MXBean Implementation
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * Implementation of Core MXBean. The this refers {@link JyroCore} instance
+ * by core name. It means that the same CoreMXBean will be used if core
+ * reloaded and change instance.
  *
- * <p>
  * @version $Revision:$
  * @author torao
  * @since 2011/07/17 Java SE 6
@@ -30,7 +32,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	// JyroMXBean
 	// ======================================================================
 	/**
-	 * Core instance that this MXBean manages.
+	 * JyroMXBean to refer core instance of this mxbean.
 	*/
 	private final JyroMXBeanImpl mxbean;
 
@@ -46,7 +48,8 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	// Constructor
 	// ======================================================================
 	/**
-	 * @param core Jyro Core
+	 * @param mxbean MXBean to refer core instance
+	 * @param name core name that this instance mapped to
 	*/
 	public CoreMXBeanImpl(JyroMXBeanImpl mxbean, String name){
 		this.mxbean = mxbean;

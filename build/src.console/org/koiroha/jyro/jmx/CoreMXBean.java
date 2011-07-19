@@ -12,14 +12,16 @@ package org.koiroha.jyro.jmx;
 
 import javax.management.MXBean;
 
+import org.koiroha.jyro.JyroCore;
+
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Core:
+// CoreMXBean: Core MXBean
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * MXBean interface to manage {@link JyroCore} outside.
  *
- * <p>
  * @version $Revision:$
  * @author torao
  * @since 2011/07/17 Java SE 6

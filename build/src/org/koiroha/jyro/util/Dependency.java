@@ -84,20 +84,22 @@ public class Dependency implements Serializable {
 	 *
 	 * @param files file collections
 	 */
-	public void add(Collection<File> file){
-		for(File f: file){
+	public void add(Collection<File> files){
+		for(File f: files){
 			add(f);
 		}
 		return;
 	}
 
 	// ======================================================================
-	// Constructor
+	// Check Modification
 	// ======================================================================
 	/**
-	 * @param file file
+	 * Check whether this dependency includes modified files.
+	 *
+	 * @return true if modified file contains
 	 */
-	public boolean modified(){
+	public boolean isModified(){
 		for(File file: dependency.keySet()){
 			long cur = file.lastModified();
 			long att = dependency.get(file);

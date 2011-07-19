@@ -34,57 +34,55 @@ public class ParseException extends Exception {
 	private static final long serialVersionUID = 1L;
 
 	// ======================================================================
-	// コンストラクタ
+	// Constructor
 	// ======================================================================
 	/**
 	 * コンストラクタは何も行いません。
 	 * <p>
 	 */
 	public ParseException() {
+		return;
+	}
+
+	// ======================================================================
+	// Constructor
+	// ======================================================================
+	/**
+	 * コンストラクタは何も行いません。
+	 * <p>
+	 * @param msg exception message
+	 */
+	public ParseException(String msg) {
+		super(msg);
 		// TODO 自動生成されたコンストラクター・スタブ
 		return;
 	}
 
 	// ======================================================================
-	// コンストラクタ
+	// Constructor
 	// ======================================================================
 	/**
 	 * コンストラクタは何も行いません。
 	 * <p>
-	 * @param arg0
+	 * @param ex cause exception
 	 */
-	public ParseException(String arg0) {
-		super(arg0);
+	public ParseException(Throwable ex) {
+		super(ex);
 		// TODO 自動生成されたコンストラクター・スタブ
 		return;
 	}
 
 	// ======================================================================
-	// コンストラクタ
+	// Constructor
 	// ======================================================================
 	/**
 	 * コンストラクタは何も行いません。
 	 * <p>
-	 * @param arg0
+	 * @param msg exception message
+	 * @param ex cause exception
 	 */
-	public ParseException(Throwable arg0) {
-		super(arg0);
-		// TODO 自動生成されたコンストラクター・スタブ
-		return;
-	}
-
-	// ======================================================================
-	// コンストラクタ
-	// ======================================================================
-	/**
-	 * コンストラクタは何も行いません。
-	 * <p>
-	 * @param arg0
-	 * @param arg1
-	 */
-	public ParseException(String arg0, Throwable arg1) {
-		super(arg0, arg1);
-		// TODO 自動生成されたコンストラクター・スタブ
+	public ParseException(String msg, Throwable ex) {
+		super(msg, ex);
 		return;
 	}
 

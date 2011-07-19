@@ -14,17 +14,25 @@ import javax.management.MXBean;
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// JyroMXBean:
+// JyroMXBean: Jyro MXBean
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * MXBean for Jyro instance.
  *
- * <p>
  * @version $Revision:$
  * @author torao
  * @since 2011/07/16 Java SE 6
  */
 @MXBean
 public interface JyroMXBean {
+
+	// ======================================================================
+	// Domain Name
+	// ======================================================================
+	/**
+	 * The domain name for Jyro on JMX.
+	 */
+	public static final String DOMAIN = "org.koiroha.jyro";
 
 	// ======================================================================
 	// Refer Name
@@ -60,7 +68,7 @@ public interface JyroMXBean {
 	// Refer Active Workers
 	// ======================================================================
 	/**
-	 * Refer active workers of all nodes.
+	 * Refer total active worker count of all nodes.
 	 *
 	 * @return active workers
 	*/

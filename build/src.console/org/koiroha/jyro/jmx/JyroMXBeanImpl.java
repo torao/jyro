@@ -22,11 +22,10 @@ import org.koiroha.jyro.*;
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// JyroMXBeanImpl:
+// JyroMXBeanImpl: Jyro MXBean Implementation
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  *
- * <p>
  * @version $Revision:$
  * @author torao
  * @since 2011/07/16 Java SE 6
@@ -136,7 +135,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 		this.dir = dir;
 		this.parent = parent;
 		this.prop = prop;
-		this.prefix = "org.koiroha.jyro:name=" + name;
+		this.prefix = DOMAIN + ":name=" + ObjectName.quote(name);
 		load();
 		return;
 	}
@@ -322,21 +321,25 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	/**
 	 * Register this MXBean to MBeanServer.
 	 *
-	 * @param childOnly if unregister all child without self
 	 * @throws InstanceAlreadyExistsException other instance that has same name already exists
 	 * @throws MBeanRegistrationException fail to regist
-	 * @throws NotCompliantMBeanException
-	 * @throws MalformedObjectNameException
 	 */
-	public synchronized void register() throws InstanceAlreadyExistsException, MBeanRegistrationException, NotCompliantMBeanException, MalformedObjectNameException {
+	public synchronized void register() throws InstanceAlreadyExistsException, MBeanRegistrationException {
+		try {
 
-		// register MXBean for Jyro instance
-		MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-		server.registerMBean(this, new ObjectName(prefix));
-		logger.debug("register MXBean: " + prefix);
+			// register MXBean for Jyro instance
+			MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+			server.registerMBean(this, new ObjectName(prefix));
+			logger.debug("register MXBean: " + prefix);
 
-		// register all cores
-		validateRegistration();
+			// register all cores
+			validateRegistration();
+
+		} catch(NotCompliantMBeanException ex){
+			throw new IllegalStateException("this maybe internal bug!", ex);
+		} catch(MalformedObjectNameException ex){
+			throw new IllegalStateException("this maybe internal bug!", ex);
+		}
 		return;
 	}
 
@@ -346,30 +349,32 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	/**
 	 * Unregister this MXBean to MBeanServer.
 	 *
-	 * @param childOnly if unregister all child without self
 	 * @throws InstanceNotFoundException instance not found
 	 * @throws MBeanRegistrationException fail to regist
-	 * @throws MalformedObjectNameException
 	 */
-	public synchronized void unregister() throws InstanceNotFoundException, MBeanRegistrationException, MalformedObjectNameException {
+	public synchronized void unregister() throws InstanceNotFoundException, MBeanRegistrationException {
+		try {
 
-		// unregister jyro instance
-		MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-		server.unregisterMBean(new ObjectName(prefix));
-		logger.debug("unregister MXBean: " + prefix);
+			// unregister jyro instance
+			MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+			server.unregisterMBean(new ObjectName(prefix));
+			logger.debug("unregister MXBean: " + prefix);
 
-		// unregister all cores
-		for(JyroCore core: jyro.getCores()){
-			String cname = prefix + ",core=" + core.getName();
+			// unregister all cores
+			for(JyroCore core: jyro.getCores()){
+				String cname = prefix + ",core=" + ObjectName.quote(core.getName());
 
-			// unregister each node instance
-			for(Node node: core.getNodes()){
-				String nname = cname + ",node=" + node.getId();
-				server.unregisterMBean(new ObjectName(nname));
+				// unregister each node instance
+				for(Node node: core.getNodes()){
+					String nname = cname + ",node=" + ObjectName.quote(node.getId());
+					server.unregisterMBean(new ObjectName(nname));
+				}
+
+				// unregister specified core instance
+				server.unregisterMBean(new ObjectName(cname));
 			}
-
-			// unregister specified core instance
-			server.unregisterMBean(new ObjectName(cname));
+		} catch(MalformedObjectNameException ex){
+			throw new IllegalStateException("this maybe internal bug!", ex);
 		}
 		return;
 	}
@@ -391,7 +396,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 		for(JyroCore core: getJyro().getCores()){
 
 			// register core mxbean if it is not registered
-			ObjectName cname = new ObjectName(prefix + ",core=" + core.getName());
+			ObjectName cname = new ObjectName(prefix + ",core=" + ObjectName.quote(core.getName()));
 			if(! server.isRegistered(cname)){
 				CoreMXBean cbean = new CoreMXBeanImpl(this, core.getName());
 				server.registerMBean(cbean, cname);
@@ -401,7 +406,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 
 			// register node mxbean if it is not registered
 			for(Node node: core.getNodes()){
-				ObjectName nname = new ObjectName(cname + ",node=" + node.getId());
+				ObjectName nname = new ObjectName(cname + ",node=" + ObjectName.quote(node.getId()));
 				if(! server.isRegistered(nname)){
 					NodeMXBean nbean = new NodeMXBeanImpl(this, core.getName(), node.getId());
 					server.registerMBean(nbean, nname);
@@ -427,13 +432,11 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 		return;
 	}
 
-	// ======================================================================
-	// Shutdown Services
-	// ======================================================================
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// Watchdog: Reload Detection
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	/**
-	 * Shutdown all services in this instance.
-	 *
-	 * @throws JyroException if fail to shutdown jyro
+	 * TimerTask to detect modification and reload Jyro instance.
 	 */
 	private class Watchdog extends TimerTask {
 		/**
