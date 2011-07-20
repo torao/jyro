@@ -91,6 +91,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	 *
 	 * @return true if one or more dependency files are modified
 	 */
+	@Override
 	public boolean isModified(){
 		return getCore().isModified();
 	}
