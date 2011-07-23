@@ -188,19 +188,6 @@ public class CoreImpl {
 	}
 
 	// ======================================================================
-	// Retrieve Queue
-	// ======================================================================
-	/**
-	 * Retrieve specified queue of this core.
-	 *
-	 * @param id name
-	 * @return job queue
-	 */
-	public JobQueue getQueue(String id){
-		return config.getQueue(id);
-	}
-
-	// ======================================================================
 	// Retrieve Home Directory
 	// ======================================================================
 	/**
@@ -237,6 +224,19 @@ public class CoreImpl {
 	 */
 	public boolean isModified(){
 		return config.isModified();
+	}
+
+	// ======================================================================
+	// Post Job
+	// ======================================================================
+	/**
+	 * Post job to this core.
+	 *
+	 */
+	public void post(String id, Job job) throws JyroException {
+		JobQueue queue = config.getQueue(id);
+		queue.post(job);
+		return;
 	}
 
 	// ======================================================================

@@ -12,7 +12,7 @@ package org.koiroha.jyro.impl;
 
 import java.util.concurrent.*;
 
-import org.koiroha.jyro.Job;
+import org.koiroha.jyro.*;
 
 
 

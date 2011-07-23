@@ -10,7 +10,11 @@
 */
 package org.koiroha.jyro.jmx;
 
+import javax.management.*;
+
+import org.koiroha.jyro.*;
 import org.koiroha.jyro.impl.*;
+import org.koiroha.jyro.util.ParseException;
 
 
 
@@ -175,6 +179,31 @@ public class CoreMXBeanImpl implements CoreMXBean {
 		return la;
 	}
 
+	// ======================================================================
+	// Post Job
+	// ======================================================================
+	/**
+	 * Post specified job to node id of this core defines.
+	 *
+	 * @param nodeId node id to post job
+	 * @param job job content
+	 * @throws JyroException if fail to post job
+	*/
+	public void post(String nodeId, String job) throws JyroException, ParseException {
+		Job j = Job.parse(job);
+		getCore().post(nodeId, j);
+		return;
+	}
+
+	// TODO How to describe MBeanOperationInfo?
+	protected MBeanOperationInfo[] createMBeanOperationInfo(){
+		return new MBeanOperationInfo[] {
+			new MBeanOperationInfo("post", "post specified job to this core", new MBeanParameterInfo[]{
+				new MBeanParameterInfo("nodeId", "String", "node id to post job"),
+				new MBeanParameterInfo("job", "String", "job content"),
+			}, "void", MBeanOperationInfo.ACTION),
+		};
+	}
 	// ======================================================================
 	// Refer Core
 	// ======================================================================

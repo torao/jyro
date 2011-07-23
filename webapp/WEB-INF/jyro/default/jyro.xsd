@@ -5,7 +5,7 @@
 		<xsd:complexType>
 			<xsd:sequence>
 				<xsd:element ref="property" minOccurs="0" maxOccurs="unbounded"/>
-				<xsd:element ref="queue" minOccurs="0" maxOccurs="unbounded"/>
+				<xsd:element ref="queue" minOccurs="0" maxOccurs="1"/>
 				<xsd:element ref="node" minOccurs="0" maxOccurs="unbounded"/>
 			</xsd:sequence>
 		</xsd:complexType>
@@ -13,17 +13,10 @@
 
 	<xsd:element name="queue">
 		<xsd:complexType>
-			<xsd:attribute name="id" type="xsd:ID" use="required">
-			</xsd:attribute>
-			<xsd:attribute name="type" use="optional" default="jvm">
-				<xsd:simpleType>
-					<xsd:restriction base="xsd:string">
-						<xsd:enumeration value="jvm">
-						</xsd:enumeration>
-						<xsd:enumeration value="jms">
-						</xsd:enumeration>
-					</xsd:restriction>
-				</xsd:simpleType>
+			<xsd:sequence>
+				<xsd:element ref="property" minOccurs="0" maxOccurs="unbounded"/>
+			</xsd:sequence>
+			<xsd:attribute name="factory" type="className" use="optional" default="org.koiroha.jyro.JVMJobQueueFactory">
 			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
@@ -106,6 +99,12 @@
 			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
+
+	<xsd:simpleType name="className">
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value=".+"/>
+		</xsd:restriction>
+	</xsd:simpleType>
 
 	<xsd:simpleType name="propertyName">
 		<xsd:restriction base="xsd:string">

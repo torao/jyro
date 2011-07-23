@@ -71,7 +71,7 @@ public class ScriptWorker extends Worker {
 		ScriptEngineManager manager = new ScriptEngineManager(loader);
 		for(ScriptEngineFactory f: manager.getEngineFactories()){
 			logger.debug(String.format(
-				"%s %s (%s %s); name=%s, mime-type=%s, ext=%s",
+				"available %s %s (%s %s); name=%s, mime-type=%s, ext=%s",
 				f.getLanguageName(), f.getLanguageVersion(),
 				f.getEngineName(), f.getEngineVersion(),
 				f.getNames(), f.getMimeTypes(), f.getExtensions()));
@@ -109,6 +109,8 @@ public class ScriptWorker extends Worker {
 				// evaluate source file
 				engine.put(ScriptEngine.FILENAME, src.getAbsolutePath());
 				engine.eval(in);
+
+				logger.debug("load script " + src + ",charset=" + charset);
 			} catch(FileNotFoundException ex){
 				logger.warn("script file not found: " + src);
 			} catch(Exception ex){

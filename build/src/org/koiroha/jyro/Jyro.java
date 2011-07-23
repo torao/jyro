@@ -56,7 +56,7 @@ public final class Jyro {
 	// Build Number
 	// ======================================================================
 	/**
-	 * Read build number from application bundle resource and return.
+	 * The build number of current Jyro module.
 	 */
 	public static final String BUILD;
 
@@ -64,7 +64,8 @@ public final class Jyro {
 	// Variable Name
 	// ======================================================================
 	/**
-	 * Common variable name for Jyro home directory.
+	 * Common variable name to find Jyro home directory from system
+	 * properties.
 	 */
 	public static final String JYRO_HOME = "jyro.home";
 
@@ -85,14 +86,12 @@ public final class Jyro {
 	}
 
 	// ======================================================================
-	// コンストラクタ
+	// Constructor
 	// ======================================================================
 	/**
-	 * コンストラクタは何も行いません。
-	 * <p>
+	 * Constructor is hidden in class.
 	 */
-	public Jyro() {
-		// TODO 自動生成されたコンストラクター・スタブ
+	private Jyro() {
 		return;
 	}
 

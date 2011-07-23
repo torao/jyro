@@ -66,6 +66,32 @@ public class NodeImpl {
 	/**
 	 * Job queue for workers.
 	 */
+	private final JobQueueImpl jobQueue;
+
+	// ======================================================================
+	// Job Queue
+	// ======================================================================
+	/**
+	 * Job queue for workers.
+	 */
+	private final JobListener listener = new JobListener() {
+		@Override
+		public void received(Job job) {
+			try {
+				post(job);
+			} catch(JyroException ex){
+				logger.fatal(getId() + ": fail to post job: " + job, ex);
+			}
+			return;
+		}
+	};
+
+	// ======================================================================
+	// Job Queue
+	// ======================================================================
+	/**
+	 * Job queue for workers.
+	 */
 	private final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>();
 
 	// ======================================================================
@@ -164,19 +190,21 @@ public class NodeImpl {
 	 * @param id task name of this node
 	 * @param loader class loader of this node
 	 */
-	public NodeImpl(String id, ClassLoader loader, Worker proc) {
+	public NodeImpl(String id, ClassLoader loader, JobQueueImpl queue, Worker proc) {
 		assert(id != null);
 		assert(loader != null);
 		assert(proc != null);
 		this.id = id;
 		this.loader = loader;
 		this.worker = proc;
+		this.jobQueue = queue;
 
 		// create load average calculator
-		this.loadAverage = new LoadAverage(queue);
+		this.loadAverage = new LoadAverage(this.queue);
 		this.loadAverage.start();
 
 		this.threadGroup = new ThreadGroup(id);
+
 		return;
 	}
 
@@ -411,8 +439,14 @@ public class NodeImpl {
 	*/
 	public void start(){
 		logger.debug("start node " + getId());
+
+		// start thread pool
 		threads = new ThreadPoolExecutor(minimumWorkers, maximumWorkers, 10, TimeUnit.SECONDS, queue);
 		threads.setThreadFactory(new NodeThreadFactory());
+
+		// start queuing
+		jobQueue.addJobQueueListener(listener);
+		jobQueue.start();
 		return;
 	}
 
@@ -424,6 +458,12 @@ public class NodeImpl {
 	*/
 	public void stop(){
 		logger.debug("stop node " + getId());
+
+		// stop queuing
+		jobQueue.stop();
+		jobQueue.removeJobQueueListener(listener);
+
+		// shutdown thread pool
 		threads.shutdown();
 		threads = null;
 		return;

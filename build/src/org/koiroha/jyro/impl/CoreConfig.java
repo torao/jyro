@@ -69,12 +69,12 @@ final class CoreConfig implements WorkerContext {
 	private final Properties param;
 
 	// ======================================================================
-	// Queues
+	// Job Queue Factory
 	// ======================================================================
 	/**
-	 * Queue map.
+	 * Job queue factory.
 	 */
-	private final Map<String,JobQueueImpl> queues = new HashMap<String,JobQueueImpl>();
+	private final JobQueueFactory factory;
 
 	// ======================================================================
 	// Nodes
@@ -146,10 +146,7 @@ final class CoreConfig implements WorkerContext {
 		}
 		this.param = jyroConfig.getProperties(init);
 
-		// build queues on this core
-		for(JobQueueImpl queue: jyroConfig.getQueues()){
-			queues.put(queue.getId(), queue);
-		}
+		this.factory = jyroConfig.getQueueFactory();
 
 		// build nodes on this core
 		for(NodeImpl node: jyroConfig.getNodes()){
@@ -178,8 +175,8 @@ final class CoreConfig implements WorkerContext {
 	 * @param id ID of queue
 	 * @return home directory
 	 */
-	public JobQueueImpl getQueue(String id) {
-		return queues.get(id);
+	public JobQueue getQueue(String id) throws JyroException{
+		return factory.lookup(id);
 	}
 
 	// ======================================================================
@@ -239,11 +236,6 @@ final class CoreConfig implements WorkerContext {
 	 */
 	public void startup() throws JyroException {
 		logger.debug("startup()");
-
-		// start all queues
-		for(JobQueueImpl n: queues.values()){
-			n.start();
-		}
 
 		// start all nodes
 		for(NodeImpl n: nodes.values()){
@@ -490,21 +482,33 @@ final class CoreConfig implements WorkerContext {
 		}
 
 		// ==================================================================
-		// Retrieve Queues
+		// Retrieve Job Queue Factory
 		// ==================================================================
 		/**
-		 * Retrieve queues defined in this confugration.
+		 * Retrieve job queue factory.
 		 *
-		 * @return list of queues
+		 * @return job queue factory
+		 * @throws JyroException
 		 */
-		public Iterable<JobQueueImpl> getQueues(){
-			List<JobQueueImpl> list = new ArrayList<JobQueueImpl>();
-			for(Element elem: elemset("j:jyro/j:queue")){
-				String id = f(elem.getAttribute("id"));
-				JobQueueImpl queue = new LocalJobQueue(id);
-				list.add(queue);
+		public JobQueueFactory getQueueFactory() throws JyroException {
+			Element elem = elem("j:jyro/j:queue");
+			if(elem == null){
+				return new JVMJobQueueFactory();
 			}
-			return list;
+			String factoryName = elem.getAttribute("factory");
+			JobQueueFactory factory = null;
+			if(factoryName.equals("jvm")){
+				factory = new JVMJobQueueFactory();
+				// TODO JMSJobQueueFactory
+			} else {
+				factory = (JobQueueFactory)Beans.newInstance(loader, factoryName);
+			}
+			for(Element prop: elemset("j:jyro/j:queue/j:property")){
+				String name = prop.getAttribute("name");
+				String value = f(prop.getAttribute("value"));
+				Beans.setProperty(factory, name, value);
+			}
+			return factory;
 		}
 
 		// ==================================================================
@@ -561,7 +565,7 @@ final class CoreConfig implements WorkerContext {
 			worker.init(CoreConfig.this);
 
 			// create node implementation
-			NodeImpl node = new NodeImpl(id, loader, worker);
+			NodeImpl node = new NodeImpl(id, loader, factory.create(id), worker);
 
 			// set minimum thread-pool size
 			if(wk.hasAttribute("min")){

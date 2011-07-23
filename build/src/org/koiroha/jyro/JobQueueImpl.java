@@ -7,12 +7,11 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro.impl;
+package org.koiroha.jyro;
 
 import java.util.*;
 
 import org.apache.log4j.*;
-import org.koiroha.jyro.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // JobQueueImpl: Job Queue Implementation
