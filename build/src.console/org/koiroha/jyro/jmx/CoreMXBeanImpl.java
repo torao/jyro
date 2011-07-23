@@ -11,6 +11,7 @@
 package org.koiroha.jyro.jmx;
 
 import org.koiroha.jyro.*;
+import org.koiroha.jyro.impl.*;
 
 
 

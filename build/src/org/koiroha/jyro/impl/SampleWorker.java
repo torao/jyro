@@ -8,67 +8,47 @@
  *                                                       http://www.moyo.biz/
  * $Id:$
 */
-package org.koiroha.jyro;
+package org.koiroha.jyro.impl;
 
-import java.util.concurrent.*;
+import org.koiroha.jyro.*;
 
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// LocalJobQueue: Local Job Queue
+// SampleWorker: Sample Worker
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Queue implementation for local Java VM.
+ * Sample worker
  * <p>
  * @version $Revision:$
  * @author torao
- * @since 2011/07/06 Java SE 6
+ * @since 2011/07/03 Java SE 6
  */
-public class LocalJobQueue extends JobQueueImpl {
-
-	// ======================================================================
-	// Queue
-	// ======================================================================
-	/**
-	 * Queue map of current Java VM.
-	*/
-	private final BlockingQueue<Job> queue;
+public class SampleWorker implements Worker {
 
 	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
-	 * @param id id of this queue.
 	 */
-	public LocalJobQueue(String id) {
-		super(id);
-		this.queue = new LinkedBlockingQueue<Job>();
+	public SampleWorker() {
 		return;
 	}
 
 	// ======================================================================
-	// Post Job
+	//
 	// ======================================================================
 	/**
-	 * Post specified job to this queue.
-	*/
-	@Override
-	public void post(Job job) {
-		queue.offer(job);
-		return;
-	}
-
-	// ======================================================================
-	// Receive Job
-	// ======================================================================
-	/**
-	 * Receive job from this queue.
 	 *
-	 * @throws InterruptedException thread interrupted while waiting job
-	*/
+	 * <p>
+	 * @param job job argument
+	 * @return result
+	 */
 	@Override
-	public Job receive() throws InterruptedException {
-		return queue.take();
+	public Object exec(Job job) {
+		long sum = 0;
+		try { Thread.sleep(10000); } catch(InterruptedException e){/* */}
+		return sum;
 	}
 
 }

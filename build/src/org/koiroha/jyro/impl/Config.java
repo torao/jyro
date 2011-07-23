@@ -7,9 +7,9 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro;
+package org.koiroha.jyro.impl;
 
-import static org.koiroha.jyro.JyroCore.*;
+import static org.koiroha.jyro.impl.JyroCore.*;
 
 import java.io.*;
 import java.net.*;
@@ -18,6 +18,7 @@ import java.util.*;
 import javax.xml.parsers.*;
 
 import org.apache.log4j.Logger;
+import org.koiroha.jyro.*;
 import org.koiroha.jyro.util.*;
 import org.koiroha.jyro.util.Text;
 import org.w3c.dom.*;

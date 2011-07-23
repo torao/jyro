@@ -7,13 +7,14 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro;
+package org.koiroha.jyro.impl;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
+import org.koiroha.jyro.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // JyroCore: Node Container

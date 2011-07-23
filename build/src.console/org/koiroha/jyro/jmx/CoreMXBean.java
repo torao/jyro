@@ -12,7 +12,7 @@ package org.koiroha.jyro.jmx;
 
 import javax.management.MXBean;
 
-import org.koiroha.jyro.JyroCore;
+import org.koiroha.jyro.impl.JyroCore;
 
 
 

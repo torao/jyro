@@ -18,6 +18,7 @@ import javax.management.*;
 
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
+import org.koiroha.jyro.impl.*;
 
 
 
@@ -86,7 +87,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	/**
 	 * Jyro instance to watch on JMX.
 	 */
-	private Jyro jyro = null;
+	private JyroImpl jyro = null;
 
 	// ======================================================================
 	// MBean Prefix
@@ -148,7 +149,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	 *
 	 * @return Jyro instance
 	 */
-	public Jyro getJyro(){
+	public JyroImpl getJyro(){
 		return jyro;
 	}
 
@@ -241,7 +242,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 		// startup watchdog
 		if(watchdog == null){
 			watchdog = new Watchdog();
-			Jyro.TIMER.scheduleAtFixedRate(watchdog, modificationDetect, modificationDetect);
+			JyroImpl.TIMER.scheduleAtFixedRate(watchdog, modificationDetect, modificationDetect);
 			logger.debug("start modification detect and reload watchdog");
 		}
 		return;
@@ -428,7 +429,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	 */
 	private void load() throws JyroException{
 		assert(this.jyro == null);
-		this.jyro = new Jyro(name, dir, parent, prop);
+		this.jyro = new JyroImpl(name, dir, parent, prop);
 		return;
 	}
 

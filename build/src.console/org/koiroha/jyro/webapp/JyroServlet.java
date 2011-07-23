@@ -20,8 +20,8 @@ import javax.xml.transform.stream.*;
 
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
+import org.koiroha.jyro.impl.*;
 import org.koiroha.jyro.jmx.JyroMXBeanImpl;
-import org.koiroha.jyro.snapshot.Snapshot;
 import org.koiroha.jyro.util.IO;
 import org.w3c.dom.Document;
 

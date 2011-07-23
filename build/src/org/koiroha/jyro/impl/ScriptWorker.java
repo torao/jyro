@@ -7,13 +7,14 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro;
+package org.koiroha.jyro.impl;
 
 import java.io.*;
 
 import javax.script.*;
 
 import org.apache.log4j.Logger;
+import org.koiroha.jyro.*;
 import org.koiroha.jyro.util.IO;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

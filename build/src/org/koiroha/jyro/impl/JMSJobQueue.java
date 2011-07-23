@@ -8,11 +8,12 @@
  *                                                       http://www.moyo.biz/
  * $Id:$
 */
-package org.koiroha.jyro;
+package org.koiroha.jyro.impl;
 
 import javax.jms.*;
 
 import org.apache.log4j.Logger;
+import org.koiroha.jyro.*;
 
 
 
