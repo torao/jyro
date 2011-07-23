@@ -34,7 +34,7 @@ import org.xml.sax.SAXException;
  * @author torao
  * @since 2011/07/03 Java SE 6
  */
-final class Config {
+final class Config implements WorkerContext {
 
 	// ======================================================================
 	// Log Output
@@ -268,6 +268,25 @@ final class Config {
 			n.stop();
 		}
 
+		return;
+	}
+
+	// ======================================================================
+	//
+	// ======================================================================
+	/**
+	 *
+	 * @param nodeId
+	 * @param job
+	 * @throws JyroException
+	 */
+	@Override
+	public void send(String nodeId, Job job) throws JyroException {
+		JobQueue queue = getQueue(nodeId);
+		if(queue == null){
+			throw new JyroException("no such worker node: " + nodeId);
+		}
+		queue.post(job);
 		return;
 	}
 
@@ -538,6 +557,9 @@ final class Config {
 				} else {
 					throw new JyroException("no worker found in node definition: " + id);
 				}
+			}
+			if(worker instanceof AbstractWorker){
+				((AbstractWorker)worker).init(Config.this);
 			}
 
 			// create node implementation

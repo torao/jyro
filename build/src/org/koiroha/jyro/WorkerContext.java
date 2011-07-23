@@ -34,6 +34,6 @@ public interface WorkerContext {
 	 * @param job job to send
 	 * @throws JyroException jyro
 	*/
-	public void post(String nodeId, Job job) throws JyroException;
+	public void send(String nodeId, Job job) throws JyroException;
 
 }

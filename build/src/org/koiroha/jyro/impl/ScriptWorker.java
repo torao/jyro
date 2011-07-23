@@ -52,7 +52,7 @@ public class ScriptWorker extends AbstractWorker {
 	/**
 	 * Function name to call script.
 	 */
-	private final String function = "main";
+	private final String function = "receive";
 
 	// ======================================================================
 	// Constructor
@@ -139,7 +139,25 @@ public class ScriptWorker extends AbstractWorker {
 	 * @throws WorkerException fail to execute script
 	*/
 	@Override
-	public Object exec(Job job) throws WorkerException {
+	public void init(WorkerContext context){
+		super.init(context);
+		((ScriptEngine)engine).put("jyro", context);
+		return;
+	}
+
+	// ======================================================================
+	// Execute Process
+	// ======================================================================
+	/**
+	 * Execute this process with specified arguments. This method called in
+	 * multi-thread environment.
+	 *
+	 * @param job job argument
+	 * @return script result
+	 * @throws WorkerException fail to execute script
+	*/
+	@Override
+	public Object receive(Job job) throws WorkerException {
 		try {
 			return engine.invokeFunction(function, job);
 		} catch(NoSuchMethodException ex){

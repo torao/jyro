@@ -463,7 +463,7 @@ public class Node {
 		long start = rb.getUptime();
 		Object result = null;
 		try {
-			result = worker.exec(job);
+			result = worker.receive(job);
 			totalJobCount ++;
 			totalJobTime += rb.getUptime() - start;
 		} catch(WorkerException ex){

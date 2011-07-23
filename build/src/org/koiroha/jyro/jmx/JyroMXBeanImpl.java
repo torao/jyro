@@ -17,7 +17,7 @@ import java.util.*;
 import javax.management.*;
 
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.*;
+import org.koiroha.jyro.JyroException;
 import org.koiroha.jyro.impl.*;
 
 
@@ -310,7 +310,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 
 		} catch(Exception ex){
 			logger.error("fail to reload jyro configuration", ex);
-			throw new IllegalStateException(ex.toString());
+			throw new IllegalStateException(ex.toString(), ex);
 		}
 
 		return;

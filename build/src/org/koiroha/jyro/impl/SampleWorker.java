@@ -45,7 +45,7 @@ public class SampleWorker extends AbstractWorker {
 	 * @return result
 	 */
 	@Override
-	public Object exec(Job job) {
+	public Object receive(Job job) {
 		long sum = 0;
 		try { Thread.sleep(10000); } catch(InterruptedException e){/* */}
 		return sum;

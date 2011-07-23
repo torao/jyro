@@ -32,6 +32,6 @@ public interface Worker {
 	 * @return result
 	 * @throws WorkerException if error in worker
 	*/
-	public Object exec(Job job) throws WorkerException;
+	public Object receive(Job job) throws WorkerException;
 
 }
