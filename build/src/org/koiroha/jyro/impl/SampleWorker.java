@@ -24,7 +24,7 @@ import org.koiroha.jyro.*;
  * @author torao
  * @since 2011/07/03 Java SE 6
  */
-public class SampleWorker implements Worker {
+public class SampleWorker extends AbstractWorker {
 
 	// ======================================================================
 	// Constructor
