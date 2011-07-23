@@ -191,7 +191,7 @@ public class JyroServlet extends HttpServlet {
 			if(l == null){
 				l = Locale.getDefault();
 			}
-			Document doc = new Snapshot(l).makeSnapshot(jyro);
+			Document doc = new Snapshot(l).makeSnapshot(mxbean);
 
 			String prefix = "/status_" + IO.getExtension(pathInfo);
 			if(! send(response, doc, prefix)){
@@ -206,7 +206,7 @@ public class JyroServlet extends HttpServlet {
 				String n = request.getParameter("node");
 				String j = request.getParameter("job");
 				Job job = Job.parse(j);
-				JyroCore core = jyro.getCore("default");
+				JyroCore core = mxbean.getCore("default");
 				Node node = core.getNode(n);
 				node.post(job);
 				response.setStatus(HttpServletResponse.SC_NO_CONTENT);
