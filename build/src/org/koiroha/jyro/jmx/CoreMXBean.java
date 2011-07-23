@@ -12,7 +12,7 @@ package org.koiroha.jyro.jmx;
 
 import javax.management.MXBean;
 
-import org.koiroha.jyro.impl.JyroCore;
+import org.koiroha.jyro.impl.CoreImpl;
 
 
 
@@ -20,7 +20,7 @@ import org.koiroha.jyro.impl.JyroCore;
 // CoreMXBean: Core MXBean
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * MXBean interface to manage {@link JyroCore} outside.
+ * MXBean interface to manage {@link CoreImpl} outside.
  *
  * @version $Revision:$
  * @author torao

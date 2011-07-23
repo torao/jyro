@@ -9,7 +9,7 @@
  */
 package org.koiroha.jyro.impl;
 
-import static org.koiroha.jyro.impl.JyroCore.*;
+import static org.koiroha.jyro.impl.CoreImpl.*;
 
 import java.io.*;
 import java.net.*;
@@ -25,16 +25,16 @@ import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Config: Configuration for JyroCore
+// CoreConfig: Configuration for JyroCore
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Configuration class to build {@link JyroCore} instance.
+ * Configuration class to build {@link CoreImpl} instance.
  *
  * @version $Revision:$ $Date:$
  * @author torao
  * @since 2011/07/03 Java SE 6
  */
-final class Config implements WorkerContext {
+final class CoreConfig implements WorkerContext {
 
 	// ======================================================================
 	// Log Output
@@ -42,7 +42,7 @@ final class Config implements WorkerContext {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(Config.class);
+	private static final Logger logger = Logger.getLogger(CoreConfig.class);
 
 	// ======================================================================
 	// Generic Use Timer
@@ -82,7 +82,7 @@ final class Config implements WorkerContext {
 	/**
 	 * Node map.
 	 */
-	private final Map<String,Node> nodes = new HashMap<String,Node>();
+	private final Map<String,NodeImpl> nodes = new HashMap<String,NodeImpl>();
 
 	// ======================================================================
 	// ClassLoader
@@ -120,7 +120,7 @@ final class Config implements WorkerContext {
 	 * @param init init properties
 	 * @throws JyroException if fail to load configuration
 	 */
-	public Config(File dir, ClassLoader parent, Properties init) throws JyroException {
+	public CoreConfig(File dir, ClassLoader parent, Properties init) throws JyroException {
 		this.dir = dir;
 
 		// determine default class loader if specified value is null
@@ -152,7 +152,7 @@ final class Config implements WorkerContext {
 		}
 
 		// build nodes on this core
-		for(Node node: jyroConfig.getNodes()){
+		for(NodeImpl node: jyroConfig.getNodes()){
 			nodes.put(node.getId(), node);
 		}
 		return;
@@ -189,8 +189,8 @@ final class Config implements WorkerContext {
 	 *
 	 * @return nodes
 	 */
-	public Iterable<Node> getNodes() {
-		return new ArrayList<Node>(nodes.values());
+	public Iterable<NodeImpl> getNodes() {
+		return new ArrayList<NodeImpl>(nodes.values());
 	}
 
 	// ======================================================================
@@ -201,7 +201,7 @@ final class Config implements WorkerContext {
 	 * @param id ID of queue
 	 * @return home directory
 	 */
-	public Node getNode(String id) {
+	public NodeImpl getNode(String id) {
 		return nodes.get(id);
 	}
 
@@ -246,7 +246,7 @@ final class Config implements WorkerContext {
 		}
 
 		// start all nodes
-		for(Node n: nodes.values()){
+		for(NodeImpl n: nodes.values()){
 			n.start();
 		}
 		return;
@@ -264,7 +264,7 @@ final class Config implements WorkerContext {
 		logger.debug("shutdown()");
 
 		// stop all nodes
-		for(Node n: nodes.values()){
+		for(NodeImpl n: nodes.values()){
 			n.stop();
 		}
 
@@ -457,7 +457,7 @@ final class Config implements WorkerContext {
 		 */
 		public JyroConfig(Document doc) {
 			super(doc);
-			setNamespaceURI("j", JyroCore.XMLNS10);
+			setNamespaceURI("j", CoreImpl.XMLNS10);
 			return;
 		}
 
@@ -516,10 +516,10 @@ final class Config implements WorkerContext {
 		 * @return list of queues
 		 * @throws JyroException if fail to build node
 		 */
-		public Iterable<Node> getNodes() throws JyroException {
-			List<Node> list = new ArrayList<Node>();
+		public Iterable<NodeImpl> getNodes() throws JyroException {
+			List<NodeImpl> list = new ArrayList<NodeImpl>();
 			for(Element elem: elemset("j:jyro/j:node")){
-				Node node = buildNode(elem);
+				NodeImpl node = buildNode(elem);
 				list.add(node);
 			}
 			return list;
@@ -535,7 +535,7 @@ final class Config implements WorkerContext {
 		 * @return Jyro instance
 		 * @throws JyroException fail to build node
 		 */
-		private Node buildNode(Element elem) throws JyroException {
+		private NodeImpl buildNode(Element elem) throws JyroException {
 
 			// retrieve task name
 			String id = f(elem.getAttribute("id"));
@@ -558,12 +558,10 @@ final class Config implements WorkerContext {
 					throw new JyroException("no worker found in node definition: " + id);
 				}
 			}
-			if(worker instanceof AbstractWorker){
-				((AbstractWorker)worker).init(Config.this);
-			}
+			worker.init(CoreConfig.this);
 
 			// create node implementation
-			Node node = new Node(id, loader, worker);
+			NodeImpl node = new NodeImpl(id, loader, worker);
 
 			// set minimum thread-pool size
 			if(wk.hasAttribute("min")){

@@ -18,7 +18,7 @@ import org.koiroha.jyro.impl.*;
 // CoreMXBeanImpl: Core MXBean Implementation
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Implementation of Core MXBean. The this refers {@link JyroCore} instance
+ * Implementation of Core MXBean. The this refers {@link CoreImpl} instance
  * by core name. It means that the same CoreMXBean will be used if core
  * reloaded and change instance.
  *
@@ -133,7 +133,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	@Override
 	public int getActiveWorkers(){
 		int count = 0;
-		for(Node node: getCore().getNodes()){
+		for(NodeImpl node: getCore().getNodes()){
 			count += node.getActiveWorkers();
 		}
 		return count;
@@ -145,7 +145,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	@Override
 	public double getLoadAverage1Min() {
 		double la = 0.0;
-		for(Node node: getCore().getNodes()){
+		for(NodeImpl node: getCore().getNodes()){
 			la += node.getLoadAverage()[0];
 		}
 		return la;
@@ -157,7 +157,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	@Override
 	public double getLoadAverage5Min() {
 		double la = 0.0;
-		for(Node node: getCore().getNodes()){
+		for(NodeImpl node: getCore().getNodes()){
 			la += node.getLoadAverage()[1];
 		}
 		return la;
@@ -169,7 +169,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	@Override
 	public double getLoadAverage15Min() {
 		double la = 0.0;
-		for(Node node: getCore().getNodes()){
+		for(NodeImpl node: getCore().getNodes()){
 			la += node.getLoadAverage()[2];
 		}
 		return la;
@@ -183,7 +183,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	 *
 	 * @return jyro core
 	*/
-	private JyroCore getCore(){
+	private CoreImpl getCore(){
 		return mxbean.getJyro().getCore(name);
 	}
 

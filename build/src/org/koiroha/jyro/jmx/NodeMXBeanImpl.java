@@ -12,7 +12,7 @@ package org.koiroha.jyro.jmx;
 
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
-import org.koiroha.jyro.impl.Node;
+import org.koiroha.jyro.impl.NodeImpl;
 import org.koiroha.jyro.util.ParseException;
 
 
@@ -335,7 +335,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 *
 	 * @return node
 	*/
-	private Node getNode(){
+	private NodeImpl getNode(){
 		return mxbean.getJyro().getCore(core).getNode(node);
 	}
 

@@ -206,8 +206,8 @@ public class JyroServlet extends HttpServlet {
 				String n = request.getParameter("node");
 				String j = request.getParameter("job");
 				Job job = Job.parse(j);
-				JyroCore core = mxbean.getCore("default");
-				Node node = core.getNode(n);
+				CoreImpl core = mxbean.getCore("default");
+				NodeImpl node = core.getNode(n);
 				node.post(job);
 				response.setStatus(HttpServletResponse.SC_NO_CONTENT);
 			} catch(Exception ex){

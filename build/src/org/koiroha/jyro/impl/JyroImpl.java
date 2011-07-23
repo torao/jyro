@@ -16,7 +16,7 @@ import org.apache.log4j.Logger;
 import org.koiroha.jyro.JyroException;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Jyro: Jyro Container
+// JyroImpl: Jyro Container
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  * Jyro container to host multi instance.
@@ -39,7 +39,7 @@ public class JyroImpl {
 	/**
 	 * The timer to detect modification and reload for cores.
 	 */
-	public static final Timer TIMER = Config.TIMER;
+	public static final Timer TIMER = CoreConfig.TIMER;
 
 	// ======================================================================
 	// Name
@@ -55,7 +55,7 @@ public class JyroImpl {
 	/**
 	 * The map of all JyroCore instance.
 	 */
-	private final Map<String,JyroCore> cores = new HashMap<String,JyroCore>();
+	private final Map<String,CoreImpl> cores = new HashMap<String,CoreImpl>();
 
 	// ======================================================================
 	// Directory
@@ -95,7 +95,7 @@ public class JyroImpl {
 					logger.debug(". directory ignored: " + names[i]);
 					continue;
 				}
-				JyroCore core = new JyroCore(names[i], file, parent, prop);
+				CoreImpl core = new CoreImpl(names[i], file, parent, prop);
 				cores.put(names[i], core);
 			}
 		}
@@ -141,8 +141,8 @@ public class JyroImpl {
 	 *
 	 * @return jyro cores
 	 */
-	public Iterable<JyroCore> getCores(){
-		return new ArrayList<JyroCore>(cores.values());
+	public Iterable<CoreImpl> getCores(){
+		return new ArrayList<CoreImpl>(cores.values());
 	}
 
 	// ======================================================================
@@ -154,7 +154,7 @@ public class JyroImpl {
 	 * @param name core name
 	 * @return jyro core
 	 */
-	public JyroCore getCore(String name){
+	public CoreImpl getCore(String name){
 		return cores.get(name);
 	}
 
@@ -175,7 +175,7 @@ public class JyroImpl {
 
 		// startup all cores
 		for(String name: names){
-			JyroCore core = cores.get(name);
+			CoreImpl core = cores.get(name);
 			core.startup();
 		}
 		return;
@@ -198,7 +198,7 @@ public class JyroImpl {
 
 		// shutdown all cores.
 		for(String name: names){
-			JyroCore core = cores.get(name);
+			CoreImpl core = cores.get(name);
 			core.shutdown();
 		}
 

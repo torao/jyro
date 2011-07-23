@@ -17,7 +17,7 @@ import org.apache.log4j.*;
 import org.koiroha.jyro.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Node:
+// NodeImpl:
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  *
@@ -26,7 +26,7 @@ import org.koiroha.jyro.*;
  * @author torao
  * @since 2011/07/01 Java SE 6
  */
-public class Node {
+public class NodeImpl {
 
 	// ======================================================================
 	// Log Output
@@ -34,7 +34,7 @@ public class Node {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(Node.class);
+	private static final Logger logger = Logger.getLogger(NodeImpl.class);
 
 	// ======================================================================
 	// Task Name
@@ -164,7 +164,7 @@ public class Node {
 	 * @param id task name of this node
 	 * @param loader class loader of this node
 	 */
-	public Node(String id, ClassLoader loader, Worker proc) {
+	public NodeImpl(String id, ClassLoader loader, Worker proc) {
 		assert(id != null);
 		assert(loader != null);
 		assert(proc != null);
@@ -509,7 +509,7 @@ public class Node {
 			}
 
 			// create new thread and set attributes
-			String name = Node.this.id + "-" + num;
+			String name = NodeImpl.this.id + "-" + num;
 			Thread thread = null;
 			if(stackSize >= 0){
 				thread = new Thread(threadGroup, r, name, stackSize);

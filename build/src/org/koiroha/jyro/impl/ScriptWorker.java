@@ -28,7 +28,7 @@ import org.koiroha.jyro.util.IO;
  * @author torao
  * @since 2011/07/02 Java SE 6
  */
-public class ScriptWorker extends AbstractWorker {
+public class ScriptWorker extends Worker {
 
 	// ======================================================================
 	// Log Output

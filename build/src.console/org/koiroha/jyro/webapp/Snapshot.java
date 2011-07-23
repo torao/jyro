@@ -87,7 +87,7 @@ public final class Snapshot {
 		doc.appendChild(root);
 
 		// append cores
-		for(JyroCore core: jyro.getCores()){
+		for(CoreImpl core: jyro.getCores()){
 			root.appendChild(createCore(core));
 		}
 		return this.doc;
@@ -102,11 +102,11 @@ public final class Snapshot {
 	 * @param core jyro core
 	 * @return core element
 	 */
-	private Element createCore(JyroCore core){
+	private Element createCore(CoreImpl core){
 		Element elem = doc.createElement("core");
 		elem.appendChild(createProperty("name", core.getName()));
 		elem.appendChild(createUptimeProperty("uptime", core.getUptime()));
-		for(org.koiroha.jyro.impl.Node node: core.getNodes()){
+		for(org.koiroha.jyro.impl.NodeImpl node: core.getNodes()){
 			elem.appendChild(createNode(node));
 		}
 		return elem;
@@ -121,7 +121,7 @@ public final class Snapshot {
 	 * @param node Node instance
 	 * @return node element
 	 */
-	private Element createNode(org.koiroha.jyro.impl.Node node){
+	private Element createNode(org.koiroha.jyro.impl.NodeImpl node){
 		Element elem = doc.createElement("node");
 		elem.appendChild(createProperty("id", node.getId()));
 		elem.appendChild(createProperty("minimumWorkers", node.getMinimumWorkers()));
