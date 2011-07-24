@@ -2,12 +2,12 @@
 <web-app xmlns="http://java.sun.com/xml/ns/javaee"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
-      version="3.0"> 
+      version="3.0">
       
   <servlet>
    <display-name>Jyro Servlet</display-name>
    <servlet-name>JyroAPI</servlet-name>
-   <servlet-class>org.koiroha.jyro.webapp.JyroServlet</servlet-class>
+   <servlet-class>org.koiroha.jyro.env.webapp.JyroServlet</servlet-class>
    <init-param>
      <param-name>jyro.home</param-name>
      <param-value>WEB-INF/jyro</param-value>

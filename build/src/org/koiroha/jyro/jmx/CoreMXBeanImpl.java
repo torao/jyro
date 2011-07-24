@@ -189,13 +189,16 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	 * @param job job content
 	 * @throws JyroException if fail to post job
 	*/
+	@Override
 	public void post(String nodeId, String job) throws JyroException, ParseException {
 		Job j = Job.parse(job);
 		getCore().post(nodeId, j);
 		return;
 	}
 
-	// TODO How to describe MBeanOperationInfo?
+	/**
+	 * TODO How to describe MBeanOperationInfo?
+	 */
 	protected MBeanOperationInfo[] createMBeanOperationInfo(){
 		return new MBeanOperationInfo[] {
 			new MBeanOperationInfo("post", "post specified job to this core", new MBeanParameterInfo[]{

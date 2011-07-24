@@ -1,36 +1,38 @@
 
-
-function update(){
-    $.ajax({
-        type: "GET",
-        url: "console/status",
-        cache: false,
-        success: function(result){
-            var servers = eval(result);
-            for(server in servers){
-                for(instance in server.instances){
-                    for(queue in instance.queues){
-                    }
-                    for(node in instance.nodes){
-                    }
-                }
-            }
-        }
-    });
+function reset_core(){
+	var core = $("#core");
+	core.empty();
+	$.getJSON("api/", function(names){
+		for(var i=0; i<names.length; i++){
+			core.append("<option value=\"" + names[i] + "\">" + names[i] + "</option>");
+		}
+		reset_node();
+	});
     return;
 }
 
-function reload(){
-	$.get("api/status.html", function(html){
-		$("#main").empty();
-		$("#main").append(html);
-	});
+function reset_node(){
+	var core = $("#core option:selected").val();
+	var node = $("#node");
+	node.empty();
+	if(core != ""){
+		$.getJSON("api/" + core, function(names){
+			for(var i=0; i<names.length; i++){
+				node.append("<option value=\"" + names[i] + "\">" + names[i] + "</option>");
+			}
+		});
+	}
+    return;
 }
 
-function post_job(job){
-	$.post("api/post", job, function(){
+function post_job(){
+	var core = $("#core option:selected").val();
+	var node = $("#node option:selected").val();
+	var job = $("#job").val();
+	$.post("api/" + core + "/" + node, {"job":job}, function(){
 		reload();
 	});
 }
 
-$(window).load(reload);
+$(window).load(reset_core);
+

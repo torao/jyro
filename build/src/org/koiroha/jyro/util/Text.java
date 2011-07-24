@@ -10,6 +10,7 @@
 package org.koiroha.jyro.util;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.regex.*;
 
@@ -334,6 +335,89 @@ public final class Text {
 			}
 		}
 		return out;
+	}
+
+	// ======================================================================
+	// JSON Output
+	// ======================================================================
+	/**
+	 * Literize specified text as JavaScript string. If null pass as text,
+	 * string "null" will append to out.
+	 *
+	 * @param out appendable to output
+	 * @param value output value
+	 * @return instance of out parameter
+	 * @throws IOException if fail to output
+	 */
+	public static Appendable json(Appendable out, Object value) throws IOException {
+		// TODO self-reference will cause stack overflow
+
+		// null value
+		if(value == null){
+			out.append("null");
+			return out;
+		}
+
+		// string
+		if(value instanceof String){
+			return literize(out, (String)value);
+		}
+
+		// number or boolean
+		if(value instanceof Number || value instanceof Boolean){
+			out.append(value.toString());
+			return out;
+		}
+
+		// array
+		if(value.getClass().isArray()){
+			out.append('[');
+			int len = Array.getLength(value);
+			for(int i=0; i<len; i++){
+				if(i != 0){
+					out.append(',');
+				}
+				json(out, Array.get(value, i));
+			}
+			out.append(']');
+			return out;
+		}
+
+		// iterable contains List
+		if(value instanceof Iterable){
+			out.append('[');
+			Iterator<?> it = ((Iterable<?>)value).iterator();
+			while(it.hasNext()){
+				json(out, it.next());
+				if(it.hasNext()){
+					out.append(',');
+				}
+			}
+			out.append(']');
+			return out;
+		}
+
+		// map
+		if(value instanceof Map<?,?>){
+			out.append('{');
+			Map<?,?> map = ((Map<?,?>)value);
+			Iterator<?> it = map.keySet().iterator();
+			while(it.hasNext()){
+				Object key = it.next();
+				Object val = map.get(key);
+				literize(out, String.valueOf(key));
+				out.append(':');
+				json(out, val);
+				if(it.hasNext()){
+					out.append(',');
+				}
+			}
+			out.append('}');
+			return out;
+		}
+
+		//
+		throw new IllegalArgumentException("unsupported json type: " + value.getClass().getName());
 	}
 
 }
