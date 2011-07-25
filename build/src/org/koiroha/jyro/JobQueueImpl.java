@@ -220,7 +220,7 @@ public abstract class JobQueueImpl implements JobQueue {
 		/**
 		 * Receive job and dispatch.
 		 *
-		 * @throws InterruptedException
+		 * @throws InterruptedException if interrupted to receive job
 		 */
 		private void dispatch() throws InterruptedException {
 			try {
@@ -239,6 +239,7 @@ public abstract class JobQueueImpl implements JobQueue {
 
 			} catch(JyroException ex){
 				logger.fatal("", ex);
+				logger.fatal("sleeping...");
 				Thread.sleep(3 * 1000);
 			}
 			return;

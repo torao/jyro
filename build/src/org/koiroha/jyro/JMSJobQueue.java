@@ -143,7 +143,12 @@ public class JMSJobQueue extends JobQueueImpl {
 	public void close() throws JyroException{
 
 		// set closed status first because normally exit should detect in receive()
-		this.closed = true;
+		synchronized(this){
+			if(this.closed){
+				return;
+			}
+			this.closed = true;
+		}
 
 		// close sender
 		try {
