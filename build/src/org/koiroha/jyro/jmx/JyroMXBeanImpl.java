@@ -17,7 +17,8 @@ import java.util.*;
 import javax.management.*;
 
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.*;
+import org.koiroha.jyro.JyroException;
+import org.koiroha.jyro.impl.*;
 
 
 
@@ -86,7 +87,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	/**
 	 * Jyro instance to watch on JMX.
 	 */
-	private Jyro jyro = null;
+	private JyroImpl jyro = null;
 
 	// ======================================================================
 	// MBean Prefix
@@ -148,7 +149,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	 *
 	 * @return Jyro instance
 	 */
-	public Jyro getJyro(){
+	public JyroImpl getJyro(){
 		return jyro;
 	}
 
@@ -208,8 +209,8 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	@Override
 	public int getActiveWorkers(){
 		int count = 0;
-		for(JyroCore core: jyro.getCores()){
-			for(Node node: core.getNodes()){
+		for(CoreImpl core: jyro.getCores()){
+			for(NodeImpl node: core.getNodes()){
 				count += node.getActiveWorkers();
 			}
 		}
@@ -241,7 +242,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 		// startup watchdog
 		if(watchdog == null){
 			watchdog = new Watchdog();
-			Jyro.TIMER.scheduleAtFixedRate(watchdog, modificationDetect, modificationDetect);
+			JyroImpl.TIMER.scheduleAtFixedRate(watchdog, modificationDetect, modificationDetect);
 			logger.debug("start modification detect and reload watchdog");
 		}
 		return;
@@ -309,7 +310,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 
 		} catch(Exception ex){
 			logger.error("fail to reload jyro configuration", ex);
-			throw new IllegalStateException(ex.toString());
+			throw new IllegalStateException(ex.toString(), ex);
 		}
 
 		return;
@@ -361,11 +362,11 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 			logger.debug("unregister MXBean: " + prefix);
 
 			// unregister all cores
-			for(JyroCore core: jyro.getCores()){
+			for(CoreImpl core: jyro.getCores()){
 				String cname = prefix + ",core=" + ObjectName.quote(core.getName());
 
 				// unregister each node instance
-				for(Node node: core.getNodes()){
+				for(NodeImpl node: core.getNodes()){
 					String nname = cname + ",node=" + ObjectName.quote(node.getId());
 					server.unregisterMBean(new ObjectName(nname));
 				}
@@ -393,7 +394,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	private void validateRegistration() throws InstanceAlreadyExistsException, MBeanRegistrationException, NotCompliantMBeanException, MalformedObjectNameException {
 		assert(Thread.holdsLock(this));
 		MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-		for(JyroCore core: getJyro().getCores()){
+		for(CoreImpl core: getJyro().getCores()){
 
 			// register core mxbean if it is not registered
 			ObjectName cname = new ObjectName(prefix + ",core=" + ObjectName.quote(core.getName()));
@@ -405,7 +406,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 			// TODO remove alread rejected cores
 
 			// register node mxbean if it is not registered
-			for(Node node: core.getNodes()){
+			for(NodeImpl node: core.getNodes()){
 				ObjectName nname = new ObjectName(cname + ",node=" + ObjectName.quote(node.getId()));
 				if(! server.isRegistered(nname)){
 					NodeMXBean nbean = new NodeMXBeanImpl(this, core.getName(), node.getId());
@@ -428,7 +429,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	 */
 	private void load() throws JyroException{
 		assert(this.jyro == null);
-		this.jyro = new Jyro(name, dir, parent, prop);
+		this.jyro = new JyroImpl(name, dir, parent, prop);
 		return;
 	}
 
@@ -444,7 +445,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 		 */
 		@Override
 		public void run(){
-			for(JyroCore core: jyro.getCores()){
+			for(CoreImpl core: jyro.getCores()){
 				if(core.isModified()){
 					logger.info("configuration modification detected, reload automatically");
 					reload();

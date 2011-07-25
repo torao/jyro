@@ -7,13 +7,14 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro;
+package org.koiroha.jyro.impl;
 
 import java.io.*;
 
 import javax.script.*;
 
 import org.apache.log4j.Logger;
+import org.koiroha.jyro.*;
 import org.koiroha.jyro.util.IO;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -27,7 +28,7 @@ import org.koiroha.jyro.util.IO;
  * @author torao
  * @since 2011/07/02 Java SE 6
  */
-public class ScriptWorker implements Worker {
+public class ScriptWorker extends Worker {
 
 	// ======================================================================
 	// Log Output
@@ -51,7 +52,7 @@ public class ScriptWorker implements Worker {
 	/**
 	 * Function name to call script.
 	 */
-	private final String function = "main";
+	private final String function = "receive";
 
 	// ======================================================================
 	// Constructor
@@ -70,7 +71,7 @@ public class ScriptWorker implements Worker {
 		ScriptEngineManager manager = new ScriptEngineManager(loader);
 		for(ScriptEngineFactory f: manager.getEngineFactories()){
 			logger.debug(String.format(
-				"%s %s (%s %s); name=%s, mime-type=%s, ext=%s",
+				"available %s %s (%s %s); name=%s, mime-type=%s, ext=%s",
 				f.getLanguageName(), f.getLanguageVersion(),
 				f.getEngineName(), f.getEngineVersion(),
 				f.getNames(), f.getMimeTypes(), f.getExtensions()));
@@ -108,6 +109,8 @@ public class ScriptWorker implements Worker {
 				// evaluate source file
 				engine.put(ScriptEngine.FILENAME, src.getAbsolutePath());
 				engine.eval(in);
+
+				logger.debug("load script " + src + ",charset=" + charset);
 			} catch(FileNotFoundException ex){
 				logger.warn("script file not found: " + src);
 			} catch(Exception ex){
@@ -138,7 +141,25 @@ public class ScriptWorker implements Worker {
 	 * @throws WorkerException fail to execute script
 	*/
 	@Override
-	public Object exec(Job job) throws WorkerException {
+	public void init(WorkerContext context){
+		super.init(context);
+		((ScriptEngine)engine).put("jyro", context);
+		return;
+	}
+
+	// ======================================================================
+	// Execute Process
+	// ======================================================================
+	/**
+	 * Execute this process with specified arguments. This method called in
+	 * multi-thread environment.
+	 *
+	 * @param job job argument
+	 * @return script result
+	 * @throws WorkerException fail to execute script
+	*/
+	@Override
+	public Object receive(Job job) throws WorkerException {
 		try {
 			return engine.invokeFunction(function, job);
 		} catch(NoSuchMethodException ex){

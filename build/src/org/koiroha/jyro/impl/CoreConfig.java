@@ -7,9 +7,9 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro;
+package org.koiroha.jyro.impl;
 
-import static org.koiroha.jyro.JyroCore.*;
+import static org.koiroha.jyro.impl.CoreImpl.*;
 
 import java.io.*;
 import java.net.*;
@@ -18,22 +18,23 @@ import java.util.*;
 import javax.xml.parsers.*;
 
 import org.apache.log4j.Logger;
+import org.koiroha.jyro.*;
 import org.koiroha.jyro.util.*;
 import org.koiroha.jyro.util.Text;
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Config: Configuration for JyroCore
+// CoreConfig: Configuration for JyroCore
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Configuration class to build {@link JyroCore} instance.
+ * Configuration class to build {@link CoreImpl} instance.
  *
  * @version $Revision:$ $Date:$
  * @author torao
  * @since 2011/07/03 Java SE 6
  */
-final class Config {
+final class CoreConfig implements WorkerContext {
 
 	// ======================================================================
 	// Log Output
@@ -41,7 +42,7 @@ final class Config {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(Config.class);
+	private static final Logger logger = Logger.getLogger(CoreConfig.class);
 
 	// ======================================================================
 	// Generic Use Timer
@@ -68,12 +69,12 @@ final class Config {
 	private final Properties param;
 
 	// ======================================================================
-	// Queues
+	// Job Queue Factory
 	// ======================================================================
 	/**
-	 * Queue map.
+	 * Job queue factory.
 	 */
-	private final Map<String,JobQueueImpl> queues = new HashMap<String,JobQueueImpl>();
+	private final JobQueueFactory factory;
 
 	// ======================================================================
 	// Nodes
@@ -81,7 +82,7 @@ final class Config {
 	/**
 	 * Node map.
 	 */
-	private final Map<String,Node> nodes = new HashMap<String,Node>();
+	private final Map<String,NodeImpl> nodes = new HashMap<String,NodeImpl>();
 
 	// ======================================================================
 	// ClassLoader
@@ -119,7 +120,7 @@ final class Config {
 	 * @param init init properties
 	 * @throws JyroException if fail to load configuration
 	 */
-	public Config(File dir, ClassLoader parent, Properties init) throws JyroException {
+	public CoreConfig(File dir, ClassLoader parent, Properties init) throws JyroException {
 		this.dir = dir;
 
 		// determine default class loader if specified value is null
@@ -145,13 +146,10 @@ final class Config {
 		}
 		this.param = jyroConfig.getProperties(init);
 
-		// build queues on this core
-		for(JobQueueImpl queue: jyroConfig.getQueues()){
-			queues.put(queue.getId(), queue);
-		}
+		this.factory = jyroConfig.getQueueFactory();
 
 		// build nodes on this core
-		for(Node node: jyroConfig.getNodes()){
+		for(NodeImpl node: jyroConfig.getNodes()){
 			nodes.put(node.getId(), node);
 		}
 		return;
@@ -177,8 +175,8 @@ final class Config {
 	 * @param id ID of queue
 	 * @return home directory
 	 */
-	public JobQueueImpl getQueue(String id) {
-		return queues.get(id);
+	public JobQueue getQueue(String id) throws JyroException{
+		return factory.lookup(id);
 	}
 
 	// ======================================================================
@@ -188,8 +186,8 @@ final class Config {
 	 *
 	 * @return nodes
 	 */
-	public Iterable<Node> getNodes() {
-		return new ArrayList<Node>(nodes.values());
+	public Iterable<NodeImpl> getNodes() {
+		return new ArrayList<NodeImpl>(nodes.values());
 	}
 
 	// ======================================================================
@@ -200,7 +198,7 @@ final class Config {
 	 * @param id ID of queue
 	 * @return home directory
 	 */
-	public Node getNode(String id) {
+	public NodeImpl getNode(String id) {
 		return nodes.get(id);
 	}
 
@@ -239,13 +237,8 @@ final class Config {
 	public void startup() throws JyroException {
 		logger.debug("startup()");
 
-		// start all queues
-		for(JobQueueImpl n: queues.values()){
-			n.start();
-		}
-
 		// start all nodes
-		for(Node n: nodes.values()){
+		for(NodeImpl n: nodes.values()){
 			n.start();
 		}
 		return;
@@ -263,10 +256,29 @@ final class Config {
 		logger.debug("shutdown()");
 
 		// stop all nodes
-		for(Node n: nodes.values()){
+		for(NodeImpl n: nodes.values()){
 			n.stop();
 		}
 
+		return;
+	}
+
+	// ======================================================================
+	//
+	// ======================================================================
+	/**
+	 *
+	 * @param nodeId
+	 * @param job
+	 * @throws JyroException
+	 */
+	@Override
+	public void send(String nodeId, Job job) throws JyroException {
+		JobQueue queue = getQueue(nodeId);
+		if(queue == null){
+			throw new JyroException("no such worker node: " + nodeId);
+		}
+		queue.post(job);
 		return;
 	}
 
@@ -437,7 +449,7 @@ final class Config {
 		 */
 		public JyroConfig(Document doc) {
 			super(doc);
-			setNamespaceURI("j", JyroCore.XMLNS10);
+			setNamespaceURI("j", CoreImpl.XMLNS10);
 			return;
 		}
 
@@ -470,21 +482,33 @@ final class Config {
 		}
 
 		// ==================================================================
-		// Retrieve Queues
+		// Retrieve Job Queue Factory
 		// ==================================================================
 		/**
-		 * Retrieve queues defined in this confugration.
+		 * Retrieve job queue factory.
 		 *
-		 * @return list of queues
+		 * @return job queue factory
+		 * @throws JyroException
 		 */
-		public Iterable<JobQueueImpl> getQueues(){
-			List<JobQueueImpl> list = new ArrayList<JobQueueImpl>();
-			for(Element elem: elemset("j:jyro/j:queue")){
-				String id = f(elem.getAttribute("id"));
-				JobQueueImpl queue = new LocalJobQueue(id);
-				list.add(queue);
+		public JobQueueFactory getQueueFactory() throws JyroException {
+			Element elem = elem("j:jyro/j:queue");
+			if(elem == null){
+				return new JVMJobQueueFactory();
 			}
-			return list;
+			String factoryName = elem.getAttribute("factory");
+			JobQueueFactory factory = null;
+			if(factoryName.equals("jvm")){
+				factory = new JVMJobQueueFactory();
+				// TODO JMSJobQueueFactory
+			} else {
+				factory = (JobQueueFactory)Beans.newInstance(loader, factoryName);
+			}
+			for(Element prop: elemset("j:jyro/j:queue/j:property")){
+				String name = prop.getAttribute("name");
+				String value = f(prop.getAttribute("value"));
+				Beans.setProperty(factory, name, value);
+			}
+			return factory;
 		}
 
 		// ==================================================================
@@ -496,10 +520,10 @@ final class Config {
 		 * @return list of queues
 		 * @throws JyroException if fail to build node
 		 */
-		public Iterable<Node> getNodes() throws JyroException {
-			List<Node> list = new ArrayList<Node>();
+		public Iterable<NodeImpl> getNodes() throws JyroException {
+			List<NodeImpl> list = new ArrayList<NodeImpl>();
 			for(Element elem: elemset("j:jyro/j:node")){
-				Node node = buildNode(elem);
+				NodeImpl node = buildNode(elem);
 				list.add(node);
 			}
 			return list;
@@ -515,7 +539,7 @@ final class Config {
 		 * @return Jyro instance
 		 * @throws JyroException fail to build node
 		 */
-		private Node buildNode(Element elem) throws JyroException {
+		private NodeImpl buildNode(Element elem) throws JyroException {
 
 			// retrieve task name
 			String id = f(elem.getAttribute("id"));
@@ -538,9 +562,10 @@ final class Config {
 					throw new JyroException("no worker found in node definition: " + id);
 				}
 			}
+			worker.init(CoreConfig.this);
 
 			// create node implementation
-			Node node = new Node(id, loader, worker);
+			NodeImpl node = new NodeImpl(id, loader, factory.create(id), worker);
 
 			// set minimum thread-pool size
 			if(wk.hasAttribute("min")){

@@ -8,90 +8,115 @@
  *                                                       http://www.moyo.biz/
  * $Id:$
 */
-package org.koiroha.jyro;
+package org.koiroha.jyro.env;
 
-import java.util.ResourceBundle;
+import java.io.File;
+import java.util.Properties;
+
+import org.apache.log4j.Logger;
+import org.koiroha.jyro.*;
+import org.koiroha.jyro.impl.*;
+import org.koiroha.jyro.jmx.JyroMXBeanImpl;
 
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Jyro:
+// JyroPlatform:
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  *
  * <p>
  * @version $Revision:$
  * @author torao
- * @since 2011/07/23 Java SE 6
+ * @since 2011/07/24 Java SE 6
  */
-public final class Jyro {
+public class JyroPlatform {
 
 	// ======================================================================
-	// Application Name
+	// Log Output
 	// ======================================================================
 	/**
-	 * Human readable application name.
+	 * Log output of this class.
 	 */
-	public static final String NAME;
+	private static final Logger logger = Logger.getLogger(JyroPlatform.class);
 
 	// ======================================================================
-	// Application ID
+	// Jyro MXBean
 	// ======================================================================
 	/**
-	 * Application ID to be able to use file or directory name, part of uri
-	 * and so on.
+	 * MXBean to manage Jyro instance.
 	 */
-	public static final String ID;
-
-	// ======================================================================
-	// Version
-	// ======================================================================
-	/**
-	 * The three numbers separated with period that specifies version of Jyro
-	 * such as "1.0.9".
-	 */
-	public static final String VERSION;
-
-	// ======================================================================
-	// Build Number
-	// ======================================================================
-	/**
-	 * The build number of current Jyro module.
-	 */
-	public static final String BUILD;
-
-	// ======================================================================
-	// Variable Name
-	// ======================================================================
-	/**
-	 * Common variable name to find Jyro home directory from system
-	 * properties.
-	 */
-	public static final String JYRO_HOME = "jyro.home";
-
-	// ======================================================================
-	// Static Initializer
-	// ======================================================================
-	/**
-	 * Read and set version constants.
-	 */
-	static {
-		ResourceBundle res = ResourceBundle.getBundle("org.koiroha.jyro.version");
-		NAME = res.getString("name");
-		ID = res.getString("id");
-		VERSION = res.getString("version");
-		BUILD = res.getString("build");
-
-		assert(VERSION.matches("\\d+\\.\\d+\\.\\d+"));
-	}
+	private final JyroMXBeanImpl mxbean;
 
 	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
-	 * Constructor is hidden in class.
 	 */
-	private Jyro() {
+	public JyroPlatform(String name, File dir, ClassLoader parent, Properties prop) throws JyroException {
+		mxbean = new JyroMXBeanImpl(name, dir, parent, null);
+		return;
+	}
+
+	// ======================================================================
+	// Startup
+	// ======================================================================
+	/**
+	 * Startup all services on this platform.
+	 *
+	 * @throws JyroException if fail to startup
+	 */
+	public JyroImpl getJyro() {
+		return mxbean.getJyro();
+	}
+
+	// ======================================================================
+	// Startup
+	// ======================================================================
+	/**
+	 * Startup all services on this platform.
+	 *
+	 * @throws JyroException if fail to startup
+	 */
+	public void post(String core, String node, Job job) throws JyroException {
+		JyroImpl j = mxbean.getJyro();
+		CoreImpl c = j.getCore(core);
+		NodeImpl n = c.getNode(node);
+		n.post(job);
+		return;
+	}
+
+	// ======================================================================
+	// Startup
+	// ======================================================================
+	/**
+	 * Startup all services on this platform.
+	 *
+	 * @throws JyroException if fail to startup
+	 */
+	public void startup() throws JyroException {
+		try {
+			mxbean.register();
+			mxbean.startup();
+		} catch(Exception ex){
+			throw new JyroException(ex);
+		}
+		return;
+	}
+
+	// ======================================================================
+	// Shutdown
+	// ======================================================================
+	/**
+	 * Shutdown all services on this platform.
+	 */
+	public void shutdown() {
+		try {
+			mxbean.shutdown();
+			mxbean.unregister();
+		} catch(Exception ex){
+			logger.fatal("fail to shutdown jyro", ex);
+		}
 		return;
 	}
 

@@ -12,6 +12,7 @@ package org.koiroha.jyro.jmx;
 
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
+import org.koiroha.jyro.impl.NodeImpl;
 import org.koiroha.jyro.util.ParseException;
 
 
@@ -64,7 +65,10 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	// Constructor
 	// ======================================================================
 	/**
-	 * @param node Jyro Node
+	 *
+	 * @param mxbean instance of Jyro MXBean
+	 * @param core core of specified node belong to
+	 * @param node node to management this MXBean
 	*/
 	public NodeMXBeanImpl(JyroMXBeanImpl mxbean, String core, String node){
 		this.mxbean = mxbean;
@@ -174,6 +178,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 *
 	 * @return thread priority
 	 */
+	@Override
 	public int getPriority(){
 		return getNode().getPriority();
 	}
@@ -186,6 +191,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 *
 	 * @param priority thread priority that defined in class {@link Thread}
 	 */
+	@Override
 	public void setPriority(int priority){
 		getNode().setPriority(priority);
 		return;
@@ -329,7 +335,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 *
 	 * @return node
 	*/
-	private Node getNode(){
+	private NodeImpl getNode(){
 		return mxbean.getJyro().getCore(core).getNode(node);
 	}
 

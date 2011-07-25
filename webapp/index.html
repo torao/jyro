@@ -6,7 +6,8 @@
 <title>Jyro Console</title>
 <link rel="stylesheet" href="style.css" type="text/css" charset="UTF-8"/>
 <script type="text/javascript" src="jquery-1.6.2.min.js" charset="UTF-8"></script>
-<script type="text/javascript" src="script.js" charset="UTF-8"></script>
+<script type="text/javascript" src="script.js" charset="UTF-8">
+</script>
 </head>
 <body>
 <h1>Jyro::Console</h1>
@@ -18,12 +19,11 @@
 </ul>
 
 <form action="" onsubmit="post_job({'node':this.node.options[this.node.selectedIndex].value,'job':this.job.value});return false;">
-<select name="node">
-<option value=""></option>
-<option value="URL取得Script">URL取得Script</option>
-<option value="URL取得Java">URL取得Java</option>
+<select name="core" id="core" onchange="reset_node();">
 </select>
-<textarea name="job">jobname{
+<select name="node" id="node">
+</select>
+<textarea name="job" id="job">jobname{
   attr1:"value1",
   attr2:"value2",
   attr3:"value3",

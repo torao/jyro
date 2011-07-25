@@ -7,23 +7,24 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro;
+package org.koiroha.jyro.impl;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
+import org.koiroha.jyro.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// JyroCore: Node Container
+// CoreImpl: Node Container
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  * Parallel processing container class.
  *
  * @author takami torao
  */
-public class JyroCore {
+public class CoreImpl {
 
 	// ======================================================================
 	// Log Output
@@ -31,7 +32,7 @@ public class JyroCore {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(JyroCore.class);
+	private static final Logger logger = Logger.getLogger(CoreImpl.class);
 
 	// ======================================================================
 	// XML Namespace
@@ -104,7 +105,7 @@ public class JyroCore {
 	/**
 	 * Configuration of this core.
 	 */
-	private final Config config;
+	private final CoreConfig config;
 
 	// ======================================================================
 	// Start Time
@@ -124,7 +125,7 @@ public class JyroCore {
 	 * @param prop init property replace with placeholder such as ${foo.bar}
 	 * @throws JyroException if cannot configure instance
 	 */
-	public JyroCore(String name, File dir, ClassLoader parent, Properties prop) throws JyroException{
+	public CoreImpl(String name, File dir, ClassLoader parent, Properties prop) throws JyroException{
 		logger.debug("initializing JyroCore: " + name);
 
 		// set core-depend context parameters
@@ -133,7 +134,7 @@ public class JyroCore {
 
 		// set instance properties
 		this.name = name;
-		this.config = new Config(dir, parent, prop);
+		this.config = new CoreConfig(dir, parent, prop);
 		return;
 	}
 
@@ -169,7 +170,7 @@ public class JyroCore {
 	 *
 	 * @return iterable nodes
 	 */
-	public Iterable<Node> getNodes(){
+	public Iterable<NodeImpl> getNodes(){
 		return config.getNodes();
 	}
 
@@ -182,21 +183,8 @@ public class JyroCore {
 	 * @param id ID of node
 	 * @return node
 	 */
-	public Node getNode(String id){
+	public NodeImpl getNode(String id){
 		return config.getNode(id);
-	}
-
-	// ======================================================================
-	// Retrieve Queue
-	// ======================================================================
-	/**
-	 * Retrieve specified queue of this core.
-	 *
-	 * @param id name
-	 * @return job queue
-	 */
-	public JobQueue getQueue(String id){
-		return config.getQueue(id);
 	}
 
 	// ======================================================================
@@ -236,6 +224,19 @@ public class JyroCore {
 	 */
 	public boolean isModified(){
 		return config.isModified();
+	}
+
+	// ======================================================================
+	// Post Job
+	// ======================================================================
+	/**
+	 * Post job to this core.
+	 *
+	 */
+	public void post(String id, Job job) throws JyroException {
+		JobQueue queue = config.getQueue(id);
+		queue.post(job);
+		return;
 	}
 
 	// ======================================================================

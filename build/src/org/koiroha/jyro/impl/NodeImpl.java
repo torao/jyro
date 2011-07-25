@@ -7,16 +7,17 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro;
+package org.koiroha.jyro.impl;
 
 import java.lang.management.*;
 import java.text.NumberFormat;
 import java.util.concurrent.*;
 
 import org.apache.log4j.*;
+import org.koiroha.jyro.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Node:
+// NodeImpl:
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  *
@@ -25,7 +26,7 @@ import org.apache.log4j.*;
  * @author torao
  * @since 2011/07/01 Java SE 6
  */
-public class Node {
+public class NodeImpl {
 
 	// ======================================================================
 	// Log Output
@@ -33,7 +34,7 @@ public class Node {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(Node.class);
+	private static final Logger logger = Logger.getLogger(NodeImpl.class);
 
 	// ======================================================================
 	// Task Name
@@ -58,6 +59,32 @@ public class Node {
 	 * Worker to execute parallel.
 	 */
 	private final Worker worker;
+
+	// ======================================================================
+	// Job Queue
+	// ======================================================================
+	/**
+	 * Job queue for workers.
+	 */
+	private final JobQueueImpl jobQueue;
+
+	// ======================================================================
+	// Job Queue
+	// ======================================================================
+	/**
+	 * Job queue for workers.
+	 */
+	private final JobListener listener = new JobListener() {
+		@Override
+		public void received(Job job) {
+			try {
+				post(job);
+			} catch(JyroException ex){
+				logger.fatal(getId() + ": fail to post job: " + job, ex);
+			}
+			return;
+		}
+	};
 
 	// ======================================================================
 	// Job Queue
@@ -163,19 +190,21 @@ public class Node {
 	 * @param id task name of this node
 	 * @param loader class loader of this node
 	 */
-	public Node(String id, ClassLoader loader, Worker proc) {
+	public NodeImpl(String id, ClassLoader loader, JobQueueImpl queue, Worker proc) {
 		assert(id != null);
 		assert(loader != null);
 		assert(proc != null);
 		this.id = id;
 		this.loader = loader;
 		this.worker = proc;
+		this.jobQueue = queue;
 
 		// create load average calculator
-		this.loadAverage = new LoadAverage(queue);
+		this.loadAverage = new LoadAverage(this.queue);
 		this.loadAverage.start();
 
 		this.threadGroup = new ThreadGroup(id);
+
 		return;
 	}
 
@@ -410,8 +439,14 @@ public class Node {
 	*/
 	public void start(){
 		logger.debug("start node " + getId());
+
+		// start thread pool
 		threads = new ThreadPoolExecutor(minimumWorkers, maximumWorkers, 10, TimeUnit.SECONDS, queue);
 		threads.setThreadFactory(new NodeThreadFactory());
+
+		// start queuing
+		jobQueue.addJobQueueListener(listener);
+		jobQueue.start();
 		return;
 	}
 
@@ -423,6 +458,12 @@ public class Node {
 	*/
 	public void stop(){
 		logger.debug("stop node " + getId());
+
+		// stop queuing
+		jobQueue.stop();
+		jobQueue.removeJobQueueListener(listener);
+
+		// shutdown thread pool
 		threads.shutdown();
 		threads = null;
 		return;
@@ -462,7 +503,7 @@ public class Node {
 		long start = rb.getUptime();
 		Object result = null;
 		try {
-			result = worker.exec(job);
+			result = worker.receive(job);
 			totalJobCount ++;
 			totalJobTime += rb.getUptime() - start;
 		} catch(WorkerException ex){
@@ -508,7 +549,7 @@ public class Node {
 			}
 
 			// create new thread and set attributes
-			String name = Node.this.id + "-" + num;
+			String name = NodeImpl.this.id + "-" + num;
 			Thread thread = null;
 			if(stackSize >= 0){
 				thread = new Thread(threadGroup, r, name, stackSize);

@@ -7,9 +7,10 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro;
+package org.koiroha.jyro.impl;
 
 import java.util.*;
+
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // LoadAverage: Unix-like Load Average Calculator
@@ -82,7 +83,7 @@ class LoadAverage extends TimerTask {
 	 * Start to calculate enqueued size of jobs.
 	 */
 	public void start(){
-		Config.TIMER.scheduleAtFixedRate(this, 0, 1000);
+		CoreConfig.TIMER.scheduleAtFixedRate(this, 0, 1000);
 		return;
 	}
 

@@ -12,7 +12,9 @@ package org.koiroha.jyro.jmx;
 
 import javax.management.MXBean;
 
-import org.koiroha.jyro.JyroCore;
+import org.koiroha.jyro.JyroException;
+import org.koiroha.jyro.impl.CoreImpl;
+import org.koiroha.jyro.util.ParseException;
 
 
 
@@ -20,7 +22,7 @@ import org.koiroha.jyro.JyroCore;
 // CoreMXBean: Core MXBean
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * MXBean interface to manage {@link JyroCore} outside.
+ * MXBean interface to manage {@link CoreImpl} outside.
  *
  * @version $Revision:$
  * @author torao
@@ -103,5 +105,18 @@ public interface CoreMXBean {
 	 * @return load average
 	 */
 	public double getLoadAverage15Min();
+
+	// ======================================================================
+	// Post Job
+	// ======================================================================
+	/**
+	 * Post specified job to node id of this core defines.
+	 *
+	 * @param nodeId node id to post job
+	 * @param job job content
+	 * @throws JyroException if fail to post job
+	 * @throws ParseException if fail to post job
+	*/
+	public void post(String nodeId, String job) throws JyroException, ParseException;
 
 }

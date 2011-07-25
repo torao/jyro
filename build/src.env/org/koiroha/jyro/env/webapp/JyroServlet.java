@@ -7,7 +7,7 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro.webapp;
+package org.koiroha.jyro.env.webapp;
 
 import java.io.*;
 import java.util.*;
@@ -20,9 +20,9 @@ import javax.xml.transform.stream.*;
 
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
-import org.koiroha.jyro.jmx.JyroMXBeanImpl;
-import org.koiroha.jyro.snapshot.Snapshot;
-import org.koiroha.jyro.util.IO;
+import org.koiroha.jyro.env.JyroPlatform;
+import org.koiroha.jyro.impl.*;
+import org.koiroha.jyro.util.*;
 import org.w3c.dom.Document;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -52,12 +52,12 @@ public class JyroServlet extends HttpServlet {
 	private static final Logger logger = Logger.getLogger(JyroServlet.class);
 
 	// ======================================================================
-	// Jyro MXBean
+	// Jyro Platform
 	// ======================================================================
 	/**
-	 * MXBean to manage Jyro instance.
+	 *
 	 */
-	private JyroMXBeanImpl mxbean = null;
+	private JyroPlatform platform = null;
 
 	// ======================================================================
 	// Template Cache
@@ -112,11 +112,10 @@ public class JyroServlet extends HttpServlet {
 
 		// build and startup Jyro
 		String contextPath = getServletContext().getContextPath();
-		ClassLoader loader = Thread.currentThread().getContextClassLoader();
+		ClassLoader loader = java.lang.Thread.currentThread().getContextClassLoader();
 		try {
-			mxbean = new JyroMXBeanImpl(contextPath, dir, loader, null);
-			mxbean.register();
-			mxbean.startup();
+			platform = new JyroPlatform(contextPath, dir, loader, null);
+			platform.startup();
 		} catch (Exception ex) {
 			throw new ServletException(ex);
 		}
@@ -135,10 +134,10 @@ public class JyroServlet extends HttpServlet {
 
 		// shutdown jyro
 		try {
-			if(mxbean != null){
-				mxbean.shutdown();
-				mxbean.unregister();
+			if(platform != null){
+				platform.shutdown();
 			}
+			platform = null;
 		} catch(Exception ex){
 			logger.fatal("fail to shutdown jyro", ex);
 		}
@@ -159,7 +158,48 @@ public class JyroServlet extends HttpServlet {
 	 */
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		doPost(request, response);
+		request.setCharacterEncoding("UTF-8");
+
+		// respond core name list
+		String[] elem = parsePathInfo(request);
+		if(elem.length == 0 || elem[0].length() == 0){
+
+			// build core list
+			List<String> names = new ArrayList<String>();
+			JyroImpl jyro = platform.getJyro();
+			for(CoreImpl core: jyro.getCores()){
+				names.add(core.getName());
+			}
+
+			// send core name list
+			response.setContentType("text/javascript+json;charset=UTF-8");
+			response.setHeader("Cache-Control", "no-cache");
+			Writer out = response.getWriter();
+			Text.json(out, names);
+			out.flush();
+			return;
+		}
+
+		// respond node name list
+		if(elem.length == 1){
+
+			// build core list
+			List<String> names = new ArrayList<String>();
+			JyroImpl jyro = platform.getJyro();
+			CoreImpl core = jyro.getCore(elem[0]);
+			for(NodeImpl node: core.getNodes()){
+				names.add(node.getId());
+			}
+
+			// send core name list
+			response.setContentType("text/javascript+json;charset=UTF-8");
+			response.setHeader("Cache-Control", "no-cache");
+			Writer out = response.getWriter();
+			Text.json(out, names);
+			out.flush();
+			return;
+		}
+
 		return;
 	}
 
@@ -177,48 +217,19 @@ public class JyroServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		request.setCharacterEncoding("UTF-8");
 
-		// redirect to top page if no PATH_INFO specified
-		String pathInfo = request.getPathInfo();
-		if(pathInfo == null || pathInfo.length() == 0 || pathInfo.equals("/")){
-			logger.debug("redirecting top page: pathInfo=" + pathInfo);
-			response.sendRedirect(request.getContextPath() + "/");
-			return;
+		String[] elem = parsePathInfo(request);
+
+		String core = elem[0];
+		String node = elem[1];
+		try {
+			String j = request.getParameter("job");
+			Job job = Job.parse(j);
+			platform.post(core, node, job);
+			response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+		} catch(Exception ex){
+			throw new ServletException(ex);
 		}
 
-		// send status for jyro
-		if(pathInfo.matches("/status\\..*")){
-			Locale l = request.getLocale();
-			if(l == null){
-				l = Locale.getDefault();
-			}
-			Document doc = new Snapshot(l).makeSnapshot(jyro);
-
-			String prefix = "/status_" + IO.getExtension(pathInfo);
-			if(! send(response, doc, prefix)){
-				send(request, response, doc, prefix);
-			}
-			return;
-		}
-
-		// post job
-		if(pathInfo.matches("/post")){
-			try {
-				String n = request.getParameter("node");
-				String j = request.getParameter("job");
-				Job job = Job.parse(j);
-				JyroCore core = jyro.getCore("default");
-				Node node = core.getNode(n);
-				node.post(job);
-				response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-			} catch(Exception ex){
-				throw new ServletException(ex);
-			}
-			return;
-		}
-
-		// send 404 Not Found if unrecognized pathinfo sent
-		logger.debug("pathinfo not found: " + pathInfo);
-		response.sendError(HttpServletResponse.SC_NOT_FOUND);
 		return;
 	}
 
@@ -289,6 +300,34 @@ public class JyroServlet extends HttpServlet {
 		req.setAttribute("jyro", doc);
 		rd.forward(req, res);
 		return;
+	}
+
+	// ======================================================================
+	// Serve GET Request
+	// ======================================================================
+	/**
+	 *
+	 * @param request HTTP request
+	 * @param response HTTP response
+	 * @throws UnsupportedEncodingException
+	 * @throws ServletException
+	 * @throws IOException if fail to output
+	 */
+	private static String[] parsePathInfo(HttpServletRequest request) throws UnsupportedEncodingException{
+
+		// redirect to top page if no PATH_INFO specified
+		logger.debug(request.getRequestURI());
+		String pathInfo = request.getPathInfo();
+		if(pathInfo == null){
+			pathInfo = "/";
+		}
+		// TODO servlet container portability problem
+		pathInfo = new String(pathInfo.getBytes("iso-8859-1"), "UTF-8");
+		pathInfo = pathInfo.replaceFirst("^/+", "");
+		pathInfo = pathInfo.replaceFirst("/+$", "");
+
+		// respond core name list
+		return pathInfo.split("/+");
 	}
 
 }

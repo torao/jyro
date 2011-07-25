@@ -8,9 +8,11 @@
  *                                                       http://www.moyo.biz/
  * $Id:$
 */
-package org.koiroha.jyro;
+package org.koiroha.jyro.impl;
 
 import java.util.concurrent.*;
+
+import org.koiroha.jyro.*;
 
 
 

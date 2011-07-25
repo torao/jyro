@@ -8,7 +8,9 @@
  *                                                       http://www.moyo.biz/
  * $Id:$
 */
-package org.koiroha.jyro;
+package org.koiroha.jyro.impl;
+
+import org.koiroha.jyro.*;
 
 
 
@@ -22,7 +24,7 @@ package org.koiroha.jyro;
  * @author torao
  * @since 2011/07/03 Java SE 6
  */
-public class SampleWorker implements Worker {
+public class SampleWorker extends Worker {
 
 	// ======================================================================
 	// Constructor
@@ -43,7 +45,7 @@ public class SampleWorker implements Worker {
 	 * @return result
 	 */
 	@Override
-	public Object exec(Job job) {
+	public Object receive(Job job) {
 		long sum = 0;
 		try { Thread.sleep(10000); } catch(InterruptedException e){/* */}
 		return sum;

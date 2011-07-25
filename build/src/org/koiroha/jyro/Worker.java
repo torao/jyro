@@ -9,17 +9,71 @@
  */
 package org.koiroha.jyro;
 
+import org.apache.log4j.Logger;
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Worker: Node Worker
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  * Worker process bound to node.
- * <p>
+ *
  * @version $Revision:$ $Date:$
  * @author torao
  * @since 2011/07/02 Java SE 6
  */
-public interface Worker {
+public class Worker {
+
+	// ======================================================================
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output for this class.
+	 */
+	private static final Logger logger = Logger.getLogger(Worker.class);
+
+	// ======================================================================
+	// Worker Context
+	// ======================================================================
+	/**
+	 * The context of this worker implementation.
+	 */
+	private WorkerContext context = null;
+
+	// ======================================================================
+	// Constructor
+	// ======================================================================
+	/**
+	 * Default constructor called dynamically.
+	 */
+	public Worker() {
+		return;
+	}
+
+	// ======================================================================
+	// initialize worker
+	// ======================================================================
+	/**
+	 * Initialize this worker.
+	 *
+	 * @param context worker context
+	 */
+	public void init(WorkerContext context){
+		logger.debug("init(" + context + ")");
+		this.context = context;
+		return;
+	}
+
+	// ======================================================================
+	// Refer Context
+	// ======================================================================
+	/**
+	 * Refer context of this worker.
+	 *
+	 * @return worker context
+	 */
+	public WorkerContext getContext() {
+		return context;
+	}
 
 	// ======================================================================
 	// Execute Process
@@ -32,6 +86,8 @@ public interface Worker {
 	 * @return result
 	 * @throws WorkerException if error in worker
 	*/
-	public Object exec(Job job) throws WorkerException;
+	public Object receive(Job job) throws WorkerException{
+		return null;
+	}
 
 }
