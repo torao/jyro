@@ -1,5 +1,7 @@
 # Introduction
 
+The goal of Jyro Project is to implement Web Crawler and supply distributed platform for parallel batch execution.
+
 # Build
 
 # Additional Libraries
