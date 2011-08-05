@@ -8,29 +8,28 @@
  *                                                       http://www.moyo.biz/
  * $Id:$
 */
-package org.koiroha.jyro.env;
+package org.koiroha.jyro.env.console;
 
 import java.io.File;
-import java.util.Properties;
+import java.lang.management.ManagementFactory;
 
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
-import org.koiroha.jyro.impl.*;
-import org.koiroha.jyro.jmx.JyroMXBeanImpl;
+import org.koiroha.jyro.env.JyroPlatform;
 
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// JyroPlatform:
+// Launcher: Jyro Launcher
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * The Jyro launcher from console.
  *
- * <p>
  * @version $Revision:$
  * @author torao
  * @since 2011/07/24 Java SE 6
  */
-public class JyroPlatform {
+public final class Launcher {
 
 	// ======================================================================
 	// Log Output
@@ -38,93 +37,74 @@ public class JyroPlatform {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(JyroPlatform.class);
+	private static final Logger logger = Logger.getLogger(Launcher.class);
 
 	// ======================================================================
-	// Jyro MXBean
+	// Node Name
 	// ======================================================================
 	/**
-	 * MXBean to manage Jyro instance.
+	 * Node name of jyro instance.
 	 */
-	private final JyroMXBeanImpl mxbean;
+	private final String name;
+
+	// ======================================================================
+	// Home Directory
+	// ======================================================================
+	/**
+	 * The home directory of jyro to launch.
+	 */
+	private final File home;
 
 	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
-	 * @param name instance name
-	 * @param dir home directory
-	 * @param parent default class loader
-	 * @param prop initialization property
-	 * @throws JyroException if fail to initialize instance
+	 * Constructor hidden in class.
+	 *
+	 * @param args commandline arguments
 	 */
-	public JyroPlatform(String name, File dir, ClassLoader parent, Properties prop) throws JyroException {
-		mxbean = new JyroMXBeanImpl(name, dir, parent, null);
+	private Launcher(String[] args) {
+
+		// parse commandline parameters
+		String name = ManagementFactory.getRuntimeMXBean().getName();
+		String home = System.getProperty(Jyro.JYRO_HOME, ".");
+		for (String arg : args) {
+
+			home = arg;
+		}
+		this.home = new File(home);
+		this.name = name;
+		logger.info(Jyro.JYRO_HOME + "=" + this.home);
 		return;
 	}
 
 	// ======================================================================
-	// Refer Instance
+	// Startup Service
 	// ======================================================================
 	/**
-	 * Refer Jyro instance of this platform.
-	 *
-	 * @return jyro implementation
-	 */
-	public JyroImpl getJyro() {
-		return mxbean.getJyro();
-	}
-
-	// ======================================================================
-	// Post Job
-	// ======================================================================
-	/**
-	 * Post specified job to node.
-	 *
-	 * @param core core name
-	 * @param node node name
-	 * @param job job to post
-	 * @throws JyroException if fail to post job
-	 */
-	public void post(String core, String node, Job job) throws JyroException {
-		JyroImpl j = mxbean.getJyro();
-		CoreImpl c = j.getCore(core);
-		NodeImpl n = c.getNode(node);
-		n.post(job);
-		return;
-	}
-
-	// ======================================================================
-	// Startup
-	// ======================================================================
-	/**
-	 * Startup all services on this platform.
+	 * Startup service.
 	 *
 	 * @throws JyroException if fail to startup
 	 */
 	public void startup() throws JyroException {
-		try {
-			mxbean.register();
-			mxbean.startup();
-		} catch(Exception ex){
-			throw new JyroException(ex);
-		}
+		ClassLoader loader = java.lang.Thread.currentThread().getContextClassLoader();
+		JyroPlatform platform = new JyroPlatform(name, home, loader, null);
+		platform.startup();
 		return;
 	}
 
 	// ======================================================================
-	// Shutdown
+	// Startup JYRO with Console
 	// ======================================================================
 	/**
-	 * Shutdown all services on this platform.
+	 * Console entry point of Jyro.
+	 *
+	 * @param args commandline arguments
+	 * @throws JyroException
 	 */
-	public void shutdown() {
-		try {
-			mxbean.shutdown();
-			mxbean.unregister();
-		} catch(Exception ex){
-			logger.fatal("fail to shutdown jyro", ex);
-		}
+	public static void main(String[] args) throws JyroException {
+		Launcher launcher = new Launcher(args);
+		launcher.startup();
 		return;
 	}
 

@@ -303,15 +303,14 @@ public class JyroServlet extends HttpServlet {
 	}
 
 	// ======================================================================
-	// Serve GET Request
+	// Parse PATH_INFO
 	// ======================================================================
 	/**
+	 * Separate PATH_INFO with slash.
 	 *
-	 * @param request HTTP request
-	 * @param response HTTP response
+	 * @param request HTTP request to retrieve PATH_INFO
+	 * @return separated components
 	 * @throws UnsupportedEncodingException
-	 * @throws ServletException
-	 * @throws IOException if fail to output
 	 */
 	private static String[] parsePathInfo(HttpServletRequest request) throws UnsupportedEncodingException{
 
