@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="build/src.env"/>
-	<classpathentry kind="src" path="build/src"/>
+	<classpathentry kind="src" path="build/src.core"/>
 	<classpathentry kind="src" path="build/src.unittest"/>
 	<classpathentry kind="src" path="build/src.lib"/>
 	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/geronimo-j2ee-management_1.1_spec-1.0.1.jar"/>
