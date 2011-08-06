@@ -4,6 +4,7 @@
 	<classpathentry kind="src" path="build/src"/>
 	<classpathentry kind="src" path="build/src.unittest"/>
 	<classpathentry kind="src" path="build/src.lib"/>
+	<classpathentry kind="src" path="build/src.worker"/>
 	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/geronimo-j2ee-management_1.1_spec-1.0.1.jar"/>
 	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/geronimo-jms_1.1_spec-1.1.1.jar"/>
 	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/geronimo-jta_1.0.1B_spec-1.0.1.jar"/>
@@ -12,5 +13,15 @@
 	<classpathentry kind="lib" path="webapp/WEB-INF/lib/xmllib_1.0.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry kind="var" path="TOMCAT_HOME/lib/servlet-api.jar"/>
+	<classpathentry kind="lib" path="build/lib/httpclient-4.1.1/commons-codec-1.4.jar"/>
+	<classpathentry kind="lib" path="build/lib/httpclient-4.1.1/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="build/lib/httpclient-4.1.1/httpclient-4.1.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="build/lib/httpclient-4.1.1/httpclient-cache-4.1.1.jar"/>
+	<classpathentry kind="lib" path="build/lib/httpclient-4.1.1/httpcore-4.1.jar"/>
+	<classpathentry kind="lib" path="build/lib/httpclient-4.1.1/httpmime-4.1.1.jar"/>
 	<classpathentry kind="output" path="webapp/WEB-INF/classes"/>
 </classpath>
