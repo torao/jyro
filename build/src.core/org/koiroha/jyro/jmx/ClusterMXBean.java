@@ -13,23 +13,23 @@ package org.koiroha.jyro.jmx;
 import javax.management.MXBean;
 
 import org.koiroha.jyro.JyroException;
-import org.koiroha.jyro.impl.CoreImpl;
+import org.koiroha.jyro.impl.ClusterImpl;
 import org.koiroha.jyro.util.ParseException;
 
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// CoreMXBean: Core MXBean
+// ClusterMXBean: Cluster MXBean
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * MXBean interface to manage {@link CoreImpl} outside.
+ * MXBean interface to manage {@link ClusterImpl} outside.
  *
  * @version $Revision:$
  * @author torao
  * @since 2011/07/17 Java SE 6
  */
 @MXBean
-public interface CoreMXBean {
+public interface ClusterMXBean {
 
 	// ======================================================================
 	// Refer Name

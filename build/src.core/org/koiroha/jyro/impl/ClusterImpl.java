@@ -17,14 +17,14 @@ import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// CoreImpl: Node Container
+// ClusterImpl: Node Container
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  * Parallel processing container class.
  *
  * @author takami torao
  */
-public class CoreImpl {
+public class ClusterImpl {
 
 	// ======================================================================
 	// Log Output
@@ -32,7 +32,7 @@ public class CoreImpl {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(CoreImpl.class);
+	private static final Logger logger = Logger.getLogger(ClusterImpl.class);
 
 	// ======================================================================
 	// XML Namespace
@@ -105,7 +105,7 @@ public class CoreImpl {
 	/**
 	 * Configuration of this core.
 	 */
-	private final CoreConfig config;
+	private final ClusterConfig config;
 
 	// ======================================================================
 	// Start Time
@@ -125,7 +125,7 @@ public class CoreImpl {
 	 * @param prop init property replace with placeholder such as ${foo.bar}
 	 * @throws JyroException if cannot configure instance
 	 */
-	public CoreImpl(String name, File dir, ClassLoader parent, Properties prop) throws JyroException{
+	public ClusterImpl(String name, File dir, ClassLoader parent, Properties prop) throws JyroException{
 		logger.debug("initializing JyroCore: " + name);
 
 		// set core-depend context parameters
@@ -134,7 +134,7 @@ public class CoreImpl {
 
 		// set instance properties
 		this.name = name;
-		this.config = new CoreConfig(dir, parent, prop);
+		this.config = new ClusterConfig(dir, parent, prop);
 		return;
 	}
 

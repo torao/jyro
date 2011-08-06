@@ -20,11 +20,11 @@ import org.koiroha.jyro.*;
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Crawler:
+// Crawler: Crawler Worker
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * The worker class to crawl web sites.
  *
- * <p>
  * @version $Revision:$
  * @author torao
  * @since 2011/08/06 Java SE 6

@@ -39,7 +39,7 @@ public class JyroImpl {
 	/**
 	 * The timer to detect modification and reload for cores.
 	 */
-	public static final Timer TIMER = CoreConfig.TIMER;
+	public static final Timer TIMER = ClusterConfig.TIMER;
 
 	// ======================================================================
 	// Name
@@ -55,7 +55,7 @@ public class JyroImpl {
 	/**
 	 * The map of all JyroCore instance.
 	 */
-	private final Map<String,CoreImpl> cores = new HashMap<String,CoreImpl>();
+	private final Map<String,ClusterImpl> cores = new HashMap<String,ClusterImpl>();
 
 	// ======================================================================
 	// Directory
@@ -95,7 +95,7 @@ public class JyroImpl {
 					logger.debug(". directory ignored: " + names[i]);
 					continue;
 				}
-				CoreImpl core = new CoreImpl(names[i], file, parent, prop);
+				ClusterImpl core = new ClusterImpl(names[i], file, parent, prop);
 				cores.put(names[i], core);
 			}
 		}
@@ -141,8 +141,8 @@ public class JyroImpl {
 	 *
 	 * @return jyro cores
 	 */
-	public Iterable<CoreImpl> getCores(){
-		return new ArrayList<CoreImpl>(cores.values());
+	public Iterable<ClusterImpl> getCores(){
+		return new ArrayList<ClusterImpl>(cores.values());
 	}
 
 	// ======================================================================
@@ -154,7 +154,7 @@ public class JyroImpl {
 	 * @param name core name
 	 * @return jyro core
 	 */
-	public CoreImpl getCore(String name){
+	public ClusterImpl getCore(String name){
 		return cores.get(name);
 	}
 
@@ -175,7 +175,7 @@ public class JyroImpl {
 
 		// startup all cores
 		for(String name: names){
-			CoreImpl core = cores.get(name);
+			ClusterImpl core = cores.get(name);
 			core.startup();
 		}
 		return;
@@ -198,7 +198,7 @@ public class JyroImpl {
 
 		// shutdown all cores.
 		for(String name: names){
-			CoreImpl core = cores.get(name);
+			ClusterImpl core = cores.get(name);
 			core.shutdown();
 		}
 

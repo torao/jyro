@@ -9,7 +9,7 @@
  */
 package org.koiroha.jyro.impl;
 
-import static org.koiroha.jyro.impl.CoreImpl.*;
+import static org.koiroha.jyro.impl.ClusterImpl.*;
 
 import java.io.*;
 import java.net.*;
@@ -25,16 +25,16 @@ import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// CoreConfig: Configuration for JyroCore
+// ClusterConfig: Configuration for JyroCore
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Configuration class to build {@link CoreImpl} instance.
+ * Configuration class to build {@link ClusterImpl} instance.
  *
  * @version $Revision:$ $Date:$
  * @author torao
  * @since 2011/07/03 Java SE 6
  */
-final class CoreConfig implements WorkerContext {
+final class ClusterConfig implements WorkerContext {
 
 	// ======================================================================
 	// Log Output
@@ -42,7 +42,7 @@ final class CoreConfig implements WorkerContext {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(CoreConfig.class);
+	private static final Logger logger = Logger.getLogger(ClusterConfig.class);
 
 	// ======================================================================
 	// Generic Use Timer
@@ -120,7 +120,7 @@ final class CoreConfig implements WorkerContext {
 	 * @param init init properties
 	 * @throws JyroException if fail to load configuration
 	 */
-	public CoreConfig(File dir, ClassLoader parent, Properties init) throws JyroException {
+	public ClusterConfig(File dir, ClassLoader parent, Properties init) throws JyroException {
 		this.dir = dir;
 
 		// determine default class loader if specified value is null
@@ -449,7 +449,7 @@ final class CoreConfig implements WorkerContext {
 		 */
 		public JyroConfig(Document doc) {
 			super(doc);
-			setNamespaceURI("j", CoreImpl.XMLNS10);
+			setNamespaceURI("j", ClusterImpl.XMLNS10);
 			return;
 		}
 
@@ -562,7 +562,7 @@ final class CoreConfig implements WorkerContext {
 					throw new JyroException("no worker found in node definition: " + id);
 				}
 			}
-			worker.init(CoreConfig.this);
+			worker.init(ClusterConfig.this);
 
 			// create node implementation
 			NodeImpl node = new NodeImpl(id, loader, factory.create(id), worker);

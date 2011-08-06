@@ -88,7 +88,7 @@ public class JyroPlatform {
 	 */
 	public void post(String core, String node, Job job) throws JyroException {
 		JyroImpl j = mxbean.getJyro();
-		CoreImpl c = j.getCore(core);
+		ClusterImpl c = j.getCore(core);
 		NodeImpl n = c.getNode(node);
 		n.post(job);
 		return;

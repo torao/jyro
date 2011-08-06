@@ -209,7 +209,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	@Override
 	public int getActiveWorkers(){
 		int count = 0;
-		for(CoreImpl core: jyro.getCores()){
+		for(ClusterImpl core: jyro.getCores()){
 			for(NodeImpl node: core.getNodes()){
 				count += node.getActiveWorkers();
 			}
@@ -362,7 +362,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 			logger.debug("unregister MXBean: " + prefix);
 
 			// unregister all cores
-			for(CoreImpl core: jyro.getCores()){
+			for(ClusterImpl core: jyro.getCores()){
 				String cname = prefix + ",core=" + ObjectName.quote(core.getName());
 
 				// unregister each node instance
@@ -394,12 +394,12 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	private void validateRegistration() throws InstanceAlreadyExistsException, MBeanRegistrationException, NotCompliantMBeanException, MalformedObjectNameException {
 		assert(Thread.holdsLock(this));
 		MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-		for(CoreImpl core: getJyro().getCores()){
+		for(ClusterImpl core: getJyro().getCores()){
 
 			// register core mxbean if it is not registered
 			ObjectName cname = new ObjectName(prefix + ",core=" + ObjectName.quote(core.getName()));
 			if(! server.isRegistered(cname)){
-				CoreMXBean cbean = new CoreMXBeanImpl(this, core.getName());
+				ClusterMXBean cbean = new ClusterMXBeanImpl(this, core.getName());
 				server.registerMBean(cbean, cname);
 			}
 
@@ -445,7 +445,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 		 */
 		@Override
 		public void run(){
-			for(CoreImpl core: jyro.getCores()){
+			for(ClusterImpl core: jyro.getCores()){
 				if(core.isModified()){
 					logger.info("configuration modification detected, reload automatically");
 					reload();

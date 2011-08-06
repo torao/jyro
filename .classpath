@@ -14,5 +14,9 @@
 	<classpathentry kind="lib" path="build/lib/httpclient-4.1.1/httpclient-cache-4.1.1.jar"/>
 	<classpathentry kind="lib" path="build/lib/httpclient-4.1.1/httpcore-4.1.jar"/>
 	<classpathentry kind="lib" path="build/lib/httpclient-4.1.1/httpmime-4.1.1.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/geronimo-j2ee-management_1.1_spec-1.0.1.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/geronimo-jms_1.1_spec-1.1.1.jar"/>
+	<classpathentry kind="lib" path="build/lib/activemq-5.5.0/geronimo-jta_1.0.1B_spec-1.0.1.jar"/>
+	<classpathentry kind="lib" path="build/lib/jetty-7.4.2/servlet-api-2.5.jar"/>
 	<classpathentry kind="output" path="webapp/WEB-INF/classes"/>
 </classpath>

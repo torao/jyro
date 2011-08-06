@@ -113,6 +113,12 @@
 	</xsd:simpleType>
 
 	<xsd:simpleType name="threadPriority">
+		<xsd:annotation>
+			<xsd:documentation>
+				The type of java thread priority value. This must be 1 (miniumum
+				priority) to 10 (maximum priority).
+			</xsd:documentation>
+		</xsd:annotation>
 		<xsd:restriction base="xsd:positiveInteger">
 			<xsd:minInclusive value="1"/>
 			<xsd:maxInclusive value="10"/>

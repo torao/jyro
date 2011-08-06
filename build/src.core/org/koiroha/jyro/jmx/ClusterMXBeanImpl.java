@@ -19,18 +19,18 @@ import org.koiroha.jyro.util.ParseException;
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// CoreMXBeanImpl: Core MXBean Implementation
+// ClusterMXBeanImpl: Cluster MXBean Implementation
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Implementation of Core MXBean. The this refers {@link CoreImpl} instance
- * by core name. It means that the same CoreMXBean will be used if core
- * reloaded and change instance.
+ * Implementation of Cluster MXBean. The this refers {@link ClusterImpl}
+ * instance by core name. It means that the same ClusterMXBean will be used
+ * if cluster reloaded and change instance.
  *
  * @version $Revision:$
  * @author torao
  * @since 2011/07/17 Java SE 6
  */
-public class CoreMXBeanImpl implements CoreMXBean {
+public class ClusterMXBeanImpl implements ClusterMXBean {
 
 	// ======================================================================
 	// JyroMXBean
@@ -55,7 +55,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	 * @param mxbean MXBean to refer core instance
 	 * @param name core name that this instance mapped to
 	*/
-	public CoreMXBeanImpl(JyroMXBeanImpl mxbean, String name){
+	public ClusterMXBeanImpl(JyroMXBeanImpl mxbean, String name){
 		this.mxbean = mxbean;
 		this.name = name;
 		return;
@@ -215,7 +215,7 @@ public class CoreMXBeanImpl implements CoreMXBean {
 	 *
 	 * @return jyro core
 	*/
-	private CoreImpl getCore(){
+	private ClusterImpl getCore(){
 		return mxbean.getJyro().getCore(name);
 	}
 
