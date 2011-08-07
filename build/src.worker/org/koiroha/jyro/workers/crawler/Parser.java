@@ -24,10 +24,8 @@ import org.koiroha.jyro.*;
 import org.koiroha.xml.parser.HTMLDocumentBuilderFactory;
 import org.w3c.dom.*;
 
-
-
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Crawler: Crawler Worker
+// Parser: Parser Worker
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  * The worker class to crawl web sites.
@@ -36,7 +34,7 @@ import org.w3c.dom.*;
  * @author torao
  * @since 2011/08/06 Java SE 6
  */
-public class Crawler extends Worker {
+public class Parser extends Worker {
 
 	// ======================================================================
 	// Log Output
@@ -44,7 +42,7 @@ public class Crawler extends Worker {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(Crawler.class);
+	private static final Logger logger = Logger.getLogger(Parser.class);
 
 	// ======================================================================
 	// HTTP Client
@@ -60,7 +58,7 @@ public class Crawler extends Worker {
 	/**
 	 *
 	 */
-	public Crawler() {
+	public Parser() {
 		this.client = new DefaultHttpClient();
 		return;
 	}
@@ -79,7 +77,7 @@ public class Crawler extends Worker {
 		String url = job.getAttribute("url");
 		List<String> urls = retrieveLink(url);
 		WorkerContext context = getContext();
-		context.send("parser", Job.parse("url{ url:\"" + urls + "\""));
+		context.send(nodeId, job);
 		return null;
 	}
 
@@ -98,7 +96,7 @@ public class Crawler extends Worker {
 		List<String> urls = new ArrayList<String>();
 		try {
 			HttpGet request = new HttpGet(url);
-			request.setHeader("User-Agent", "Mozilla/5.0 (compatible; Jyrobot/" + Jyro.VERSION + "; +http://www.koiroha.org/jyro.html)");
+			request.setHeader("User-Agent", "Mozilla/5.0 (compatible; Jyrobot/" + Jyro.VERSION + "; +http://www.koiroha.org/bot.html)");
 			HttpResponse response = client.execute(request);
 
 			Header header = response.getFirstHeader("Content-Type");

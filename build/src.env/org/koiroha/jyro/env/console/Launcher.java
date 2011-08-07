@@ -56,6 +56,14 @@ public final class Launcher {
 	private final File home;
 
 	// ======================================================================
+	// Jyro Platform
+	// ======================================================================
+	/**
+	 * The jyro platform.
+	 */
+	private JyroPlatform platform = null;
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -88,8 +96,21 @@ public final class Launcher {
 	 */
 	public void startup() throws JyroException {
 		ClassLoader loader = java.lang.Thread.currentThread().getContextClassLoader();
-		JyroPlatform platform = new JyroPlatform(name, home, loader, null);
+		platform = new JyroPlatform(name, home, loader, null);
 		platform.startup();
+		return;
+	}
+
+	// ======================================================================
+	// Shutdown Service
+	// ======================================================================
+	/**
+	 * Shutdown service.
+	 */
+	public void shutdown() {
+		if(platform != null){
+			platform.shutdown();
+		}
 		return;
 	}
 
@@ -103,8 +124,14 @@ public final class Launcher {
 	 * @throws JyroException
 	 */
 	public static void main(String[] args) throws JyroException {
-		Launcher launcher = new Launcher(args);
+		final Launcher launcher = new Launcher(args);
 		launcher.startup();
+		Runtime.getRuntime().addShutdownHook(new Thread(){
+			@Override
+			public void run(){
+				launcher.shutdown();
+			}
+		});
 		return;
 	}
 
