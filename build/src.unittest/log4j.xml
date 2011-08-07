@@ -7,6 +7,10 @@
         <param name="conversionPattern" value="%d %5p %c{1} - %m%n" />
      </layout>
   </appender>
+  <logger name="org.apache" additivity="false">
+    <level value ="info" />
+    <appender-ref ref="stdout" />
+  </logger> 
   <root>
     <priority value ="trace" />
     <appender-ref ref="stdout"/>

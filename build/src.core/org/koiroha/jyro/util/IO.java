@@ -10,6 +10,8 @@
 package org.koiroha.jyro.util;
 
 import java.io.*;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -215,6 +217,26 @@ public final class IO {
 			try {
 				o.close();
 			} catch(IOException ex){
+				logger.error("fail to close stream", ex);
+			}
+		}
+		return;
+	}
+
+	// ======================================================================
+	// Close Stream
+	// ======================================================================
+	/**
+	 * Close specified stream quietly. Only error level log will be output if
+	 * fail to close stream.
+	 *
+	 * @param o stream to close, or nothing to do in case null
+	 */
+	public static void close(Connection o){
+		if(o != null){
+			try {
+				o.close();
+			} catch(SQLException ex){
 				logger.error("fail to close stream", ex);
 			}
 		}

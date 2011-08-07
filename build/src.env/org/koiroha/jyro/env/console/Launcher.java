@@ -107,9 +107,28 @@ public final class Launcher {
 	/**
 	 * Shutdown service.
 	 */
-	public void shutdown() {
+	public synchronized void shutdown() {
 		if(platform != null){
 			platform.shutdown();
+			platform = null;
+			this.notifyAll();
+		}
+		return;
+	}
+
+	// ======================================================================
+	// Wait Shutdown
+	// ======================================================================
+	/**
+	 * Wait for shutdown of launcher.
+	 * 
+	 * @throws InterruptedException if interrupted in waiting shutdown
+	 */
+	public void waitForShutdown() throws InterruptedException {
+		synchronized(this){
+			if(platform != null){
+				this.wait();
+			}
 		}
 		return;
 	}
@@ -122,16 +141,19 @@ public final class Launcher {
 	 *
 	 * @param args commandline arguments
 	 * @throws JyroException
+	 * @throws InterruptedException if interrupted
 	 */
-	public static void main(String[] args) throws JyroException {
+	public static void main(String[] args) throws JyroException, InterruptedException {
 		final Launcher launcher = new Launcher(args);
 		launcher.startup();
 		Runtime.getRuntime().addShutdownHook(new Thread(){
 			@Override
 			public void run(){
+				logger.debug("running shutdown hook");
 				launcher.shutdown();
 			}
 		});
+		launcher.waitForShutdown();
 		return;
 	}
 

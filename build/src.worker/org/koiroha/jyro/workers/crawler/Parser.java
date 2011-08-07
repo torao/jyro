@@ -77,7 +77,6 @@ public class Parser extends Worker {
 		String url = job.getAttribute("url");
 		List<String> urls = retrieveLink(url);
 		WorkerContext context = getContext();
-		context.send(nodeId, job);
 		return null;
 	}
 
