@@ -7,12 +7,17 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro;
+package org.koiroha.jyro.impl;
 
 import java.util.*;
 import java.util.concurrent.*;
 
 import org.apache.log4j.Logger;
+import org.koiroha.jyro.Job;
+import org.koiroha.jyro.JobQueue;
+import org.koiroha.jyro.JobQueueFactory;
+import org.koiroha.jyro.JobQueueImpl;
+import org.koiroha.jyro.JyroException;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // JVMJobQueueFactory:

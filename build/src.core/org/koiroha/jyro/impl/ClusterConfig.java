@@ -491,10 +491,14 @@ final class ClusterConfig implements WorkerContext {
 		 * @throws JyroException
 		 */
 		public JobQueueFactory getQueueFactory() throws JyroException {
+
+			// refer queue element
 			Element elem = elem("j:jyro/j:queue");
 			if(elem == null){
 				return new JVMJobQueueFactory();
 			}
+
+			// create queue factory instance
 			String factoryName = elem.getAttribute("factory");
 			JobQueueFactory factory = null;
 			if(factoryName.equals("jvm")){
@@ -503,6 +507,8 @@ final class ClusterConfig implements WorkerContext {
 			} else {
 				factory = (JobQueueFactory)Beans.newInstance(loader, factoryName);
 			}
+
+			// set factory properties
 			for(Element prop: elemset("j:jyro/j:queue/j:property")){
 				String name = prop.getAttribute("name");
 				String value = f(prop.getAttribute("value"));
