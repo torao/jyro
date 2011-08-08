@@ -7,22 +7,26 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroga.jyro.lib;
+package org.koiroha.jyro;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// UserAgent:
+// JobListener: Job Listener
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * Listener class to receive job from queue.
  *
- * <p>
- * @version $Revision:$
- * @author torao
- * @since 2011/07/17 Java SE 6
+ * @author takami torao
  */
-public class UserAgent {
+public interface JobListener {
 
-	public void UserAgent(){
-		return;
-	}
+	// ======================================================================
+	// Receive Job
+	// ======================================================================
+	/**
+	 * Notify when specified job received on queue.
+	 *
+	 * @param job received job
+	*/
+	public void received(Job job);
 
 }

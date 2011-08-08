@@ -9,10 +9,14 @@
  */
 package org.koiroha.jyro.util;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import java.io.*;
-import java.util.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.Test;
 import org.koiroha.jyro.AbstractJyroTest;
@@ -257,7 +261,7 @@ public class IOTest extends AbstractJyroTest{
 		// ------------------------------------------------------------------
 		// nothing to do if null passed
 		try {
-			IO.close(null);
+			IO.close((Closeable)null);
 		} catch(Throwable ex){
 			fail("exception if null passed: " + ex);
 		}

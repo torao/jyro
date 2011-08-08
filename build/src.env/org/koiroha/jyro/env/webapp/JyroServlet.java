@@ -167,7 +167,7 @@ public class JyroServlet extends HttpServlet {
 			// build core list
 			List<String> names = new ArrayList<String>();
 			JyroImpl jyro = platform.getJyro();
-			for(CoreImpl core: jyro.getCores()){
+			for(ClusterImpl core: jyro.getCores()){
 				names.add(core.getName());
 			}
 
@@ -186,7 +186,7 @@ public class JyroServlet extends HttpServlet {
 			// build core list
 			List<String> names = new ArrayList<String>();
 			JyroImpl jyro = platform.getJyro();
-			CoreImpl core = jyro.getCore(elem[0]);
+			ClusterImpl core = jyro.getCore(elem[0]);
 			for(NodeImpl node: core.getNodes()){
 				names.add(node.getId());
 			}
@@ -303,15 +303,14 @@ public class JyroServlet extends HttpServlet {
 	}
 
 	// ======================================================================
-	// Serve GET Request
+	// Parse PATH_INFO
 	// ======================================================================
 	/**
+	 * Separate PATH_INFO with slash.
 	 *
-	 * @param request HTTP request
-	 * @param response HTTP response
+	 * @param request HTTP request to retrieve PATH_INFO
+	 * @return separated components
 	 * @throws UnsupportedEncodingException
-	 * @throws ServletException
-	 * @throws IOException if fail to output
 	 */
 	private static String[] parsePathInfo(HttpServletRequest request) throws UnsupportedEncodingException{
 

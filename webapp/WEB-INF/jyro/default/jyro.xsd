@@ -25,6 +25,7 @@
 		<xsd:complexType>
 			<xsd:sequence>
 				<xsd:element ref="lib" minOccurs="0" maxOccurs="unbounded"/>
+				<xsd:element ref="param" minOccurs="0" maxOccurs="unbounded"/>
 				<xsd:choice>
 					<xsd:element ref="worker" minOccurs="1" maxOccurs="1"/>
 					<xsd:element ref="script" minOccurs="1" maxOccurs="1"/>
@@ -88,6 +89,15 @@
 		</xsd:complexType>
 	</xsd:element>
 
+	<xsd:element name="param">
+		<xsd:complexType>
+			<xsd:attribute name="name" type="xsd:string" use="required">
+			</xsd:attribute>
+			<xsd:attribute name="value" type="xsd:string" use="required">
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
 	<xsd:element name="lib">
 		<xsd:annotation>
 			<xsd:documentation>
@@ -113,6 +123,12 @@
 	</xsd:simpleType>
 
 	<xsd:simpleType name="threadPriority">
+		<xsd:annotation>
+			<xsd:documentation>
+				The type of java thread priority value. This must be 1 (miniumum
+				priority) to 10 (maximum priority).
+			</xsd:documentation>
+		</xsd:annotation>
 		<xsd:restriction base="xsd:positiveInteger">
 			<xsd:minInclusive value="1"/>
 			<xsd:maxInclusive value="10"/>
