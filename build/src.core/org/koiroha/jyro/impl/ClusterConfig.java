@@ -168,12 +168,14 @@ final class ClusterConfig implements WorkerContext {
 	}
 
 	// ======================================================================
-	//
+	// Retrieve Queue
 	// ======================================================================
 	/**
+	 * Retrieve job queue for specified node id.
 	 *
 	 * @param id ID of queue
-	 * @return home directory
+	 * @return job queue
+	 * @throws JyroException if not found
 	 */
 	public JobQueue getQueue(String id) throws JyroException{
 		return factory.lookup(id);

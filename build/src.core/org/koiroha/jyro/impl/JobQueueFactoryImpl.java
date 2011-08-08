@@ -9,15 +9,10 @@
  */
 package org.koiroha.jyro.impl;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.JobQueue;
-import org.koiroha.jyro.JobQueueFactory;
-import org.koiroha.jyro.JobQueueImpl;
-import org.koiroha.jyro.JyroException;
+import org.koiroha.jyro.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // JobQueueFactoryImpl: Default Implementation for JobQueueFactory
@@ -104,9 +99,9 @@ public abstract class JobQueueFactoryImpl implements JobQueueFactory {
 	/**
 	 * Create new job queue instance.
 	 *
-	 * @param nodeId
+	 * @param nodeId node id
 	 * @return job queue implementation
-	 * @throws JyroException
+	 * @throws JyroException if fail to create queue
 	 */
 	protected abstract JobQueueImpl createQueue(String nodeId) throws JyroException;
 

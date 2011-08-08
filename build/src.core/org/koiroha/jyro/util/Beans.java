@@ -16,15 +16,16 @@ import org.apache.log4j.Logger;
 import org.koiroha.jyro.JyroException;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// :
+// Beans: Beans Utility
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * The utility class for Java Beans.
  *
- * <p>
  * @author torao
  * @since 2011/07/24 Java SE 6
  */
 public final class Beans {
+
 	// ======================================================================
 	// Log Output
 	// ======================================================================
@@ -34,10 +35,10 @@ public final class Beans {
 	private static final Logger logger = Logger.getLogger(Beans.class);
 
 	// ======================================================================
-	//
+	// Constructor
 	// ======================================================================
 	/**
-	 *
+	 * The default constructor hidden in class.
 	 */
 	private Beans() {
 		return;
@@ -47,10 +48,11 @@ public final class Beans {
 	// Create New Instance
 	// ======================================================================
 	/**
-	 * Create new instance.
+	 * Create new instance for specified class name.
 	 *
 	 * @param loader class loader
 	 * @param className class name
+	 * @return instance
 	 * @throws JyroException fail to create instance
 	 */
 	public static Object newInstance(ClassLoader loader, String className) throws JyroException{
@@ -66,7 +68,7 @@ public final class Beans {
 	// Set Bean Property
 	// ======================================================================
 	/**
-	 * Set bean property.
+	 * Set bean property to specified object.
 	 *
 	 * @param bean object to set property
 	 * @param name property name
@@ -103,17 +105,19 @@ public final class Beans {
 	}
 
 	// ======================================================================
-	// Set Bean Property
+	// Convert Value
 	// ======================================================================
 	/**
-	 * Set bean property.
+	 * Convert string-specified value to type.
 	 *
-	 * @param bean object to set property
-	 * @param name property name
 	 * @param value property value
+	 * @param type return type
+	 * @return object
 	 * @throws JyroException if attribute is not a valid number
 	 */
 	public static Object translate(String value, Class<?> type) throws JyroException{
+
+		// TODO array, Map, List or else
 
 		// primitive type conversion
 		if(type.isPrimitive()){

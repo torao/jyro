@@ -10,23 +10,11 @@
 package org.koiroha.jyro.impl;
 
 import java.util.*;
-import java.util.concurrent.*;
 
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.ObjectMessage;
-import javax.jms.QueueConnection;
-import javax.jms.QueueReceiver;
-import javax.jms.QueueSender;
-import javax.jms.QueueSession;
-import javax.jms.Session;
+import javax.jms.*;
 
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.Job;
-import org.koiroha.jyro.JobQueue;
-import org.koiroha.jyro.JobQueueFactory;
-import org.koiroha.jyro.JobQueueImpl;
-import org.koiroha.jyro.JyroException;
+import org.koiroha.jyro.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // JMSJobQueueFactory:
@@ -75,9 +63,10 @@ public class JMSJobQueueFactory implements JobQueueFactory {
 	}
 
 	// ======================================================================
-	//
+	// Create Queue
 	// ======================================================================
 	/**
+	 * Create
 	 *
 	 * @param nodeId
 	 * @return

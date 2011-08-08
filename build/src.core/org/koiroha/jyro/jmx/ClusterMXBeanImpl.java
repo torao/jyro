@@ -71,7 +71,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	*/
 	@Override
 	public String getName(){
-		return getCore().getName();
+		return getCluster().getName();
 	}
 
 	// ======================================================================
@@ -84,7 +84,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	 */
 	@Override
 	public String getStatus(){
-		return getCore().getStatus().toString();
+		return getCluster().getStatus().toString();
 	}
 
 	// ======================================================================
@@ -97,7 +97,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	 */
 	@Override
 	public boolean isModified(){
-		return getCore().isModified();
+		return getCluster().isModified();
 	}
 
 	// ======================================================================
@@ -110,7 +110,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	*/
 	@Override
 	public String getDirectory(){
-		return getCore().getDirectory().getAbsolutePath();
+		return getCluster().getDirectory().getAbsolutePath();
 	}
 
 	// ======================================================================
@@ -123,7 +123,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	*/
 	@Override
 	public long getUptime(){
-		return getCore().getUptime();
+		return getCluster().getUptime();
 	}
 
 	// ======================================================================
@@ -137,7 +137,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	@Override
 	public int getActiveWorkers(){
 		int count = 0;
-		for(NodeImpl node: getCore().getNodes()){
+		for(NodeImpl node: getCluster().getNodes()){
 			count += node.getActiveWorkers();
 		}
 		return count;
@@ -149,7 +149,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	@Override
 	public double getLoadAverage1Min() {
 		double la = 0.0;
-		for(NodeImpl node: getCore().getNodes()){
+		for(NodeImpl node: getCluster().getNodes()){
 			la += node.getLoadAverage()[0];
 		}
 		return la;
@@ -161,7 +161,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	@Override
 	public double getLoadAverage5Min() {
 		double la = 0.0;
-		for(NodeImpl node: getCore().getNodes()){
+		for(NodeImpl node: getCluster().getNodes()){
 			la += node.getLoadAverage()[1];
 		}
 		return la;
@@ -173,7 +173,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	@Override
 	public double getLoadAverage15Min() {
 		double la = 0.0;
-		for(NodeImpl node: getCore().getNodes()){
+		for(NodeImpl node: getCluster().getNodes()){
 			la += node.getLoadAverage()[2];
 		}
 		return la;
@@ -192,12 +192,17 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	@Override
 	public void post(String nodeId, String job) throws JyroException, ParseException {
 		Job j = Job.parse(job);
-		getCore().post(nodeId, j);
+		getCluster().post(nodeId, j);
 		return;
 	}
 
+	// ======================================================================
+	// Refer Operation Info
+	// ======================================================================
 	/**
 	 * TODO How to describe MBeanOperationInfo?
+	 *
+	 * @return operation information
 	 */
 	protected MBeanOperationInfo[] createMBeanOperationInfo(){
 		return new MBeanOperationInfo[] {
@@ -207,16 +212,17 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 			}, "void", MBeanOperationInfo.ACTION),
 		};
 	}
+
 	// ======================================================================
-	// Refer Core
+	// Refer Cluster
 	// ======================================================================
 	/**
-	 * Refer core of this instance.
+	 * Refer cluster of this instance.
 	 *
-	 * @return jyro core
+	 * @return jyro cluster
 	*/
-	private ClusterImpl getCore(){
-		return mxbean.getJyro().getCore(name);
+	private ClusterImpl getCluster(){
+		return mxbean.getJyro().getCluster(name);
 	}
 
 }

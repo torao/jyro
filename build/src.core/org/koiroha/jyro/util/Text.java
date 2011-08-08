@@ -384,7 +384,7 @@ public final class Text {
 		}
 
 		// iterable contains List
-		if(value instanceof Iterable){
+		if(value instanceof Iterable<?>){
 			out.append('[');
 			Iterator<?> it = ((Iterable<?>)value).iterator();
 			while(it.hasNext()){

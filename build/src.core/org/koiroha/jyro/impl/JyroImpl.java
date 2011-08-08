@@ -55,7 +55,7 @@ public class JyroImpl {
 	/**
 	 * The map of all JyroCore instance.
 	 */
-	private final Map<String,ClusterImpl> cores = new HashMap<String,ClusterImpl>();
+	private final Map<String,ClusterImpl> clusters = new HashMap<String,ClusterImpl>();
 
 	// ======================================================================
 	// Directory
@@ -96,15 +96,15 @@ public class JyroImpl {
 					continue;
 				}
 				ClusterImpl core = new ClusterImpl(names[i], file, parent, prop);
-				cores.put(names[i], core);
+				clusters.put(names[i], core);
 			}
 		}
 
 		// logging stuations
-		if(cores.size() == 0){
+		if(clusters.size() == 0){
 			logger.warn("no jyro core load from: " + dir);
 		} else {
-			logger.debug("load " + cores.size() + " cores: " + dir);
+			logger.debug("load " + clusters.size() + " cores: " + dir);
 		}
 		return;
 	}
@@ -134,28 +134,28 @@ public class JyroImpl {
 	}
 
 	// ======================================================================
-	// Retrieve Jyro Cores
+	// Retrieve Jyro Cluster
 	// ======================================================================
 	/**
-	 * Retrieve Jyro cores as iterable.
+	 * Retrieve Jyro cluster as iterable.
 	 *
-	 * @return jyro cores
+	 * @return jyro cluster
 	 */
-	public Iterable<ClusterImpl> getCores(){
-		return new ArrayList<ClusterImpl>(cores.values());
+	public Iterable<ClusterImpl> getClusters(){
+		return new ArrayList<ClusterImpl>(clusters.values());
 	}
 
 	// ======================================================================
-	// Retrieve Jyro Core
+	// Retrieve Jyro Cluster
 	// ======================================================================
 	/**
-	 * Retrieve Jyro core by specified name. Null will return is not found.
+	 * Retrieve Jyro cluster by specified name. Null will return is not found.
 	 *
 	 * @param name core name
 	 * @return jyro core
 	 */
-	public ClusterImpl getCore(String name){
-		return cores.get(name);
+	public ClusterImpl getCluster(String name){
+		return clusters.get(name);
 	}
 
 	// ======================================================================
@@ -170,12 +170,12 @@ public class JyroImpl {
 		logger.debug("startup()");
 
 		// boot with alphanumeric sequence
-		List<String> names = new ArrayList<String>(cores.keySet());
+		List<String> names = new ArrayList<String>(clusters.keySet());
 		Collections.sort(names);
 
 		// startup all cores
 		for(String name: names){
-			ClusterImpl core = cores.get(name);
+			ClusterImpl core = clusters.get(name);
 			core.startup();
 		}
 		return;
@@ -193,12 +193,12 @@ public class JyroImpl {
 		logger.debug("shutdown()");
 
 		// shutdown with reverse alphanumeric sequence
-		List<String> names = new ArrayList<String>(cores.keySet());
+		List<String> names = new ArrayList<String>(clusters.keySet());
 		Collections.sort(names, Collections.reverseOrder());
 
 		// shutdown all cores.
 		for(String name: names){
-			ClusterImpl core = cores.get(name);
+			ClusterImpl core = clusters.get(name);
 			core.shutdown();
 		}
 

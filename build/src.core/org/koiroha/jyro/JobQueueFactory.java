@@ -28,7 +28,8 @@ public interface JobQueueFactory {
 	 * Create job queue for specified node id
 	 *
 	 * @param nodeId node ID of queue
-	 * @throws JyroException if fail to post job
+	 * @return the implementation of job queue
+	 * @throws JyroException if fail to create job queue
 	 */
 	public JobQueueImpl create(String nodeId) throws JyroException;
 
@@ -39,6 +40,7 @@ public interface JobQueueFactory {
 	 * Refer job queue to post job.
 	 *
 	 * @param nodeId node ID of queue
+	 * @return the implementation of job queue
 	 * @throws JyroException if fail to post job
 	 */
 	public JobQueue lookup(String nodeId) throws JyroException;

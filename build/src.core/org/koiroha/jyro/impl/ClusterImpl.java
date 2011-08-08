@@ -232,6 +232,9 @@ public class ClusterImpl {
 	/**
 	 * Post job to this core.
 	 *
+	 * @param id node ID of post to
+	 * @param job job to post
+	 * @throws JyroException if fail to post job
 	 */
 	public void post(String id, Job job) throws JyroException {
 		JobQueue queue = config.getQueue(id);

@@ -153,7 +153,7 @@ public class JyroServlet extends HttpServlet {
 	 *
 	 * @param request HTTP request
 	 * @param response HTTP response
-	 * @throws ServletException
+	 * @throws ServletException if fail to execute servlet
 	 * @throws IOException if fail to output
 	 */
 	@Override
@@ -167,7 +167,7 @@ public class JyroServlet extends HttpServlet {
 			// build core list
 			List<String> names = new ArrayList<String>();
 			JyroImpl jyro = platform.getJyro();
-			for(ClusterImpl core: jyro.getCores()){
+			for(ClusterImpl core: jyro.getClusters()){
 				names.add(core.getName());
 			}
 
@@ -186,7 +186,7 @@ public class JyroServlet extends HttpServlet {
 			// build core list
 			List<String> names = new ArrayList<String>();
 			JyroImpl jyro = platform.getJyro();
-			ClusterImpl core = jyro.getCore(elem[0]);
+			ClusterImpl core = jyro.getCluster(elem[0]);
 			for(NodeImpl node: core.getNodes()){
 				names.add(node.getId());
 			}
@@ -210,7 +210,7 @@ public class JyroServlet extends HttpServlet {
 	 *
 	 * @param request HTTP request
 	 * @param response HTTP response
-	 * @throws ServletException
+	 * @throws ServletException if fail to execute servlet
 	 * @throws IOException if fail to output
 	 */
 	@Override

@@ -186,9 +186,10 @@ public class NodeImpl {
 	// Constructor
 	// ======================================================================
 	/**
-	 * @param proc process to execute on this node
 	 * @param id task name of this node
 	 * @param loader class loader of this node
+	 * @param queue job queue implementation
+	 * @param proc process to execute on this node
 	 */
 	public NodeImpl(String id, ClassLoader loader, JobQueueImpl queue, Worker proc) {
 		assert(id != null);
@@ -204,7 +205,6 @@ public class NodeImpl {
 		this.loadAverage.start();
 
 		this.threadGroup = new ThreadGroup(id);
-
 		return;
 	}
 

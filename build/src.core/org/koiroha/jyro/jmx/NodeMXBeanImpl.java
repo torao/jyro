@@ -336,7 +336,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 * @return node
 	*/
 	private NodeImpl getNode(){
-		return mxbean.getJyro().getCore(core).getNode(node);
+		return mxbean.getJyro().getCluster(core).getNode(node);
 	}
 
 }
