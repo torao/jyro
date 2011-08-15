@@ -9,12 +9,26 @@
  */
 package org.koiroha.jyro.impl;
 
-import java.lang.management.*;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.text.NumberFormat;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.log4j.*;
-import org.koiroha.jyro.*;
+import org.apache.log4j.Logger;
+import org.apache.log4j.NDC;
+import org.koiroha.jyro.Job;
+import org.koiroha.jyro.JobListener;
+import org.koiroha.jyro.JobQueueImpl;
+import org.koiroha.jyro.JyroException;
+import org.koiroha.jyro.Worker;
+import org.koiroha.jyro.WorkerException;
+import org.koiroha.jyro.WorkerFilter;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // NodeImpl:
@@ -51,6 +65,14 @@ public class NodeImpl {
 	 * Class Loader of this node.
 	 */
 	private final ClassLoader loader;
+
+	// ======================================================================
+	// Filter
+	// ======================================================================
+	/**
+	 * Worker filters.
+	 */
+	private final List<WorkerFilter> filters = new ArrayList<WorkerFilter>();
 
 	// ======================================================================
 	// Worker
@@ -522,6 +544,64 @@ public class NodeImpl {
 			NDC.pop();
 		}
 		return result;
+	}
+
+	// ======================================================================
+	// Execute Worker
+	// ======================================================================
+	/**
+	 * Execute worker process.
+	 *
+	 * @param job arguments for worker
+	 * @return result
+	*/
+	private Object execFilters(Job job){
+
+		// create terminal runnalbe object
+		final Job j = job;
+		final Object[] result = new Object[1];
+		Runnable r = new Runnable(){
+			@Override
+			public void run(){
+				result[0] = worker.receive(j);
+			}
+		};
+		return result;
+	}
+
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// NodeThreadFactory
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	/**
+	 * The thread factory for this node.
+	*/
+	private class FilterRunnableChain implements Runnable {
+
+		/** Next runnable. */
+		private final Runnable next;
+
+		/** Next runnable. */
+		private final WorkerFilter filter;
+
+		/**
+		 * Constructor.
+		 * @param filter filter to call next
+		 * @param next next called runnable object
+		 */
+		public FilterRunnableChain(WorkerFilter filter, Runnable next){
+			this.filter = filter;
+			this.next = next;
+			return;
+		}
+
+		/**
+		 * Execute next runnable object.
+		 */
+		@Override
+		public void run() {
+			next.run();
+			return;
+		}
 	}
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

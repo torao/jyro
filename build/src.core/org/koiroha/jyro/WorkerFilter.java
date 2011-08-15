@@ -10,7 +10,7 @@
 package org.koiroha.jyro;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// WorkerFilter: I/O Utility
+// WorkerFilter: Filter for Worker
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  *
@@ -19,5 +19,30 @@ package org.koiroha.jyro;
  * @since 2011/07/03 Java SE 6
 */
 public interface WorkerFilter {
+
+	// ======================================================================
+	// Execute Worker
+	// ======================================================================
+	/**
+	 * Execute worker process.
+	 *
+	 * @param job arguments for worker
+	 * @return result
+	*/
+	public void filter(Runnable r) throws WorkerException;
+
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// NodeThreadFactory
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	/**
+	 * The thread factory for this node.
+	*/
+	public interface Hop {
+
+		/**
+		 * Execute next runnable object.
+		 */
+		public void execute(Job job) throws WorkerException;
+	}
 
 }

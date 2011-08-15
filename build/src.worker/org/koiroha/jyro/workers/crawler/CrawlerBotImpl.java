@@ -10,23 +10,35 @@
 */
 package org.koiroha.jyro.workers.crawler;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
-import javax.xml.parsers.*;
-import javax.xml.xpath.*;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathException;
+import javax.xml.xpath.XPathFactory;
 
-import org.apache.http.*;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.*;
+import org.koiroha.jyro.Jyro;
+import org.koiroha.jyro.WorkerException;
 import org.koiroha.xml.Xml;
 import org.koiroha.xml.parser.HTMLDocumentBuilderFactory;
-import org.w3c.dom.*;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 
@@ -60,6 +72,14 @@ public class CrawlerBotImpl implements CrawlerBot {
 	private long maxContentLength = 1 * 1024 * 1024;
 
 	// ======================================================================
+	// User-Agent
+	// ======================================================================
+	/**
+	 * The value of User-Agent header.
+	 */
+	private String userAgent = "Mozilla/5.0 (compatible; Jyrobot/" + Jyro.VERSION + "; +http://www.koiroha.org/jyro.html)";
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -88,6 +108,7 @@ public class CrawlerBotImpl implements CrawlerBot {
 	 * @param content content to retrieve
 	 * @throws WorkerException if fail to retrieve
 	*/
+	@Override
 	public void retrieveContent(Content content) throws WorkerException{
 		InputStream in = null;
 		try {
@@ -95,7 +116,7 @@ public class CrawlerBotImpl implements CrawlerBot {
 			// execute request
 			HttpClient client = new DefaultHttpClient();
 			HttpGet request = new HttpGet(content.uri);
-			request.setHeader("User-Agent", "Mozilla/5.0 (compatible; Jyrobot/" + Jyro.VERSION + "; +http://www.koiroha.org/jyro.html)");
+			request.setHeader("User-Agent", userAgent);
 			if(content.referer != null){
 				request.setHeader("Referer", content.referer.toASCIIString());
 			}
@@ -140,6 +161,7 @@ public class CrawlerBotImpl implements CrawlerBot {
 	 * @param content content to analyze
 	 * @throws WorkerException if fail to retrieve
 	*/
+	@Override
 	@Stage
 	public void analyzeContent(Content content) throws WorkerException {
 		List<URI> urls = new ArrayList<URI>();
