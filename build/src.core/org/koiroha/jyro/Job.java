@@ -9,17 +9,16 @@
  */
 package org.koiroha.jyro;
 
-import java.io.*;
+import java.io.Serializable;
 import java.util.*;
-import java.util.regex.Pattern;
 
-import org.koiroha.jyro.util.*;
+import org.koiroha.jyro.util.Text;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Job: Job
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * The job class to send and receive between {@link JobQueue}.
+ * The job class to send and receive between {@link JobReceiver}.
  *
  * @author takami torao
  */
@@ -34,169 +33,117 @@ public final class Job implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	// ======================================================================
-	// Name Pattern
+	// Function Name
 	// ======================================================================
 	/**
-	 * Name pattern of job.
+	 * Target function name to execute this job.
 	 */
-	private static final Pattern NAME = Pattern.compile("[^\"\'\\{\\}\\s]+");
+	private final String func;
 
 	// ======================================================================
-	// Job Name
+	// Method Arguments
 	// ======================================================================
 	/**
-	 * The name of this job.
+	 * Arguments to call method.
 	 */
-	private final String name;
+	private final Object[] args;
 
 	// ======================================================================
-	// Attributes
+	// Callback Function
 	// ======================================================================
 	/**
-	 * Attributes of this job mapped by key.
+	 * Execution callback interface.
 	 */
-	private final Map<String,String> attributes = new HashMap<String,String>();
+	private final Callback callback;
+
+	// ======================================================================
+	// Callback Function
+	// ======================================================================
+	/**
+	 * Execution callback interface.
+	 */
+	private transient Map<String,Object> attributes = null;
 
 	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
-	 * Create job instance by to specify job name without any attributes.
+	 * Create job instance by to specify function without any attributes.
 	 *
-	 * @param name name of this job
+	 * @param method method to call as worker
+	 * @param args method arguments
+	 * @param callback callback
 	 */
-	public Job(String name) {
-		this(name, null);
+	public Job(String func, Object[] args, Callback callback) {
+		this.func = func;
+		this.args = args;
+		this.callback = callback;
 		return;
 	}
 
 	// ======================================================================
-	// Constructor
+	// Retrieve Function Name
 	// ======================================================================
 	/**
-	 * Create job instance by to specify job name and attributes.
+	 * Retrieve function name of worker to execute this job.
 	 *
-	 * @param name name of this job
-	 * @param attrs attribute set of this job
+	 * @return function name
 	 */
-	public Job(String name, Map<String,String> attrs) {
-		this.name = name;
-		if(attrs != null){
-			this.attributes.putAll(attrs);
-		}
+	public String getFunction(){
+		return func;
+	}
 
-		// validate name restriction
-		if(! NAME.matcher(name).matches()){
-			throw new IllegalArgumentException("invalid job name: " + name);
+	// ======================================================================
+	// Retrieve Arguments
+	// ======================================================================
+	/**
+	 * Retrieve arguments of worker to execute this job.
+	 *
+	 * @return arguments
+	 */
+	public Object[] getArguments(){
+		return args;
+	}
+
+	// ======================================================================
+	// Refer Callback
+	// ======================================================================
+	/**
+	 * Refer callback.
+	 *
+	 * @return callback object
+	 */
+	public Callback getCallback(){
+		return callback;
+	}
+
+	// ======================================================================
+	// Set Attribute
+	// ======================================================================
+	/**
+	 *
+	 * @return callback object
+	 */
+	public void setAttribute(String name, Object value){
+		if(attributes == null){
+			attributes = new HashMap<String, Object>();
 		}
+		attributes.put(name, value);
 		return;
 	}
 
 	// ======================================================================
-	// Retrieve Job Name
+	// Set Attribute
 	// ======================================================================
 	/**
-	 * Retrieve the name of this job. Note that the job name does not
-	 * identify each of its instance.
 	 *
-	 * @return the name of this job
+	 * @return callback object
 	 */
-	public String getName() {
-		return name;
-	}
-
-	// ======================================================================
-	// Retrieve Job Attribute
-	// ======================================================================
-	/**
-	 * Retrieve attribute value of this job associated with specified key.
-	 * If no value found, the null will return.
-	 *
-	 * @param key key of attribute
-	 * @return value of attribute
-	 */
-	public String getAttribute(String key){
-		return attributes.get(key);
-	}
-
-	// ======================================================================
-	// Export Job
-	// ======================================================================
-	/**
-	 * Export contentt of this job to specified output.
-	 *
-	 * @param out output to export this instance
-	 * @throws IOException if fail to output
-	 * @see #parse(String)
-	*/
-	public void export(Appendable out) throws IOException {
-		out.append(name);
-		if(! attributes.isEmpty()){
-			out.append('{');
-			Iterator<String> it = attributes.keySet().iterator();
-			while(it.hasNext()){
-				String key = it.next();
-				String value = attributes.get(key);
-				out.append(key);
-				out.append(':');
-				Text.literize(out, value);
-				if(it.hasNext()){
-					out.append(',');
-				}
-			}
-			out.append('}');
+	public Object getAttribute(String name){
+		if(attributes == null){
+			return null;
 		}
-		return;
-	}
-
-	// ======================================================================
-	// Retrieve Hash Value
-	// ======================================================================
-	/**
-	 * Retrieve hash value of this job instance.
-	 *
-	 * @return hash value
-	*/
-	@Override
-	public int hashCode() {
-		return name.hashCode() + attributes.size();
-	}
-
-	// ======================================================================
-	// Evaluate Equality
-	// ======================================================================
-	/**
-	 * Evaluate equality for specified object.
-	 *
-	 * @param obj object
-	 * @return true if equals to obj
-	*/
-	@Override
-	public boolean equals(Object obj) {
-
-		// false if instance is not Job
-		if(! (obj instanceof Job)){
-			return false;
-		}
-		Job other = (Job)obj;
-
-		// false if job name not matches
-		if(! this.name.equals(other.name)){
-			return false;
-		}
-
-		// false if attribute count not matches
-		if(this.attributes.size() != other.attributes.size()){
-			return false;
-		}
-
-		// false if attribute value not matches
-		for(Map.Entry<String,String> e: this.attributes.entrySet()){
-			if(e.getValue().equals(other.attributes.get(e.getKey()))){
-				return false;
-			}
-		}
-		return true;
+		return attributes.get(name);
 	}
 
 	// ======================================================================
@@ -210,107 +157,136 @@ public final class Job implements Serializable {
 	@Override
 	public String toString() {
 		StringBuilder buffer = new StringBuilder();
-		try {
-			export(buffer);
-		} catch(IOException ex){/* */}
+		buffer.append(func);
+		buffer.append('(');
+		for(int i=0; i<args.length; i++){
+			if(i != 0){
+				buffer.append(',');
+			}
+			buffer.append(Text.json(args[i]));
+		}
+		buffer.append(')');
 		return buffer.toString();
 	}
 
-	// ======================================================================
-	// Parse Text
-	// ======================================================================
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// Result:
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	/**
-	 * Parse specified plain text and build job instance. The plain text
-	 * must be formatted JSON-like as follows.
-	 * <pre>
-	 * name{attr1:"value1",attr2:"value2",...}
-	 * </pre>
 	 *
-	 * @param text the job representation plain text
-	 * @return job instance
-	 * @throws ParseException fail to parse
-	*/
-	public static final Job parse(String text) throws ParseException{
-		String name = text.trim();
-		Map<String,String> attr = new HashMap<String,String>();
-		int sep = text.indexOf('{');
-		if(sep >= 0){
+	 */
+	public class Result implements Serializable {
 
-			// split name
-			name = text.substring(0, sep).trim();
+		// ==================================================================
+		// Serial Version
+		// ==================================================================
+		/**
+		 * Serial version UID of this class.
+		 */
+		private static final long serialVersionUID = 1L;
 
-			// split attribute fields.
-			text = text.substring(sep+1).trim();
-			if(! text.endsWith("}")){
-				throw new ParseException("'}' expected on end of text: " + text);
-			}
-			text = text.substring(0, text.length()-1);
+		// ==================================================================
+		// Result
+		// ==================================================================
+		/**
+		 * Result of this job
+		 */
+		private final Object result;
 
-			// parse attribute field
-			StringBuilder buffer = new StringBuilder(text);
-			while(true){
-				String id = parseIdentifier(buffer, ':');
-				if(id == null){
-					break;
-				}
-				String value = parseValue(buffer, ',');
-				attr.put(id, value);
-			}
+		// ==================================================================
+		// Exception
+		// ==================================================================
+		/**
+		 * Exception of this job
+		 */
+		private final Throwable exception;
+
+		// ==================================================================
+		// Exception
+		// ==================================================================
+		/**
+		 * Exception of this job
+		 */
+		public Result(Object result, Throwable exception){
+			assert(result == null || exception == null);
+			this.result = result;
+			this.exception = exception;
+			return;
 		}
-		return new Job(name, attr);
+
+		// ==================================================================
+		// Refer Job
+		// ==================================================================
+		/**
+		 * Refer job of this result.
+		 *
+		 * @return job
+		 */
+		public Job getJob(){
+			return Job.this;
+		}
+
+		// ==================================================================
+		// Refer Result
+		// ==================================================================
+		/**
+		 * Refer result of this job.
+		 *
+		 * @return result object
+		 */
+		public Object getResult(){
+			return result;
+		}
+
+		// ==================================================================
+		// Refer Exception
+		// ==================================================================
+		/**
+		 * Refer exception of this job.
+		 *
+		 * @return exception object
+		 */
+		public Throwable getException(){
+			return exception;
+		}
+
+		// ==================================================================
+		// Callback
+		// ==================================================================
+		/**
+		 * Execute callback in current thread.
+		 */
+		public void callback(){
+			Job job = getJob();
+			Job.Callback callback = job.getCallback();
+			if(callback != null){
+				callback.callback(this);
+			}
+			return;
+		}
+
 	}
 
-	// ======================================================================
-	// Parse Identifier
-	// ======================================================================
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// Callback:
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	/**
-	 * Parse and split identifier from head of buffer to delimiter.
 	 *
-	 * @param buffer buffer
-	 * @param delim delimiter character
-	 * @return identifier string, or null if buffer has no delimiter
-	*/
-	private static String parseIdentifier(StringBuilder buffer, char delim){
-		int i = 0;
-		while(true){
-			if(i == buffer.length()){
-				return null;
-			}
-			char ch = buffer.charAt(i);
-			if(ch == delim){
-				break;
-			}
-			i ++;
-		}
-		String id = buffer.substring(0, i);
-		buffer.delete(0, i+1);
-		return id.trim();
-	}
+	 */
+	public interface Callback extends Serializable {
 
-	// ======================================================================
-	// Parse Identifier
-	// ======================================================================
-	/**
-	 * Parse and split identifier from head of buffer to delimiter.
-	 *
-	 * @param buffer buffer
-	 * @param delim delimiter character
-	 * @return identifier string, or null if buffer has no delimiter
-	 * @throws ParseException if invalid format specified
-	*/
-	private static String parseValue(StringBuilder buffer, char delim) throws ParseException{
-		int i = 0;
-		for(/* */; i<buffer.length(); i++){
-			char ch = buffer.charAt(i);
-			if(ch == '\\'){
-				i ++;
-			} else if(ch == delim){
-				break;
-			}
-		}
-		String value = buffer.substring(0, i);
-		buffer.delete(0, i+1);
-		return Text.unliterize(value.trim());
+		// ==================================================================
+		// Finish Callback
+		// ==================================================================
+		/**
+		 * Callback to finish job execution.
+		 *
+		 * @param job target job instance
+		 * @param result execution result
+		 * @param ex exception if error occured
+		*/
+		public void callback(Result result);
+
 	}
 
 }

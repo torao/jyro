@@ -17,14 +17,14 @@ import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// ClusterImpl: Node Container
+// Cluster: Node Container
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Parallel processing container class.
+ * Parallel processing container.
  *
  * @author takami torao
  */
-public class ClusterImpl {
+public class Cluster {
 
 	// ======================================================================
 	// Log Output
@@ -32,13 +32,13 @@ public class ClusterImpl {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(ClusterImpl.class);
+	private static final Logger logger = Logger.getLogger(Cluster.class);
 
 	// ======================================================================
 	// XML Namespace
 	// ======================================================================
 	/**
-	 * XML Namespace of Jyro configuration xml.
+	 * XML Namespace of cluster configuration xml.
 	 */
 	public static final String XMLNS10 = "http://www.koiroha.org/xmlns/jyro/configuration_1.0";
 
@@ -62,15 +62,15 @@ public class ClusterImpl {
 	// Configuration File Name
 	// ======================================================================
 	/**
-	 * Configuration file name of jyro instance. ${jyro.home}/${jyro.name}/conf/{@value}
+	 * Configuration file name of cluster instance. ${jyro.home}/${jyro.name}/conf/{@value}
 	 */
 	public static final String FILE_CONF = "jyro.xml";
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	// Status: Core Status
+	// Status: Cluster Status
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	/**
-	 * The enumeration value that specify core status.
+	 * The enumeration value that specify cluster status.
 	 */
 	public enum Status {
 		/** */
@@ -84,18 +84,18 @@ public class ClusterImpl {
 	}
 
 	// ======================================================================
-	// Core Name
+	// Cluster Name
 	// ======================================================================
 	/**
-	 * The name of this core.
+	 * The name of this cluster.
 	 */
 	private final String name;
 
 	// ======================================================================
-	// Core Status
+	// Cluster Status
 	// ======================================================================
 	/**
-	 * The status of this core.
+	 * The status of this cluster.
 	 */
 	private Status status = Status.STOPED;
 
@@ -103,9 +103,9 @@ public class ClusterImpl {
 	// Configuration
 	// ======================================================================
 	/**
-	 * Configuration of this core.
+	 * Configuration of this cluster.
 	 */
-	private final ClusterConfig config;
+	private final Config config;
 
 	// ======================================================================
 	// Start Time
@@ -125,38 +125,38 @@ public class ClusterImpl {
 	 * @param prop init property replace with placeholder such as ${foo.bar}
 	 * @throws JyroException if cannot configure instance
 	 */
-	public ClusterImpl(String name, File dir, ClassLoader parent, Properties prop) throws JyroException{
-		logger.debug("initializing JyroCore: " + name);
+	public Cluster(String name, File dir, ClassLoader parent, Properties prop) throws JyroException{
+		logger.debug("initializing cluster: " + name);
 
 		// set core-depend context parameters
 		prop = new Properties(prop);
-		prop.setProperty("core.name", name);
+		prop.setProperty("cluster.name", name);
 
 		// set instance properties
 		this.name = name;
-		this.config = new ClusterConfig(dir, parent, prop);
+		this.config = new Config(dir, parent, prop);
 		return;
 	}
 
 	// ======================================================================
-	// Retrieve Core Name
+	// Retrieve Cluster Name
 	// ======================================================================
 	/**
-	 * Retrieve the name of this core.
+	 * Retrieve the name of this cluster.
 	 *
-	 * @return core name
+	 * @return cluster name
 	 */
 	public String getName() {
 		return name;
 	}
 
 	// ======================================================================
-	// Retrieve Core Status
+	// Retrieve Cluster Status
 	// ======================================================================
 	/**
-	 * Retrieve the status of this core.
+	 * Retrieve the status of this cluster.
 	 *
-	 * @return core status
+	 * @return cluster status
 	 */
 	public Status getStatus() {
 		return status;
@@ -166,11 +166,11 @@ public class ClusterImpl {
 	// Retrieve Nodes
 	// ======================================================================
 	/**
-	 * Retrieve nodes on this core.
+	 * Retrieve nodes on this cluster.
 	 *
 	 * @return iterable nodes
 	 */
-	public Iterable<NodeImpl> getNodes(){
+	public Iterable<Node> getNodes(){
 		return config.getNodes();
 	}
 
@@ -183,7 +183,7 @@ public class ClusterImpl {
 	 * @param id ID of node
 	 * @return node
 	 */
-	public NodeImpl getNode(String id){
+	public Node getNode(String id){
 		return config.getNode(id);
 	}
 
@@ -191,7 +191,7 @@ public class ClusterImpl {
 	// Retrieve Home Directory
 	// ======================================================================
 	/**
-	 * Retrieve home directory of this jyro instance.
+	 * Retrieve home directory of this cluster instance.
 	 *
 	 * @return home directory
 	 */
@@ -200,10 +200,10 @@ public class ClusterImpl {
 	}
 
 	// ======================================================================
-	// Retrieve Home Directory
+	// Retrieve Uptime
 	// ======================================================================
 	/**
-	 * Retrieve home directory of this jyro instance.
+	 * Retrieve uptime in millis of this cluster instance.
 	 *
 	 * @return home directory
 	 */
@@ -218,7 +218,7 @@ public class ClusterImpl {
 	// Retrieve Modified
 	// ======================================================================
 	/**
-	 * Retrieve that whether core-dependent files are modified or not.
+	 * Retrieve that whether cluster-dependent files are modified or not.
 	 *
 	 * @return true if one or more dependency files are modified
 	 */
@@ -227,26 +227,10 @@ public class ClusterImpl {
 	}
 
 	// ======================================================================
-	// Post Job
-	// ======================================================================
-	/**
-	 * Post job to this core.
-	 *
-	 * @param id node ID of post to
-	 * @param job job to post
-	 * @throws JyroException if fail to post job
-	 */
-	public void post(String id, Job job) throws JyroException {
-		JobQueue queue = config.getQueue(id);
-		queue.post(job);
-		return;
-	}
-
-	// ======================================================================
 	// Startup Services
 	// ======================================================================
 	/**
-	 * Start all services in this instance.
+	 * Start all nodes in this instance.
 	 *
 	 * @throws JyroException if fail to startup jyro
 	 */
@@ -272,6 +256,19 @@ public class ClusterImpl {
 		this.config.shutdown();
 		this.startTime = -1;
 		this.status = Status.STOPED;
+		return;
+	}
+
+	// ======================================================================
+	// Shutdown Services
+	// ======================================================================
+	/**
+	 * Shutdown all services in this instance.
+	 *
+	 * @throws JyroException if fail to shutdown jyro
+	 */
+	public void send(Job job) throws JyroException {
+		config.send(job);
 		return;
 	}
 

@@ -11,9 +11,7 @@
 package org.koiroha.jyro.jmx;
 
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.*;
-import org.koiroha.jyro.impl.NodeImpl;
-import org.koiroha.jyro.util.ParseException;
+import org.koiroha.jyro.impl.Node;
 
 
 
@@ -88,19 +86,6 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	@Override
 	public String getId(){
 		return getNode().getId();
-	}
-
-	// ======================================================================
-	// Refer Waiting Jobs
-	// ======================================================================
-	/**
-	 * Refer waiting jobs of node.
-	 *
-	 * @return waiting jobs
-	*/
-	@Override
-	public int getWaitingJobs(){
-		return getNode().getWaitingJobs();
 	}
 
 	// ======================================================================
@@ -302,32 +287,6 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	}
 
 	// ======================================================================
-	// Post Job
-	// ======================================================================
-	/**
-	 * Post specified job to node.
-	 *
-	 * @param text job to post
-	*/
-	@Override
-	public void post(String text) {
-		try {
-			Job job = Job.parse(text);
-			getNode().post(job);
-		} catch(ParseException ex){
-			logger.error("invalid job text format: " + text, ex);
-			throw new IllegalArgumentException(ex.toString());
-		} catch(JyroException ex){
-			logger.error("fail to post job: " + text, ex);
-			throw new IllegalArgumentException(ex.toString());
-		} catch(RuntimeException ex){
-			logger.error("fail to post job: " + text, ex);
-			throw ex;
-		}
-		return;
-	}
-
-	// ======================================================================
 	// Retrieve Node
 	// ======================================================================
 	/**
@@ -335,7 +294,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 *
 	 * @return node
 	*/
-	private NodeImpl getNode(){
+	private Node getNode(){
 		return mxbean.getJyro().getCluster(core).getNode(node);
 	}
 

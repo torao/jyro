@@ -38,16 +38,6 @@ public interface NodeMXBean {
 	public String getId();
 
 	// ======================================================================
-	// Refer Waiting Jobs
-	// ======================================================================
-	/**
-	 * Refer waiting jobs of node.
-	 *
-	 * @return waiting jobs
-	*/
-	public int getWaitingJobs();
-
-	// ======================================================================
 	// Refer Active Workers
 	// ======================================================================
 	/**
@@ -192,15 +182,5 @@ public interface NodeMXBean {
 	 * @return total job time
 	*/
 	public long getTotalJobTime();
-
-	// ======================================================================
-	// Post Job
-	// ======================================================================
-	/**
-	 * Post specified job to node.
-	 *
-	 * @param text job to post
-	*/
-	public void post(String text);
 
 }

@@ -83,7 +83,7 @@ class LoadAverage extends TimerTask {
 	 * Start to calculate enqueued size of jobs.
 	 */
 	public void start(){
-		ClusterConfig.TIMER.scheduleAtFixedRate(this, 0, 1000);
+		Config.TIMER.scheduleAtFixedRate(this, 0, 1000);
 		return;
 	}
 

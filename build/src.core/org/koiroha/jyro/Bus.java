@@ -7,23 +7,22 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro.impl;
+package org.koiroha.jyro;
 
 import java.util.*;
 
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// JobQueueFactoryImpl: Default Implementation for JobQueueFactory
+// Bus: Node Bus
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * The default implementation for JobQueueFactory.
+ * The abstract class to connect and send, receive job between node.
  *
  * @author torao
  * @since 2011/07/24 Java SE 6
  */
-public abstract class JobQueueFactoryImpl implements JobQueueFactory {
+public abstract class Bus {
 
 	// ======================================================================
 	// Log Output
@@ -31,78 +30,82 @@ public abstract class JobQueueFactoryImpl implements JobQueueFactory {
 	/**
 	 * Log output for this class.
 	 */
-	private static final Logger logger = Logger.getLogger(JobQueueFactoryImpl.class);
+	private static final Logger logger = Logger.getLogger(Bus.class);
 
 	// ======================================================================
-	// Job Queue Map
+	// Attribute
 	// ======================================================================
 	/**
-	 * Job queue map.
+	 * Attribute values of this factory.
 	 */
-	private static final Map<String,JobQueueImpl> queues
-		= Collections.synchronizedMap(new HashMap<String,JobQueueImpl>());
+	private static final Map<String,String> attributes = new HashMap<String,String>();
 
 	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
-	 * Nothing to do in super class.
+	 * Constructor can call only from subclass.
 	 */
-	public JobQueueFactoryImpl() {
+	protected Bus(){
 		return;
 	}
 
 	// ======================================================================
-	// Create Queue
+	// Send Job
 	// ======================================================================
 	/**
-	 * Create new job queue for specified nodeId.
+	 * Send specified job on this bus.
 	 *
-	 * @param nodeId node id
-	 * @return new job queue
-	 * @throws JyroException
+	 * @param job job to post any node
+	 * @throws JyroException if fail to post job
 	 */
-	@Override
-	public JobQueueImpl create(String nodeId) throws JyroException {
-		synchronized(queues){
-			JobQueueImpl queue = queues.get(nodeId);
-			if(queue == null){
-				queue = createQueue(nodeId);
-				queues.put(nodeId, queue);
-			}
-			return queue;
-		}
-	}
+	public abstract void send(Job job) throws JobRoutingException, JyroException;
 
 	// ======================================================================
-	// Lookup Queue
+	// Receive Job
 	// ======================================================================
 	/**
-	 * Lookup queue for specified nodeId.
+	 * Receive job.
 	 *
-	 * @param nodeId node id
-	 * @return job queue
-	 * @throws JyroException
+	 * @param func function names to receive job
+	 * @throws JyroException if fail to post job
 	 */
-	@Override
-	public JobQueue lookup(String nodeId) throws JyroException {
-		JobQueue queue = queues.get(nodeId);
-		if(queue == null){
-			throw new JyroException("no such queue: " + nodeId);
-		}
-		return queue;
+	public abstract Job receive(String func) throws JyroException, InterruptedException;
+
+	// ======================================================================
+	// Callback Result
+	// ======================================================================
+	/**
+	 * Callback execution result from worker.
+	 *
+	 * @param result result of job execution
+	 */
+	public abstract void callback(Job.Result result) throws JyroException;
+
+	// ======================================================================
+	//
+	// ======================================================================
+	/**
+	 */
+	public void close(){
+		return;
 	}
 
 	// ======================================================================
 	// Create Job Queue
 	// ======================================================================
 	/**
-	 * Create new job queue instance.
+	 * Create job queue for specified worker interface.
 	 *
-	 * @param nodeId node id
-	 * @return job queue implementation
-	 * @throws JyroException if fail to create queue
+	 * @param worker worker interface type
+	 * @return BlockingQueue instance
+	 * @throws JyroException if fail to refer queue
 	 */
-	protected abstract JobQueueImpl createQueue(String nodeId) throws JyroException;
+	public String getAttribute(String name) {
+		if(logger.isDebugEnabled()){
+			logger.debug("getAttribute(" + name + "): " + attributes.get(name));
+		}
+		return attributes.get(name);
+	}
 
 }

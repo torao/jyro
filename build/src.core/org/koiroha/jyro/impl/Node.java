@@ -9,26 +9,13 @@
  */
 package org.koiroha.jyro.impl;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
+import java.lang.management.*;
 import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
-import org.apache.log4j.Logger;
-import org.apache.log4j.NDC;
-import org.koiroha.jyro.Job;
-import org.koiroha.jyro.JobListener;
-import org.koiroha.jyro.JobQueueImpl;
-import org.koiroha.jyro.JyroException;
-import org.koiroha.jyro.Worker;
-import org.koiroha.jyro.WorkerException;
-import org.koiroha.jyro.WorkerFilter;
+import org.apache.log4j.*;
+import org.koiroha.jyro.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // NodeImpl:
@@ -40,7 +27,7 @@ import org.koiroha.jyro.WorkerFilter;
  * @author torao
  * @since 2011/07/01 Java SE 6
  */
-public class NodeImpl {
+public class Node {
 
 	// ======================================================================
 	// Log Output
@@ -48,7 +35,7 @@ public class NodeImpl {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(NodeImpl.class);
+	private static final Logger logger = Logger.getLogger(Node.class);
 
 	// ======================================================================
 	// Task Name
@@ -75,6 +62,14 @@ public class NodeImpl {
 	private final List<WorkerFilter> filters = new ArrayList<WorkerFilter>();
 
 	// ======================================================================
+	// Bus
+	// ======================================================================
+	/**
+	 * Bus.
+	 */
+	private final Bus bus;
+
+	// ======================================================================
 	// Worker
 	// ======================================================================
 	/**
@@ -88,7 +83,7 @@ public class NodeImpl {
 	/**
 	 * Job queue for workers.
 	 */
-	private final JobQueueImpl jobQueue;
+	private final BlockingQueue<Runnable> queue;
 
 	// ======================================================================
 	// Job Queue
@@ -96,25 +91,7 @@ public class NodeImpl {
 	/**
 	 * Job queue for workers.
 	 */
-	private final JobListener listener = new JobListener() {
-		@Override
-		public void received(Job job) {
-			try {
-				post(job);
-			} catch(JyroException ex){
-				logger.fatal(getId() + ": fail to post job: " + job, ex);
-			}
-			return;
-		}
-	};
-
-	// ======================================================================
-	// Job Queue
-	// ======================================================================
-	/**
-	 * Job queue for workers.
-	 */
-	private final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>();
+	private Dispatcher dispatcher = null;
 
 	// ======================================================================
 	// Thread Pool
@@ -210,17 +187,18 @@ public class NodeImpl {
 	/**
 	 * @param id task name of this node
 	 * @param loader class loader of this node
-	 * @param queue job queue implementation
+	 * @param queue job queue
 	 * @param proc process to execute on this node
 	 */
-	public NodeImpl(String id, ClassLoader loader, JobQueueImpl queue, Worker proc) {
+	public Node(String id, ClassLoader loader, Bus bus, Worker proc) {
 		assert(id != null);
 		assert(loader != null);
 		assert(proc != null);
 		this.id = id;
 		this.loader = loader;
+		this.bus = bus;
 		this.worker = proc;
-		this.jobQueue = queue;
+		this.queue = new ArrayBlockingQueue<Runnable>(1);
 
 		// create load average calculator
 		this.loadAverage = new LoadAverage(this.queue);
@@ -228,6 +206,31 @@ public class NodeImpl {
 
 		this.threadGroup = new ThreadGroup(id);
 		return;
+	}
+
+	// ======================================================================
+	// Refer Bus
+	// ======================================================================
+	/**
+	 * Refer bus of this node use.
+	 *
+	 * @return bus
+	*/
+	Bus getBus(){
+		return bus;
+	}
+
+	// ======================================================================
+	// Return Worker Function Names
+	// ======================================================================
+	/**
+	 * Return worker function names that has {@link Distribute} marker.
+	 * 0 length array returns if no annotation specified.
+	 *
+	 * @return worker functions
+	*/
+	public String[] getFunctions(){
+		return worker.getFunctions();
 	}
 
 	// ======================================================================
@@ -253,18 +256,6 @@ public class NodeImpl {
 	*/
 	public ClassLoader getClassLoader(){
 		return loader;
-	}
-
-	// ======================================================================
-	// Retrieve Enqueued Job
-	// ======================================================================
-	/**
-	 * Retrieve enqueued and waiting jobs count.
-	 *
-	 * @return size of waiting jobs
-	 */
-	public int getWaitingJobs(){
-		return queue.size();
 	}
 
 	// ======================================================================
@@ -460,15 +451,16 @@ public class NodeImpl {
 	 * Start workers on this node.
 	*/
 	public void start(){
-		logger.debug("start node " + getId());
+		logger.debug("starting " + getId() + " node");
 
 		// start thread pool
 		threads = new ThreadPoolExecutor(minimumWorkers, maximumWorkers, 10, TimeUnit.SECONDS, queue);
 		threads.setThreadFactory(new NodeThreadFactory());
 
-		// start queuing
-		jobQueue.addJobQueueListener(listener);
-		jobQueue.start();
+		// start job dispatcher
+		dispatcher = new Dispatcher(this);
+		dispatcher.start();
+
 		return;
 	}
 
@@ -479,11 +471,11 @@ public class NodeImpl {
 	 * Stop workers on this node.
 	*/
 	public void stop(){
-		logger.debug("stop node " + getId());
+		logger.debug("stopping " + getId() + " node");
 
-		// stop queuing
-		jobQueue.stop();
-		jobQueue.removeJobQueueListener(listener);
+		// start job dispatcher
+		dispatcher.stop();
+		dispatcher = null;
 
 		// shutdown thread pool
 		threads.shutdown();
@@ -492,22 +484,16 @@ public class NodeImpl {
 	}
 
 	// ======================================================================
-	//
+	// Execute Worker
 	// ======================================================================
 	/**
-	 * @param job job to execute
-	 * @throws JyroException if node is not running
+	 * Execute worker process.
+	 *
+	 * @param job arguments for worker
+	 * @return result
 	*/
-	public void post(final Job job) throws JyroException{
-		if(threads == null){
-			throw new JyroException("node is not running");
-		}
-		threads.execute(new Runnable(){
-			@Override
-			public void run(){
-				exec(job);
-			}
-		});
+	void post(Runnable r){
+		threads.execute(r);
 		return;
 	}
 
@@ -520,21 +506,32 @@ public class NodeImpl {
 	 * @param job arguments for worker
 	 * @return result
 	*/
-	private Object exec(Job job){
+	void exec(Job job) {
 		NDC.push(getId());
 		long start = rb.getUptime();
 		Object result = null;
 		try {
-			result = worker.receive(job);
+			result = execFilters(job);
 			totalJobCount ++;
 			totalJobTime += rb.getUptime() - start;
-		} catch(WorkerException ex){
-			logger.error("", ex);
+
+			// success callback
+			bus.callback(job.new Result(result, null));
+
 		} catch(Throwable ex){
-			if(ex instanceof ThreadDeath){
-				throw (ThreadDeath)ex;
-			}
 			logger.fatal("unexpected exception in worker", ex);
+
+			// error callback
+			try {
+				bus.callback(job.new Result(null, ex));
+			} catch (JyroException e) {
+				logger.fatal("fail to callback", ex);
+			}
+
+			// through Error because thread pool cleanup this thread
+			if(ex instanceof Error){
+				throw (Error)ex;
+			}
 		} finally {
 			if(logger.isDebugEnabled()){
 				long end = rb.getUptime();
@@ -543,7 +540,7 @@ public class NodeImpl {
 			}
 			NDC.pop();
 		}
-		return result;
+		return;
 	}
 
 	// ======================================================================
@@ -555,18 +552,18 @@ public class NodeImpl {
 	 * @param job arguments for worker
 	 * @return result
 	*/
-	private Object execFilters(Job job){
-
-		// create terminal runnalbe object
-		final Job j = job;
-		final Object[] result = new Object[1];
-		Runnable r = new Runnable(){
-			@Override
-			public void run(){
-				result[0] = worker.receive(j);
-			}
-		};
-		return result;
+	private Object execFilters(Job job) throws JyroException{
+		return worker.execute(job);
+//
+//		// create terminal runnalbe object
+//		final Job j = job;
+//		final Object[] result = new Object[1];
+//		Runnable r = new Runnable(){
+//			@Override
+//			public void run(){
+//			}
+//		};
+//		return result;
 	}
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -612,7 +609,12 @@ public class NodeImpl {
 	*/
 	private class NodeThreadFactory implements ThreadFactory {
 
-		/** Sequence number for name of new thread. */
+		// ==================================================================
+		// Thread Sequence Number
+		// ==================================================================
+		/**
+		 * Sequence number for name of new thread.
+		 */
 		private int seq = 0;
 
 		/**
@@ -629,7 +631,7 @@ public class NodeImpl {
 			}
 
 			// create new thread and set attributes
-			String name = NodeImpl.this.id + "-" + num;
+			String name = getId() + "-" + num;
 			Thread thread = null;
 			if(stackSize >= 0){
 				thread = new Thread(threadGroup, r, name, stackSize);

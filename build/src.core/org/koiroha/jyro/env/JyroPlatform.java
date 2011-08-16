@@ -81,16 +81,15 @@ public class JyroPlatform {
 	/**
 	 * Post specified job to node.
 	 *
-	 * @param core core name
+	 * @param cluster core name
 	 * @param node node name
 	 * @param job job to post
 	 * @throws JyroException if fail to post job
 	 */
-	public void post(String core, String node, Job job) throws JyroException {
+	public void post(String cluster, Job job) throws JyroException {
 		JyroImpl j = mxbean.getJyro();
-		ClusterImpl c = j.getCluster(core);
-		NodeImpl n = c.getNode(node);
-		n.post(job);
+		Cluster c = j.getCluster(cluster);
+		c.send(job);
 		return;
 	}
 

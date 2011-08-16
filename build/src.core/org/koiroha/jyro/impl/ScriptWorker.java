@@ -47,14 +47,6 @@ public class ScriptWorker extends Worker {
 	private final Invocable engine;
 
 	// ======================================================================
-	// Function Name
-	// ======================================================================
-	/**
-	 * Function name to call script.
-	 */
-	private final String function = "receive";
-
-	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -141,9 +133,8 @@ public class ScriptWorker extends Worker {
 	 * @throws WorkerException fail to execute script
 	*/
 	@Override
-	public void init(WorkerContext context){
-		super.init(context);
-		((ScriptEngine)engine).put("jyro", context);
+	public void init(){
+		((ScriptEngine)engine).put("jyro", getContext());
 		return;
 	}
 
@@ -159,13 +150,15 @@ public class ScriptWorker extends Worker {
 	 * @throws WorkerException fail to execute script
 	*/
 	@Override
-	public Object receive(Job job) throws WorkerException {
+	public Object execute(Job job) throws JyroException {
+		String func = job.getFunction();
+		Object[] args = job.getArguments();
 		try {
-			return engine.invokeFunction(function, job);
+			return engine.invokeFunction(func, args);
 		} catch(NoSuchMethodException ex){
-			throw new WorkerException("function " + function + " not defined in script", ex);
+			throw new JyroException("function " + func + " not defined in script", ex);
 		} catch(ScriptException ex){
-			throw new WorkerException("unexpected script execution error", ex);
+			throw new JyroException("unexpected script execution error", ex);
 		}
 	}
 

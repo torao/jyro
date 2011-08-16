@@ -25,15 +25,15 @@ package org.koiroha.jyro;
 public interface WorkerContext {
 
 	// ======================================================================
-	// Post Job
+	// Retrieve Worker Interface
 	// ======================================================================
 	/**
-	 * Post specified job to other node.
+	 * Retrieve worker interface to call.
 	 *
-	 * @param nodeId node ID to post job
-	 * @param job job to send
-	 * @throws JyroException jyro
+	 * @param worker worker interface
+	 * @return callable worker instance
+	 * @throws WorkerException if fail to refer worker interface
 	*/
-	public void send(String nodeId, Job job) throws JyroException;
+	public void call(String func, Object... args) throws JyroException;
 
 }

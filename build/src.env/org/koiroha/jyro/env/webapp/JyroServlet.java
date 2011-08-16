@@ -167,7 +167,7 @@ public class JyroServlet extends HttpServlet {
 			// build core list
 			List<String> names = new ArrayList<String>();
 			JyroImpl jyro = platform.getJyro();
-			for(ClusterImpl core: jyro.getClusters()){
+			for(Cluster core: jyro.getClusters()){
 				names.add(core.getName());
 			}
 
@@ -186,8 +186,8 @@ public class JyroServlet extends HttpServlet {
 			// build core list
 			List<String> names = new ArrayList<String>();
 			JyroImpl jyro = platform.getJyro();
-			ClusterImpl core = jyro.getCluster(elem[0]);
-			for(NodeImpl node: core.getNodes()){
+			Cluster core = jyro.getCluster(elem[0]);
+			for(Node node: core.getNodes()){
 				names.add(node.getId());
 			}
 

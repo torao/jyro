@@ -11,8 +11,11 @@ package org.koiroha.jyro.util;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.util.*;
-import java.util.regex.*;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Text: Text Utility Class
@@ -341,8 +344,26 @@ public final class Text {
 	// JSON Output
 	// ======================================================================
 	/**
-	 * Literize specified text as JavaScript string. If null pass as text,
-	 * string "null" will append to out.
+	 * Literize specified value as JSON string.
+	 *
+	 * @param text value
+	 * @return instance of out parameter
+	 */
+	public static String json(Object value){
+		StringBuilder buffer = new StringBuilder();
+		try {
+			json(buffer, value);
+		} catch(IOException ex){
+			throw new IllegalStateException("unexpected exception; this probably bug!: " + value, ex);
+		}
+		return buffer.toString();
+	}
+
+	// ======================================================================
+	// JSON Output
+	// ======================================================================
+	/**
+	 * Literize specified value as JSON string.
 	 *
 	 * @param out appendable to output
 	 * @param value output value

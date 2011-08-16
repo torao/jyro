@@ -9,7 +9,7 @@
  */
 package org.koiroha.jyro.impl;
 
-import static org.koiroha.jyro.impl.ClusterImpl.*;
+import static org.koiroha.jyro.impl.Cluster.*;
 
 import java.io.*;
 import java.net.*;
@@ -25,16 +25,16 @@ import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// ClusterConfig: Configuration for JyroCore
+// Config: Configuration for Cluster
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Configuration class to build {@link ClusterImpl} instance.
+ * Configuration class to build {@link Cluster} instance.
  *
  * @version $Revision:$ $Date:$
  * @author torao
  * @since 2011/07/03 Java SE 6
  */
-final class ClusterConfig implements WorkerContext {
+final class Config {
 
 	// ======================================================================
 	// Log Output
@@ -42,7 +42,7 @@ final class ClusterConfig implements WorkerContext {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(ClusterConfig.class);
+	private static final Logger logger = Logger.getLogger(Config.class);
 
 	// ======================================================================
 	// Generic Use Timer
@@ -69,12 +69,12 @@ final class ClusterConfig implements WorkerContext {
 	private final Properties param;
 
 	// ======================================================================
-	// Job Queue Factory
+	// Bus
 	// ======================================================================
 	/**
-	 * Job queue factory.
+	 * Bus to transport jobs.
 	 */
-	private final JobQueueFactory factory;
+	private final Bus bus;
 
 	// ======================================================================
 	// Nodes
@@ -82,7 +82,7 @@ final class ClusterConfig implements WorkerContext {
 	/**
 	 * Node map.
 	 */
-	private final Map<String,NodeImpl> nodes = new HashMap<String,NodeImpl>();
+	private final Map<String,Node> nodes = new HashMap<String,Node>();
 
 	// ======================================================================
 	// ClassLoader
@@ -98,7 +98,7 @@ final class ClusterConfig implements WorkerContext {
 	/**
 	 * The core configuration file jyro.xml.
 	 */
-	private final JyroConfig jyroConfig;
+	private final Stub conf;
 
 	// ======================================================================
 	// Dependency
@@ -120,7 +120,7 @@ final class ClusterConfig implements WorkerContext {
 	 * @param init init properties
 	 * @throws JyroException if fail to load configuration
 	 */
-	public ClusterConfig(File dir, ClassLoader parent, Properties init) throws JyroException {
+	public Config(File dir, ClassLoader parent, Properties init) throws JyroException {
 		this.dir = dir;
 
 		// determine default class loader if specified value is null
@@ -138,18 +138,18 @@ final class ClusterConfig implements WorkerContext {
 
 		// read jyro configuration xml
 		Document doc = load(new File(dir, FILE_CONF));
-		this.jyroConfig = new JyroConfig(doc);
+		this.conf = new Stub(doc);
 
 		// empty property use if initprop is null
 		if(init == null){
 			init = new Properties();
 		}
-		this.param = jyroConfig.getProperties(init);
+		this.param = conf.getProperties(init);
 
-		this.factory = jyroConfig.getQueueFactory();
+		this.bus = conf.getBus();
 
 		// build nodes on this core
-		for(NodeImpl node: jyroConfig.getNodes()){
+		for(Node node: conf.getNodes()){
 			nodes.put(node.getId(), node);
 		}
 		return;
@@ -168,28 +168,14 @@ final class ClusterConfig implements WorkerContext {
 	}
 
 	// ======================================================================
-	// Retrieve Queue
-	// ======================================================================
-	/**
-	 * Retrieve job queue for specified node id.
-	 *
-	 * @param id ID of queue
-	 * @return job queue
-	 * @throws JyroException if not found
-	 */
-	public JobQueue getQueue(String id) throws JyroException{
-		return factory.lookup(id);
-	}
-
-	// ======================================================================
 	//
 	// ======================================================================
 	/**
 	 *
 	 * @return nodes
 	 */
-	public Iterable<NodeImpl> getNodes() {
-		return new ArrayList<NodeImpl>(nodes.values());
+	public Iterable<Node> getNodes() {
+		return new ArrayList<Node>(nodes.values());
 	}
 
 	// ======================================================================
@@ -200,7 +186,7 @@ final class ClusterConfig implements WorkerContext {
 	 * @param id ID of queue
 	 * @return home directory
 	 */
-	public NodeImpl getNode(String id) {
+	public Node getNode(String id) {
 		return nodes.get(id);
 	}
 
@@ -240,7 +226,7 @@ final class ClusterConfig implements WorkerContext {
 		logger.debug("startup()");
 
 		// start all nodes
-		for(NodeImpl n: nodes.values()){
+		for(Node n: nodes.values()){
 			n.start();
 		}
 		return;
@@ -258,7 +244,7 @@ final class ClusterConfig implements WorkerContext {
 		logger.debug("shutdown()");
 
 		// stop all nodes
-		for(NodeImpl n: nodes.values()){
+		for(Node n: nodes.values()){
 			n.stop();
 		}
 
@@ -266,21 +252,15 @@ final class ClusterConfig implements WorkerContext {
 	}
 
 	// ======================================================================
-	//
+	// Shutdown Services
 	// ======================================================================
 	/**
+	 * Shutdown all services in this instance.
 	 *
-	 * @param nodeId
-	 * @param job
-	 * @throws JyroException
+	 * @throws JyroException if fail to shutdown jyro
 	 */
-	@Override
-	public void send(String nodeId, Job job) throws JyroException {
-		JobQueue queue = getQueue(nodeId);
-		if(queue == null){
-			throw new JyroException("no such worker node: " + nodeId);
-		}
-		queue.post(job);
+	public void send(Job job) throws JyroException {
+		bus.send(job);
 		return;
 	}
 
@@ -436,12 +416,39 @@ final class ClusterConfig implements WorkerContext {
 	}
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	// JyroConfig: jyro.xml
+	// Stub: jyro.xml
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	/**
 	 * XML configuration for {@code jyro.xml}.
 	 */
-	private class JyroConfig extends XmlBeanAdapter {
+	private class Context implements WorkerContext {
+
+		// ======================================================================
+		// Retrieve Worker Interface
+		// ======================================================================
+		/**
+		 * Retrieve worker interface to call.
+		 *
+		 * @param worker worker interface
+		 * @return callable worker instance
+		 * @throws JyroException if fail to refer worker interface
+		*/
+		@Override
+		public void call(String func, Object... args) throws JyroException{
+			Job job = new Job(func, args, null);
+			bus.send(job);
+			return;
+		}
+
+	}
+
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// Stub: jyro.xml
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	/**
+	 * XML configuration for {@code jyro.xml}.
+	 */
+	private class Stub extends XmlBeanAdapter {
 
 		// ==================================================================
 		// Constructor
@@ -449,9 +456,9 @@ final class ClusterConfig implements WorkerContext {
 		/**
 		 * @param doc xml document of jyro.xml
 		 */
-		public JyroConfig(Document doc) {
+		public Stub(Document doc) {
 			super(doc);
-			setNamespaceURI("j", ClusterImpl.XMLNS10);
+			setNamespaceURI("j", Cluster.XMLNS10);
 			return;
 		}
 
@@ -484,30 +491,32 @@ final class ClusterConfig implements WorkerContext {
 		}
 
 		// ==================================================================
-		// Retrieve Job Queue Factory
+		// Retrieve Bus
 		// ==================================================================
 		/**
-		 * Retrieve job queue factory.
+		 * Retrieve bus to transmit jobs.
 		 *
-		 * @return job queue factory
+		 * @return bus
 		 * @throws JyroException
 		 */
-		public JobQueueFactory getQueueFactory() throws JyroException {
+		public Bus getBus() throws JyroException {
 
 			// refer queue element
 			Element elem = elem("j:jyro/j:queue");
 			if(elem == null){
-				return new JVMJobQueueFactory();
+				return new LocalBus();
 			}
 
 			// create queue factory instance
 			String factoryName = elem.getAttribute("factory");
-			JobQueueFactory factory = null;
+			Bus factory = null;
 			if(factoryName.equals("jvm")){
-				factory = new JVMJobQueueFactory();
-				// TODO JMSJobQueueFactory
+				factory = new LocalBus();
+			} else if(factoryName.equals("jms")){
+				factory = new JMSBus();
+				// TODO initialize JMS settings
 			} else {
-				factory = (JobQueueFactory)Beans.newInstance(loader, factoryName);
+				factory = (Bus)Beans.newInstance(loader, factoryName);
 			}
 
 			// set factory properties
@@ -528,10 +537,10 @@ final class ClusterConfig implements WorkerContext {
 		 * @return list of queues
 		 * @throws JyroException if fail to build node
 		 */
-		public Iterable<NodeImpl> getNodes() throws JyroException {
-			List<NodeImpl> list = new ArrayList<NodeImpl>();
+		public Iterable<Node> getNodes() throws JyroException {
+			List<Node> list = new ArrayList<Node>();
 			for(Element elem: elemset("j:jyro/j:node")){
-				NodeImpl node = buildNode(elem);
+				Node node = buildNode(elem);
 				list.add(node);
 			}
 			return list;
@@ -547,7 +556,7 @@ final class ClusterConfig implements WorkerContext {
 		 * @return Jyro instance
 		 * @throws JyroException fail to build node
 		 */
-		private NodeImpl buildNode(Element elem) throws JyroException {
+		private Node buildNode(Element elem) throws JyroException {
 
 			// retrieve task name
 			String id = f(elem.getAttribute("id"));
@@ -570,10 +579,11 @@ final class ClusterConfig implements WorkerContext {
 					throw new JyroException("no worker found in node definition: " + id);
 				}
 			}
-			worker.init(ClusterConfig.this);
+			worker.setContext(new Context());
+			worker.init();
 
 			// create node implementation
-			NodeImpl node = new NodeImpl(id, loader, factory.create(id), worker);
+			Node node = new Node(id, loader, bus, worker);
 
 			// set minimum thread-pool size
 			if(wk.hasAttribute("min")){

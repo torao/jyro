@@ -44,11 +44,10 @@ public class SampleWorker extends Worker {
 	 * @param job job argument
 	 * @return result
 	 */
-	@Override
-	public Object receive(Job job) {
-		long sum = 0;
+	@Distribute("")
+	public void greeting(String prompt){
 		try { Thread.sleep(10000); } catch(InterruptedException e){/* */}
-		return sum;
+		return;
 	}
 
 }

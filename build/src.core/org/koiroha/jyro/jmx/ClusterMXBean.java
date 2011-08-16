@@ -13,8 +13,7 @@ package org.koiroha.jyro.jmx;
 import javax.management.MXBean;
 
 import org.koiroha.jyro.JyroException;
-import org.koiroha.jyro.impl.ClusterImpl;
-import org.koiroha.jyro.util.ParseException;
+import org.koiroha.jyro.impl.Cluster;
 
 
 
@@ -22,7 +21,7 @@ import org.koiroha.jyro.util.ParseException;
 // ClusterMXBean: Cluster MXBean
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * MXBean interface to manage {@link ClusterImpl} outside.
+ * MXBean interface to manage {@link Cluster} outside.
  *
  * @version $Revision:$
  * @author torao
@@ -107,16 +106,17 @@ public interface ClusterMXBean {
 	public double getLoadAverage15Min();
 
 	// ======================================================================
-	// Post Job
+	// Refer Uptime
 	// ======================================================================
 	/**
-	 * Post specified job to node id of this core defines.
+	 * Refer uptime of core.
 	 *
-	 * @param nodeId node id to post job
-	 * @param job job content
-	 * @throws JyroException if fail to post job
-	 * @throws ParseException if fail to post job
+	 * @return uptime
 	*/
-	public void post(String nodeId, String job) throws JyroException, ParseException;
+	public void send(String func) throws JyroException;
+	public void send(String func, String a1) throws JyroException;
+	public void send(String func, String a1, String a2) throws JyroException;
+	public void send(String func, String a1, String a2, String a3) throws JyroException;
+	public void send(String func, String a1, String a2, String a3, String a4) throws JyroException;
 
 }

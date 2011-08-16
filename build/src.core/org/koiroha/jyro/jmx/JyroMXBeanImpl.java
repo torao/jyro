@@ -209,8 +209,8 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	@Override
 	public int getActiveWorkers(){
 		int count = 0;
-		for(ClusterImpl core: jyro.getClusters()){
-			for(NodeImpl node: core.getNodes()){
+		for(Cluster core: jyro.getClusters()){
+			for(Node node: core.getNodes()){
 				count += node.getActiveWorkers();
 			}
 		}
@@ -362,11 +362,11 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 			logger.debug("unregister MXBean: " + prefix);
 
 			// unregister all cores
-			for(ClusterImpl core: jyro.getClusters()){
+			for(Cluster core: jyro.getClusters()){
 				String cname = prefix + ",core=" + ObjectName.quote(core.getName());
 
 				// unregister each node instance
-				for(NodeImpl node: core.getNodes()){
+				for(Node node: core.getNodes()){
 					String nname = cname + ",node=" + ObjectName.quote(node.getId());
 					server.unregisterMBean(new ObjectName(nname));
 				}
@@ -394,7 +394,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 	private void validateRegistration() throws InstanceAlreadyExistsException, MBeanRegistrationException, NotCompliantMBeanException, MalformedObjectNameException {
 		assert(Thread.holdsLock(this));
 		MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-		for(ClusterImpl core: getJyro().getClusters()){
+		for(Cluster core: getJyro().getClusters()){
 
 			// register core mxbean if it is not registered
 			ObjectName cname = new ObjectName(prefix + ",core=" + ObjectName.quote(core.getName()));
@@ -406,7 +406,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 			// TODO remove alread rejected cores
 
 			// register node mxbean if it is not registered
-			for(NodeImpl node: core.getNodes()){
+			for(Node node: core.getNodes()){
 				ObjectName nname = new ObjectName(cname + ",node=" + ObjectName.quote(node.getId()));
 				if(! server.isRegistered(nname)){
 					NodeMXBean nbean = new NodeMXBeanImpl(this, core.getName(), node.getId());
@@ -445,7 +445,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 		 */
 		@Override
 		public void run(){
-			for(ClusterImpl core: jyro.getClusters()){
+			for(Cluster core: jyro.getClusters()){
 				if(core.isModified()){
 					logger.info("configuration modification detected, reload automatically");
 					reload();

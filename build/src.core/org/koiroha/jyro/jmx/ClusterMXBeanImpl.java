@@ -14,7 +14,6 @@ import javax.management.*;
 
 import org.koiroha.jyro.*;
 import org.koiroha.jyro.impl.*;
-import org.koiroha.jyro.util.ParseException;
 
 
 
@@ -22,7 +21,7 @@ import org.koiroha.jyro.util.ParseException;
 // ClusterMXBeanImpl: Cluster MXBean Implementation
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Implementation of Cluster MXBean. The this refers {@link ClusterImpl}
+ * Implementation of Cluster MXBean. The this refers {@link Cluster}
  * instance by core name. It means that the same ClusterMXBean will be used
  * if cluster reloaded and change instance.
  *
@@ -137,7 +136,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	@Override
 	public int getActiveWorkers(){
 		int count = 0;
-		for(NodeImpl node: getCluster().getNodes()){
+		for(Node node: getCluster().getNodes()){
 			count += node.getActiveWorkers();
 		}
 		return count;
@@ -149,7 +148,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	@Override
 	public double getLoadAverage1Min() {
 		double la = 0.0;
-		for(NodeImpl node: getCluster().getNodes()){
+		for(Node node: getCluster().getNodes()){
 			la += node.getLoadAverage()[0];
 		}
 		return la;
@@ -161,7 +160,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	@Override
 	public double getLoadAverage5Min() {
 		double la = 0.0;
-		for(NodeImpl node: getCluster().getNodes()){
+		for(Node node: getCluster().getNodes()){
 			la += node.getLoadAverage()[1];
 		}
 		return la;
@@ -173,28 +172,35 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	@Override
 	public double getLoadAverage15Min() {
 		double la = 0.0;
-		for(NodeImpl node: getCluster().getNodes()){
+		for(Node node: getCluster().getNodes()){
 			la += node.getLoadAverage()[2];
 		}
 		return la;
 	}
 
 	// ======================================================================
-	// Post Job
+	// Refer Uptime
 	// ======================================================================
 	/**
-	 * Post specified job to node id of this core defines.
+	 * Refer uptime of core.
 	 *
-	 * @param nodeId node id to post job
-	 * @param job job content
-	 * @throws JyroException if fail to post job
+	 * @return uptime
 	*/
-	@Override
-	public void post(String nodeId, String job) throws JyroException, ParseException {
-		Job j = Job.parse(job);
-		getCluster().post(nodeId, j);
+	private void send0(String func, Object... args) throws JyroException{
+		Job job = new Job(func, args, null);
+		getCluster().send(job);
 		return;
 	}
+	@Override
+	public void send(String func) throws JyroException { send0(func); }
+	@Override
+	public void send(String func, String a1) throws JyroException { send0(func, a1); }
+	@Override
+	public void send(String func, String a1, String a2) throws JyroException { send0(func, a1, a2); }
+	@Override
+	public void send(String func, String a1, String a2, String a3) throws JyroException { send0(func, a1, a2, a3); }
+	@Override
+	public void send(String func, String a1, String a2, String a3, String a4) throws JyroException { send0(func, a1, a2, a3, a4); }
 
 	// ======================================================================
 	// Refer Operation Info
@@ -221,7 +227,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	 *
 	 * @return jyro cluster
 	*/
-	private ClusterImpl getCluster(){
+	private Cluster getCluster(){
 		return mxbean.getJyro().getCluster(name);
 	}
 
