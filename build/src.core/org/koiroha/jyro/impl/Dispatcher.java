@@ -9,7 +9,7 @@
  */
 package org.koiroha.jyro.impl;
 
-import org.apache.log4j.Logger;
+import org.apache.log4j.*;
 import org.koiroha.jyro.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -75,8 +75,10 @@ final class Dispatcher {
 	 * Start job dispatch.
 	 */
 	public void start() {
+		logger.debug("start()");
 		for(Receiver r: receivers){
 			r.start();
+			logger.debug("start listening queue: " + r.func);
 		}
 		return;
 	}
@@ -88,8 +90,10 @@ final class Dispatcher {
 	 * Start job dispatch.
 	 */
 	public void stop() {
+		logger.debug("stop()");
 		for(Receiver r: receivers){
 			r.cancel();
+			logger.debug("stop listening queue: " + r.func);
 		}
 		return;
 	}
@@ -150,8 +154,9 @@ final class Dispatcher {
 		 */
 		@Override
 		public void run() {
-			Bus bus = node.getBus();
+			NDC.push(node.getId());
 			try {
+				Bus bus = node.getBus();
 				boolean error = false;	// error status
 				while(!stop && !Thread.interrupted()){
 
@@ -175,6 +180,8 @@ final class Dispatcher {
 				}
 			} catch(InterruptedException ex){
 				logger.debug("pomping thread finish");
+			} finally {
+				NDC.pop();
 			}
 			return;
 		}

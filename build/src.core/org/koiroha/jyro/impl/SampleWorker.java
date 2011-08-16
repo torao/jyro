@@ -44,7 +44,7 @@ public class SampleWorker extends Worker {
 	 * @param job job argument
 	 * @return result
 	 */
-	@Distribute("")
+	@Distribute("greeting")
 	public void greeting(String prompt){
 		try { Thread.sleep(10000); } catch(InterruptedException e){/* */}
 		return;
