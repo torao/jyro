@@ -64,13 +64,13 @@ public class LocalBus extends Bus {
 	 * @throws JyroException if fail to post job
 	 */
 	@Override
-	public void send(Job job) throws JobRoutingException, JyroException{
+	public void send(Job job) throws FunctionNotFoundException, JyroException{
 		if(logger.isDebugEnabled()){
 			logger.debug("post(" + job + ")");
 		}
 		BlockingQueue<Job> queue = queues.get(job.getFunction());
 		if(queue == null){
-			throw new JobRoutingException("worker not exists on local jvm: " + job.getFunction());
+			throw new FunctionNotFoundException("worker not exists on local jvm: " + job.getFunction());
 		}
 		try {
 			queue.put(job);

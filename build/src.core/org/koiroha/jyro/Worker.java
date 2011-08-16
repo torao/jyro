@@ -13,6 +13,7 @@ import java.lang.reflect.*;
 import java.util.*;
 
 import org.apache.log4j.Logger;
+import org.koiroha.jyro.impl.Job;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Worker: Node Worker

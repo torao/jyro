@@ -10,7 +10,7 @@
 package org.koiroha.jyro;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// JobRoutingException:
+// FunctionNotFoundException:
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  *
@@ -18,7 +18,7 @@ package org.koiroha.jyro;
  * @author Takami Torao
  * @since 2011/08/16 Java SE 6
  */
-public class JobRoutingException extends JyroException {
+public class FunctionNotFoundException extends JyroException {
 
 	// ======================================================================
 	// Serial Version
@@ -34,7 +34,7 @@ public class JobRoutingException extends JyroException {
 	/**
 	 * Create exception with no message.
 	 */
-	public JobRoutingException() {
+	public FunctionNotFoundException() {
 		return;
 	}
 
@@ -46,7 +46,7 @@ public class JobRoutingException extends JyroException {
 	 *
 	 * @param msg exception message
 	 */
-	public JobRoutingException(String msg) {
+	public FunctionNotFoundException(String msg) {
 		super(msg);
 		return;
 	}
@@ -59,7 +59,7 @@ public class JobRoutingException extends JyroException {
 	 *
 	 * @param ex cause exception
 	 */
-	public JobRoutingException(Throwable ex) {
+	public FunctionNotFoundException(Throwable ex) {
 		super(ex);
 		return;
 	}
@@ -73,7 +73,7 @@ public class JobRoutingException extends JyroException {
 	 * @param msg exception message
 	 * @param ex cause exception
 	 */
-	public JobRoutingException(String msg, Throwable ex) {
+	public FunctionNotFoundException(String msg, Throwable ex) {
 		super(msg, ex);
 		return;
 	}

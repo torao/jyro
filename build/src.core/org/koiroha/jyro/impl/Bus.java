@@ -7,11 +7,12 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro;
+package org.koiroha.jyro.impl;
 
 import java.util.*;
 
 import org.apache.log4j.Logger;
+import org.koiroha.jyro.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Bus: Node Bus
@@ -59,7 +60,7 @@ public abstract class Bus {
 	 * @param job job to post any node
 	 * @throws JyroException if fail to post job
 	 */
-	public abstract void send(Job job) throws JobRoutingException, JyroException;
+	public abstract void send(Job job) throws FunctionNotFoundException, JyroException;
 
 	// ======================================================================
 	// Receive Job

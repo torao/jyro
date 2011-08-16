@@ -25,15 +25,18 @@ package org.koiroha.jyro;
 public interface WorkerContext {
 
 	// ======================================================================
-	// Retrieve Worker Interface
+	// Call Procedure
 	// ======================================================================
 	/**
-	 * Retrieve worker interface to call.
+	 * Request to call specified function on cluster anywhere.
+	 * In this method, there is no way to retrieve function result.
 	 *
-	 * @param worker worker interface
-	 * @return callable worker instance
-	 * @throws WorkerException if fail to refer worker interface
+	 * @param func function name to call
+	 * @param args arguments
+	 * @throws JyroException fail to request call
 	*/
 	public void call(String func, Object... args) throws JyroException;
+
+	// TODO add method that returns result waiting object.
 
 }

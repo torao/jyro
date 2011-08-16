@@ -75,7 +75,7 @@ public class JMSBus extends Bus {
 	 * @throws JyroException if fail to post job
 	 */
 	@Override
-	public void send(Job job) throws JobRoutingException, JyroException{
+	public void send(Job job) throws FunctionNotFoundException, JyroException{
 		Queue queue = getQueue(job.getFunction());
 		queue.send(job);
 		return;
