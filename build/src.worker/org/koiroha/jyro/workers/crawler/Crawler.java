@@ -11,11 +11,7 @@
 package org.koiroha.jyro.workers.crawler;
 
 import java.net.URI;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.*;
 
 import javax.xml.parsers.*;
@@ -27,7 +23,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
-import org.koiroha.jyro.impl.Job;
 import org.koiroha.jyro.util.IO;
 import org.koiroha.xml.parser.HTMLDocumentBuilderFactory;
 import org.w3c.dom.*;
@@ -73,9 +68,8 @@ public class Crawler extends Worker {
 	 * @return
 	 * @throws WorkerException
 	*/
-	@Override
-	public Object receive(Job job) throws WorkerException {
-		String url = job.getAttribute("url");
+	@Distribute(name="crawl",params={"url"})
+	public void crawl(String url) throws WorkerException {
 		List<URI> urls = retrieveLink(url);
 		WorkerContext context = getContext();
 
@@ -85,9 +79,9 @@ public class Crawler extends Worker {
 			con.setAutoCommit(false);
 
 			PreparedStatement stmt1 = con.prepareStatement(
-				"INSERT INTO jyro_retrieved_urls(scheme,host,port,path,retrieved_at,created_at) VALUES(?,?,?,?,?,?)");
+				"INSERT INTO jyro_urls(scheme,host,port,path,retrieved_at,created_at) VALUES(?,?,?,?,?,?)");
 			PreparedStatement stmt = con.prepareStatement(
-				"SELECT EXISTS(SELECT * FROM jyro_retrieved_urls WHERE scheme=? AND host=? AND port=? AND path=?)");
+				"SELECT EXISTS(SELECT * FROM jyro_urls WHERE scheme=? AND host=? AND port=? AND path=?)");
 			for(URI uri: urls){
 				int port = getPort(uri);
 				if(port < 0){
@@ -112,7 +106,7 @@ public class Crawler extends Worker {
 					stmt1.setTimestamp(6, now);
 					stmt1.executeUpdate();
 					con.commit();
-					context.send("crawler", Job.parse("f{ url:\"" + uri + "\" }"));
+					context.call("crawl", uri.toString());
 				} else {
 					logger.info("URL " + uri + " already retrieved");
 				}
@@ -125,7 +119,7 @@ public class Crawler extends Worker {
 		} finally {
 			IO.close(con);
 		}
-		return null;
+		return;
 	}
 
 	// ======================================================================

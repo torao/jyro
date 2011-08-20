@@ -10,12 +10,14 @@
 package org.koiroha.jyro.impl;
 
 import java.lang.management.*;
+import java.lang.reflect.Method;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
 
 import org.apache.log4j.*;
 import org.koiroha.jyro.*;
+import org.koiroha.jyro.WorkerFilter.Next;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // NodeImpl:
@@ -221,6 +223,20 @@ public class Node {
 	}
 
 	// ======================================================================
+	// Retrieve Method Names
+	// ======================================================================
+	/**
+	 * Retrieve all distributed methods in this instance.
+	 * The default behavior of this method is to return methods with
+	 * {@link Distribute} annotation.
+	 *
+	 * @return distributed methods
+	 */
+	public Method[] getDistributedMethods(){
+		return worker.getDistributedMethods();
+	}
+
+	// ======================================================================
 	// Return Worker Function Names
 	// ======================================================================
 	/**
@@ -230,7 +246,14 @@ public class Node {
 	 * @return worker functions
 	*/
 	public String[] getFunctions(){
-		return worker.getFunctions();
+		List<String> names = new ArrayList<String>();
+		for(Method m: getDistributedMethods()){
+			String name = Jyro.getFunctionName(m);
+			if(name != null){
+				names.add(name);
+			}
+		}
+		return names.toArray(new String[names.size()]);
 	}
 
 	// ======================================================================
@@ -501,12 +524,12 @@ public class Node {
 	// Execute Worker
 	// ======================================================================
 	/**
-	 * Execute worker process.
+	 * Execute specified worker process in current thread (synchronously).
 	 *
 	 * @param job arguments for worker
 	 * @return result
 	*/
-	void exec(Job job) {
+	public Object execute(Job job) {
 		NDC.push(getId());
 		long start = rb.getUptime();
 		Object result = null;
@@ -540,7 +563,7 @@ public class Node {
 			}
 			NDC.pop();
 		}
-		return;
+		return result;
 	}
 
 	// ======================================================================
@@ -553,17 +576,20 @@ public class Node {
 	 * @return result
 	*/
 	private Object execFilters(Job job) throws JyroException{
-		return worker.execute(job);
-//
-//		// create terminal runnalbe object
-//		final Job j = job;
-//		final Object[] result = new Object[1];
-//		Runnable r = new Runnable(){
-//			@Override
-//			public void run(){
-//			}
-//		};
-//		return result;
+
+		// last
+		WorkerFilter.Next last = new Next() {
+			@Override
+			public Object execute(Job job) throws JyroException {
+				return worker.execute(job);
+			}
+		};
+		for(int i=filters.size()-1; i>=0; i--){
+			WorkerFilter.Next hop = new FilterRunnableChain(filters.get(i), last);
+			last = hop;
+		}
+
+		return last.execute(job);
 	}
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -572,10 +598,10 @@ public class Node {
 	/**
 	 * The thread factory for this node.
 	*/
-	private class FilterRunnableChain implements Runnable {
+	private class FilterRunnableChain implements WorkerFilter.Next {
 
 		/** Next runnable. */
-		private final Runnable next;
+		private final WorkerFilter.Next next;
 
 		/** Next runnable. */
 		private final WorkerFilter filter;
@@ -585,7 +611,7 @@ public class Node {
 		 * @param filter filter to call next
 		 * @param next next called runnable object
 		 */
-		public FilterRunnableChain(WorkerFilter filter, Runnable next){
+		public FilterRunnableChain(WorkerFilter filter, WorkerFilter.Next next){
 			this.filter = filter;
 			this.next = next;
 			return;
@@ -595,9 +621,8 @@ public class Node {
 		 * Execute next runnable object.
 		 */
 		@Override
-		public void run() {
-			next.run();
-			return;
+		public Object execute(Job job) throws JyroException {
+			return filter.filter(next);
 		}
 	}
 

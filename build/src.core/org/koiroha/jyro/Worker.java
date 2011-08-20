@@ -44,7 +44,7 @@ public class Worker {
 	private WorkerContext context = null;
 
 	// ======================================================================
-	// Function Mappings
+	// Distributed Methods
 	// ======================================================================
 	/**
 	 * Function name to method mappings.
@@ -58,6 +58,15 @@ public class Worker {
 	 * Default constructor called dynamically.
 	 */
 	public Worker() {
+
+		// retrieve distributed methods
+		for(Method method: getClass().getMethods()){
+			String name = Jyro.getFunctionName(method);
+			if(name != null){
+				// TODO check duplicate name definition
+				this.functions.put(name, method);
+			}
+		}
 		return;
 	}
 
@@ -98,34 +107,22 @@ public class Worker {
 			throw new IllegalStateException("context already specified");
 		}
 		this.context = context;
-
-		// build function mappings
-		for(Method m: getClass().getMethods()){
-			Distribute d = m.getAnnotation(Distribute.class);
-			if(d != null){
-				String f = d.value();
-				if(f == null || f.length() == 0){
-					f = m.getDeclaringClass().getCanonicalName() + "." + m.getName();
-				}
-				this.functions.put(f, m);
-			}
-		}
 		return;
 	}
 
 	// ======================================================================
-	// Retrieve Function Names
+	// Retrieve Method Names
 	// ======================================================================
 	/**
-	 * Retrieve all function names implemented by this instance.
-	 * The default behavior of this method is to return the names of methods
-	 * with {@link Distribute} annotation.
+	 * Retrieve all distributed methods in this instance.
+	 * The default behavior of this method is to return methods with
+	 * {@link Distribute} annotation.
 	 *
-	 * @return function names
+	 * @return distributed methods
 	 */
-	public String[] getFunctions(){
-		List<String> dist = new ArrayList<String>(functions.keySet());
-		return dist.toArray(new String[dist.size()]);
+	public Method[] getDistributedMethods(){
+		Set<Method> dist = new HashSet<Method>(functions.values());
+		return dist.toArray(new Method[dist.size()]);
 	}
 
 	// ======================================================================

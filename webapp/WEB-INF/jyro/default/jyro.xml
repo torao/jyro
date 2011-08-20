@@ -10,10 +10,6 @@
 		<worker min="5" max="10" class="org.koiroha.jyro.workers.crawler.Crawler"/>
 	</node>
 
-	<node id="parser" queue="hoge">
-		<worker min="5" max="10" class="org.koiroha.jyro.workers.crawler.Parser"/>
-	</node>
-
 	<node id="URL取得Java" queue="hoge">
 		<worker min="5" max="10" class="org.koiroha.jyro.impl.SampleWorker"/>
 	</node>
