@@ -105,7 +105,7 @@ public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 	*/
 	@Override
 	public int getActiveWorkers(){
-		return getNode().getActiveWorkers();
+		return getNode().getThreadPool().getActiveWorkers();
 	}
 
 	// ======================================================================
@@ -118,7 +118,7 @@ public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 	*/
 	@Override
 	public int getMinimumWorkers(){
-		return getNode().getMinimumWorkers();
+		return getNode().getThreadPool().getMinimumWorkers();
 	}
 
 	// ======================================================================
@@ -131,7 +131,7 @@ public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 	*/
 	@Override
 	public void setMinimumWorkers(int min){
-		getNode().setMinimumWorkers(min);
+		getNode().getThreadPool().setMinimumWorkers(min);
 		return;
 	}
 
@@ -145,7 +145,7 @@ public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 	*/
 	@Override
 	public int getMaximumWorkers(){
-		return getNode().getMaximumWorkers();
+		return getNode().getThreadPool().getMaximumWorkers();
 	}
 
 	// ======================================================================
@@ -158,7 +158,7 @@ public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 	*/
 	@Override
 	public void setMaximumWorkers(int max){
-		getNode().setMaximumWorkers(max);
+		getNode().getThreadPool().setMaximumWorkers(max);
 		return;
 	}
 
@@ -172,7 +172,7 @@ public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 	 */
 	@Override
 	public int getPriority(){
-		return getNode().getPriority();
+		return getNode().getThreadPool().getPriority();
 	}
 
 	// ======================================================================
@@ -185,7 +185,7 @@ public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 	 */
 	@Override
 	public void setPriority(int priority){
-		getNode().setPriority(priority);
+		getNode().getThreadPool().setPriority(priority);
 		return;
 	}
 
@@ -199,7 +199,7 @@ public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 	*/
 	@Override
 	public boolean isDaemon(){
-		return getNode().isDaemon();
+		return getNode().getThreadPool().isDaemon();
 	}
 
 	// ======================================================================
@@ -212,7 +212,7 @@ public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 	*/
 	@Override
 	public void setDaemon(boolean daemon){
-		getNode().setDaemon(true);
+		getNode().getThreadPool().setDaemon(daemon);
 		return;
 	}
 
@@ -226,7 +226,7 @@ public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 	*/
 	@Override
 	public int getStackSize(){
-		return getNode().getStackSize();
+		return getNode().getThreadPool().getStackSize();
 	}
 
 	// ======================================================================
@@ -239,7 +239,7 @@ public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 	*/
 	@Override
 	public void setStackSize(int stackSize){
-		getNode().setStackSize(stackSize);
+		getNode().getThreadPool().setStackSize(stackSize);
 		return;
 	}
 
@@ -248,7 +248,7 @@ public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 	 */
 	@Override
 	public double getLoadAverage1Min() {
-		return getNode().getLoadAverage()[0];
+		return getNode().getThreadPool().getLoadAverage()[0];
 	}
 
 	/** Refer load average for 5min.
@@ -256,7 +256,7 @@ public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 	 */
 	@Override
 	public double getLoadAverage5Min() {
-		return getNode().getLoadAverage()[1];
+		return getNode().getThreadPool().getLoadAverage()[1];
 	}
 
 	/** Refer load average for 15min.
@@ -264,7 +264,7 @@ public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 	 */
 	@Override
 	public double getLoadAverage15Min() {
-		return getNode().getLoadAverage()[2];
+		return getNode().getThreadPool().getLoadAverage()[2];
 	}
 
 	// ======================================================================

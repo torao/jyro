@@ -5,13 +5,13 @@
 		<xsd:complexType>
 			<xsd:sequence>
 				<xsd:element ref="property" minOccurs="0" maxOccurs="unbounded"/>
-				<xsd:element ref="queue" minOccurs="0" maxOccurs="1"/>
+				<xsd:element ref="bus" minOccurs="0" maxOccurs="1"/>
 				<xsd:element ref="node" minOccurs="0" maxOccurs="unbounded"/>
 			</xsd:sequence>
 		</xsd:complexType>
 	</xsd:element>
 
-	<xsd:element name="queue">
+	<xsd:element name="bus">
 		<xsd:complexType>
 			<xsd:sequence>
 				<xsd:element ref="property" minOccurs="0" maxOccurs="unbounded"/>
@@ -26,14 +26,14 @@
 			<xsd:sequence>
 				<xsd:element ref="lib" minOccurs="0" maxOccurs="unbounded"/>
 				<xsd:element ref="param" minOccurs="0" maxOccurs="unbounded"/>
+				<xsd:element ref="filter" minOccurs="0" maxOccurs="unbounded"/>
 				<xsd:choice>
 					<xsd:element ref="worker" minOccurs="1" maxOccurs="1"/>
 					<xsd:element ref="script" minOccurs="1" maxOccurs="1"/>
 				</xsd:choice>
+				<xsd:element ref="thread" minOccurs="0" maxOccurs="1"/>
 			</xsd:sequence>
 			<xsd:attribute name="id" type="xsd:ID" use="required">
-			</xsd:attribute>
-			<xsd:attribute name="queue" type="xsd:IDREF" use="required">
 			</xsd:attribute>
 			<xsd:attribute name="classpath" type="xsd:string" use="optional">
 			</xsd:attribute>
@@ -42,16 +42,18 @@
 		</xsd:complexType>
 	</xsd:element>
 
+	<xsd:element name="filter">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="property" minOccurs="0" maxOccurs="unbounded"/>
+			</xsd:sequence>
+			<xsd:attribute name="class" type="className" use="required">
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
 	<xsd:element name="worker">
 		<xsd:complexType>
-			<xsd:attribute name="min" type="xsd:unsignedInt" use="optional" default="5">
-			</xsd:attribute>
-			<xsd:attribute name="max" type="xsd:unsignedInt" use="optional" default="10">
-			</xsd:attribute>
-			<xsd:attribute name="priority" type="threadPriority" use="optional" default="5">
-			</xsd:attribute>
-			<xsd:attribute name="daemon" type="xsd:boolean" use="optional" default="false">
-			</xsd:attribute>
 			<xsd:attribute name="class" type="xsd:string" use="optional">
 			</xsd:attribute>
 		</xsd:complexType>
@@ -61,14 +63,6 @@
 		<xsd:complexType>
 			<xsd:simpleContent>
 				<xsd:extension base="xsd:string">
-					<xsd:attribute name="min" type="xsd:unsignedInt" use="optional" default="5">
-					</xsd:attribute>
-					<xsd:attribute name="max" type="xsd:unsignedInt" use="optional" default="10">
-					</xsd:attribute>
-					<xsd:attribute name="priority" type="threadPriority" use="optional" default="5">
-					</xsd:attribute>
-					<xsd:attribute name="daemon" type="xsd:boolean" use="optional" default="false">
-					</xsd:attribute>
 					<xsd:attribute name="type" type="xsd:string" use="required">
 					</xsd:attribute>
 					<xsd:attribute name="includes" type="xsd:string" use="optional">
@@ -77,6 +71,19 @@
 					</xsd:attribute>
 				</xsd:extension>
 			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="thread">
+		<xsd:complexType>
+			<xsd:attribute name="min" type="xsd:unsignedInt" use="optional" default="5">
+			</xsd:attribute>
+			<xsd:attribute name="max" type="xsd:unsignedInt" use="optional" default="10">
+			</xsd:attribute>
+			<xsd:attribute name="priority" type="threadPriority" use="optional" default="5">
+			</xsd:attribute>
+			<xsd:attribute name="daemon" type="xsd:boolean" use="optional" default="false">
+			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
 

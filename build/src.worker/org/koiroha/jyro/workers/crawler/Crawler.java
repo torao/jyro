@@ -23,7 +23,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
-import org.koiroha.jyro.util.IO;
+import org.koiroha.jyro.filters.Transaction;
 import org.koiroha.xml.parser.HTMLDocumentBuilderFactory;
 import org.w3c.dom.*;
 
@@ -75,7 +75,7 @@ public class Crawler extends Worker {
 
 		Connection con = null;
 		try{
-			con = DriverManager.getConnection("jdbc:mysql://localhost/jyro", "mysql", "mysql");
+			con = Transaction.getConnection();
 			con.setAutoCommit(false);
 
 			PreparedStatement stmt1 = con.prepareStatement(
@@ -116,8 +116,6 @@ public class Crawler extends Worker {
 			con.commit();
 		} catch(Exception ex){
 			throw new WorkerException(ex);
-		} finally {
-			IO.close(con);
 		}
 		return;
 	}

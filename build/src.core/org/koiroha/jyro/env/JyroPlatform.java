@@ -14,7 +14,7 @@ import java.io.File;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.*;
+import org.koiroha.jyro.JyroException;
 import org.koiroha.jyro.impl.*;
 import org.koiroha.jyro.jmx.JyroMXBeanImpl;
 
@@ -108,6 +108,7 @@ public class JyroPlatform {
 		} catch(Exception ex){
 			throw new JyroException(ex);
 		}
+		logger.info("startup jyro service");
 		return;
 	}
 

@@ -19,5 +19,7 @@
 	<classpathentry kind="lib" path="build/lib/jetty-7.4.2/servlet-api-2.5.jar"/>
 	<classpathentry kind="lib" path="webapp/WEB-INF/lib/mysql-connector-java-5.1.15-bin.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="webapp/WEB-INF/lib/commons-dbcp-1.4.jar"/>
+	<classpathentry kind="lib" path="webapp/WEB-INF/lib/commons-pool-1.5.6.jar"/>
 	<classpathentry kind="output" path="webapp/WEB-INF/classes"/>
 </classpath>

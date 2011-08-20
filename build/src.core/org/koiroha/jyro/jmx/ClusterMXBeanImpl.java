@@ -151,7 +151,7 @@ public class ClusterMXBeanImpl extends StandardMBean implements ClusterMXBean {
 	public int getActiveWorkers(){
 		int count = 0;
 		for(Node node: getCluster().getNodes()){
-			count += node.getActiveWorkers();
+			count += node.getThreadPool().getActiveWorkers();
 		}
 		return count;
 	}
@@ -163,7 +163,7 @@ public class ClusterMXBeanImpl extends StandardMBean implements ClusterMXBean {
 	public double getLoadAverage1Min() {
 		double la = 0.0;
 		for(Node node: getCluster().getNodes()){
-			la += node.getLoadAverage()[0];
+			la += node.getThreadPool().getLoadAverage()[0];
 		}
 		return la;
 	}
@@ -175,7 +175,7 @@ public class ClusterMXBeanImpl extends StandardMBean implements ClusterMXBean {
 	public double getLoadAverage5Min() {
 		double la = 0.0;
 		for(Node node: getCluster().getNodes()){
-			la += node.getLoadAverage()[1];
+			la += node.getThreadPool().getLoadAverage()[1];
 		}
 		return la;
 	}
@@ -187,7 +187,7 @@ public class ClusterMXBeanImpl extends StandardMBean implements ClusterMXBean {
 	public double getLoadAverage15Min() {
 		double la = 0.0;
 		for(Node node: getCluster().getNodes()){
-			la += node.getLoadAverage()[2];
+			la += node.getThreadPool().getLoadAverage()[2];
 		}
 		return la;
 	}
