@@ -50,6 +50,22 @@ public class Crawler extends Worker {
 	private static final Logger logger = Logger.getLogger(Crawler.class);
 
 	// ======================================================================
+	// Max Content Length
+	// ======================================================================
+	/**
+	 * Max content length as byte to read.
+	 */
+	private long maxContentLength = 1 * 1024 * 1024;
+
+	// ======================================================================
+	// User-Agent
+	// ======================================================================
+	/**
+	 * The value of User-Agent header.
+	 */
+	private String userAgent = "Mozilla/5.0 (compatible; Jyrobot/" + Jyro.VERSION + "; +http://www.koiroha.org/jyro.html)";
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
