@@ -10,7 +10,9 @@
 */
 package org.koiroha.jyro.workers.crawler;
 
+import java.io.*;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.*;
 
@@ -24,8 +26,11 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
 import org.koiroha.jyro.filters.Transaction;
+import org.koiroha.jyro.util.IO;
+import org.koiroha.xml.Xml;
 import org.koiroha.xml.parser.HTMLDocumentBuilderFactory;
 import org.w3c.dom.*;
+import org.xml.sax.InputSource;
 
 
 
@@ -137,6 +142,112 @@ public class Crawler extends Worker {
 	}
 
 	// ======================================================================
+	// URL Content Retrieve Stage
+	// ======================================================================
+	/**
+	 * Retrieve content of specified object.
+	 *
+	 * @param content content to retrieve
+	 * @throws WorkerException if fail to retrieve
+	*/
+	private void retrieveContent(URI uri, URI referer) throws IOException{
+
+		// execute request
+		HttpClient client = new DefaultHttpClient();
+		HttpGet request = new HttpGet(uri);
+		request.setHeader("User-Agent", userAgent);
+		if(referer != null){
+			request.setHeader("Referer", referer.toASCIIString());
+		}
+
+		String contentType = null;
+		byte[] content = null;
+		InputStream in = null;
+		try {
+
+			// read response content
+			HttpResponse response = client.execute(request);
+			HttpEntity entity = response.getEntity();
+			if(entity != null){
+				Header header = entity.getContentType();
+				if(header != null){
+					contentType = header.getValue();
+				}
+				in = entity.getContent();
+				ByteArrayOutputStream out = new ByteArrayOutputStream();
+				byte[] buffer = new byte[1024];
+				long remaining = maxContentLength;
+				while(true){
+					int len = (int)Math.min(buffer.length, remaining);
+					len = in.read(buffer, 0, len);
+					if(len < 0){
+						break;
+					}
+					out.write(buffer, 0, len);
+					remaining -= len;
+				}
+				content = out.toByteArray();
+			}
+		} finally {
+			IO.close(in);
+		}
+
+		return;
+	}
+
+	// ======================================================================
+	// Content Analyzer Stage
+	// ======================================================================
+	/**
+	 * Parse content.
+	 *
+	 * @param content content to analyze
+	 * @throws WorkerException if fail to retrieve
+	*/
+	private List<URI> analyzeContent(URI uri, String type, byte[] content) {
+		List<URI> urls = Collections.emptyList();
+		if(type.toLowerCase().startsWith("text/html")){
+			urls = parseHtmlContent(uri, type, content);
+		}
+		return urls;
+	}
+
+	// ======================================================================
+	// Content Analyzer Stage
+	// ======================================================================
+	/**
+	 * Parse content.
+	 *
+	 * @param content content to analyze
+	 * @throws WorkerException if fail to retrieve
+	*/
+	private List<URI> parseHtmlContent(URI uri, String type, byte[] content) {
+		List<URI> urls = new ArrayList<URI>();
+
+		try {
+			// parse html document
+			Charset def = Xml.getCharset(type);
+			HTMLDocumentBuilderFactory factory = new HTMLDocumentBuilderFactory();
+			factory.setNamespaceAware(false);
+			factory.setXIncludeAware(false);
+			InputSource is = factory.guessInputSource(new ByteArrayInputStream(content), def.name(), content.length);
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			Document doc = builder.parse(is);
+
+			// extract link
+			XPath xpath = XPathFactory.newInstance().newXPath();
+			NodeList nl = (NodeList)xpath.evaluate("//a/@href", doc, XPathConstants.NODESET);
+			for(int i=0; i<nl.getLength(); i++){
+				String href = ((Attr)nl.item(i)).getValue();
+				urls.add(uri.resolve(href));
+			}
+		} catch(Exception ex){
+			throw new IllegalStateException(ex);
+		}
+		return urls;
+	}
+
+	// ======================================================================
 	// Determine Port
 	// ======================================================================
 	/**
@@ -178,7 +289,7 @@ public class Crawler extends Worker {
 		try {
 			HttpClient client = new DefaultHttpClient();
 			HttpGet request = new HttpGet(url);
-			request.setHeader("User-Agent", "Mozilla/5.0 (compatible; Jyrobot/" + Jyro.VERSION + "; +http://www.koiroha.org/jyro.html)");
+			request.setHeader("User-Agent", userAgent);
 			HttpResponse response = client.execute(request);
 
 			Header header = response.getFirstHeader("Content-Type");
