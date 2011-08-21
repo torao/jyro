@@ -71,13 +71,24 @@ public class Worker {
 	}
 
 	// ======================================================================
-	// initialize worker
+	// Initialize Worker
 	// ======================================================================
 	/**
 	 * Initialize this worker.
 	 */
-	public void init(){
+	public void init() throws JyroException{
 		logger.debug("init()");
+		return;
+	}
+
+	// ======================================================================
+	// Destroy Worker
+	// ======================================================================
+	/**
+	 * Destroy this worker.
+	 */
+	public void destroy(){
+		logger.debug("destroy()");
 		return;
 	}
 
@@ -139,6 +150,7 @@ public class Worker {
 		String func = job.getFunction();
 		Method method = functions.get(func);
 		try {
+			logger.trace(method.toGenericString());
 			return method.invoke(this, job.getArguments());
 		} catch(InvocationTargetException ex){
 			if(ex.getCause() instanceof JyroException){

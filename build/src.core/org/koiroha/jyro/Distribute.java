@@ -31,7 +31,7 @@ public @interface Distribute {
 	 * if empty string "" specified, the fully-qualified method name such as
 	 * "org.koiroha.sample.SampleWorker.helloWorld" will be used.
 	 */
-	public String name();
+	public String name() default "";
 
 	// ======================================================================
 	// Distributed Function Name

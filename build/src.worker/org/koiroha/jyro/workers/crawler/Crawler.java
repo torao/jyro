@@ -16,6 +16,7 @@ import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.*;
 
+import javax.persistence.*;
 import javax.xml.parsers.*;
 import javax.xml.xpath.*;
 
@@ -54,6 +55,9 @@ public class Crawler extends Worker {
 	 */
 	private static final Logger logger = Logger.getLogger(Crawler.class);
 
+	private EntityManagerFactory factory = null;
+	private EntityManager manager = null;
+
 	// ======================================================================
 	// Max Content Length
 	// ======================================================================
@@ -81,6 +85,38 @@ public class Crawler extends Worker {
 	}
 
 	// ======================================================================
+	// Initialize Worker
+	// ======================================================================
+	/**
+	 * Initialize this worker instance.
+	*/
+	@Override
+	public void init() throws JyroException {
+		super.init();
+		factory = Persistence.createEntityManagerFactory("jyro");
+		manager = factory.createEntityManager();
+		return;
+	}
+
+	// ======================================================================
+	// Destroy Worker
+	// ======================================================================
+	/**
+	 * Destroy this worker.
+	 */
+	@Override
+	public void destroy() {
+		super.destroy();
+		if(manager != null){
+			manager.close();
+		}
+		if(factory != null){
+			factory.close();
+		}
+		return;
+	}
+
+	// ======================================================================
 	// Receive specified job
 	// ======================================================================
 	/**
@@ -90,7 +126,8 @@ public class Crawler extends Worker {
 	 * @throws WorkerException
 	*/
 	@Distribute(name="crawl",params={"url", "referer"})
-	public void crawl(String url, String referer) throws SQLException, JyroException {
+	public void crawl(String url, String referer) throws IOException, SQLException, JyroException {
+		retrieveContent(URI.create(url), URI.create(referer));
 		List<URI> urls = retrieveLink(url);
 		WorkerContext context = getContext();
 
@@ -125,7 +162,7 @@ public class Crawler extends Worker {
 				stmt1.setTimestamp(6, now);
 				stmt1.executeUpdate();
 				con.commit();
-				context.call("crawl", uri.toString());
+				context.call("crawl", uri.toString(), url);
 			} else {
 				logger.info("URL " + uri + " already retrieved");
 			}
@@ -145,7 +182,7 @@ public class Crawler extends Worker {
 	 * @param content content to retrieve
 	 * @throws WorkerException if fail to retrieve
 	*/
-	private Content retrieveContent(URI uri, URI referer) throws IOException{
+	private int retrieveContent(URI uri, URI referer) throws IOException{
 
 		// execute request
 		HttpClient client = new DefaultHttpClient();
@@ -190,16 +227,45 @@ public class Crawler extends Worker {
 			IO.close(in);
 		}
 
-		Content content = new Content(uri);
-		Content.Request req = new Content.Request(
-			request.getRequestLine().getMethod(),
-			URI.create(request.getRequestLine().getUri()),
-			request.getRequestLine().getProtocolVersion().toString());
-		Content.Response res = new Content.Response(
-			response.getStatusLine().getProtocolVersion().toString(),
-			response.getStatusLine().getStatusCode(),
-			response.getStatusLine().getReasonPhrase());
-		return null;
+		// make request header
+		StringBuilder reqHeader = new StringBuilder();
+		for(Header header: request.getAllHeaders()){
+			reqHeader.append(header.getName()).append(": ");
+			reqHeader.append(header.getValue()).append("\r\n");
+		}
+
+		// make response header
+		StringBuilder resHeader = new StringBuilder();
+		for(Header header: response.getAllHeaders()){
+			resHeader.append(header.getName()).append(": ");
+			resHeader.append(header.getValue()).append("\r\n");
+		}
+
+		JyroContent content = new JyroContent();
+		content.setUrl(uri.toASCIIString());
+		content.setRequestMethod(request.getRequestLine().getMethod());
+		content.setRequestUri(request.getRequestLine().getUri());
+		content.setRequestVersion(request.getRequestLine().getProtocolVersion().toString());
+		content.setRequestHeader(reqHeader.toString());
+		content.setResponseVersion(response.getStatusLine().getProtocolVersion().toString());
+		content.setResponseCode(response.getStatusLine().getStatusCode());
+		content.setResponsePhrase(response.getStatusLine().getReasonPhrase());
+		content.setResponseHeader(resHeader.toString());
+		content.setContentType(contentType);
+		content.setContent(binary);
+
+		EntityTransaction tran = manager.getTransaction();
+		try {
+			tran.begin();
+			manager.persist(content);
+			tran.commit();
+			tran = null;
+		} finally {
+			if(tran != null){
+				tran.rollback();
+			}
+		}
+		return content.getId();
 	}
 
 	// ======================================================================

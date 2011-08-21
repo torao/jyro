@@ -249,6 +249,21 @@ public class Node {
 	}
 
 	// ======================================================================
+	// Initialize Node
+	// ======================================================================
+	/**
+	 * Initialize workers on this node.
+	*/
+	public void init() throws JyroException{
+		logger.debug("initializing " + getId() + " node");
+		for(WorkerFilter f: filters){
+			f.init();
+		}
+		worker.init();
+		return;
+	}
+
+	// ======================================================================
 	// Start Node
 	// ======================================================================
 	/**
@@ -282,6 +297,23 @@ public class Node {
 
 		// shutdown thread pool
 		threads.stop();
+		return;
+	}
+
+	// ======================================================================
+	// Destroy Node
+	// ======================================================================
+	/**
+	 * Destroy workers on this node.
+	*/
+	public void destroy() {
+		logger.debug("destroying " + getId() + " node");
+		worker.destroy();
+		List<WorkerFilter> rev = new ArrayList<WorkerFilter>(filters);
+		Collections.reverse(rev);
+		for(WorkerFilter f: rev){
+			f.destroy();
+		}
 		return;
 	}
 

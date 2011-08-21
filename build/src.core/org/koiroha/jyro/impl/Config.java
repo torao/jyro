@@ -208,6 +208,11 @@ final class Config {
 
 		// start all nodes
 		for(Node n: nodes.values()){
+			n.init();
+		}
+
+		// start all nodes
+		for(Node n: nodes.values()){
 			n.start();
 		}
 		return;
@@ -227,6 +232,11 @@ final class Config {
 		// stop all nodes
 		for(Node n: nodes.values()){
 			n.stop();
+		}
+
+		// stop all nodes
+		for(Node n: nodes.values()){
+			n.destroy();
 		}
 
 		return;
