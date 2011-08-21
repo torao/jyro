@@ -70,12 +70,12 @@ public class Node {
 	private final Bus bus;
 
 	// ======================================================================
-	// Worker
+	// Worker Stub
 	// ======================================================================
 	/**
 	 * Worker to execute parallel.
 	 */
-	private final Worker worker;
+	private final WorkerStub worker;
 
 	// ======================================================================
 	// Job Queue
@@ -197,7 +197,7 @@ public class Node {
 		this.id = id;
 		this.loader = loader;
 		this.bus = bus;
-		this.worker = proc;
+		this.worker = new WorkerStub(proc);
 		this.queue = new ArrayBlockingQueue<Runnable>(1);
 
 		// create load average calculator

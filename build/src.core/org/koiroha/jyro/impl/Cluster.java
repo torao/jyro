@@ -14,7 +14,7 @@ import java.lang.management.ManagementFactory;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.*;
+import org.koiroha.jyro.JyroException;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Cluster: Node Container
@@ -260,12 +260,13 @@ public class Cluster {
 	}
 
 	// ======================================================================
-	// Shutdown Services
+	// Send Job
 	// ======================================================================
 	/**
-	 * Shutdown all services in this instance.
+	 * Send specified job on this cluster.
 	 *
-	 * @throws JyroException if fail to shutdown jyro
+	 * @param job job to send
+	 * @throws JyroException if fail to send job
 	 */
 	public void send(Job job) throws JyroException {
 		config.send(job);

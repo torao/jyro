@@ -19,7 +19,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.*;
 
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.*;
+import org.koiroha.jyro.Jyro;
 import org.koiroha.jyro.env.JyroPlatform;
 import org.koiroha.jyro.impl.*;
 import org.koiroha.jyro.util.*;
@@ -219,12 +219,12 @@ public class JyroServlet extends HttpServlet {
 
 		String[] elem = parsePathInfo(request);
 
-		String core = elem[0];
+		String cluster = elem[0];
 		String node = elem[1];
 		try {
 			String j = request.getParameter("job");
 			Job job = Job.parse(j);
-			platform.post(core, node, job);
+			platform.post(cluster, job);
 			response.setStatus(HttpServletResponse.SC_NO_CONTENT);
 		} catch(Exception ex){
 			throw new ServletException(ex);

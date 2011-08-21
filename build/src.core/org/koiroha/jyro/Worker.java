@@ -9,14 +9,10 @@
  */
 package org.koiroha.jyro;
 
-import java.lang.reflect.*;
-import java.util.*;
-
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.impl.Job;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Worker: Node Worker
+// Worker: Worker
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  * Worker process bound to node.
@@ -44,14 +40,6 @@ public class Worker {
 	private WorkerContext context = null;
 
 	// ======================================================================
-	// Function Mappings
-	// ======================================================================
-	/**
-	 * Function name to method mappings.
-	 */
-	private final Map<String,Method> functions = new HashMap<String, Method>();
-
-	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -68,7 +56,6 @@ public class Worker {
 	 * Initialize this worker.
 	 */
 	public void init(){
-		logger.debug("init()");
 		return;
 	}
 
@@ -92,71 +79,16 @@ public class Worker {
 	 * framework and can call only once for instance.
 	 *
 	 * @param context worker context
+	 * @throws IllegalStateException if context already set
 	 */
 	public final void setContext(WorkerContext context) throws IllegalStateException{
+		assert(context != null);
 		if(this.context != null){
-			throw new IllegalStateException("context already specified");
+			logger.error("context specified");
+			throw new IllegalStateException("context already present");
 		}
 		this.context = context;
-
-		// build function mappings
-		for(Method m: getClass().getMethods()){
-			Distribute d = m.getAnnotation(Distribute.class);
-			if(d != null){
-				String f = d.value();
-				if(f == null || f.length() == 0){
-					f = m.getDeclaringClass().getCanonicalName() + "." + m.getName();
-				}
-				this.functions.put(f, m);
-			}
-		}
 		return;
-	}
-
-	// ======================================================================
-	// Retrieve Function Names
-	// ======================================================================
-	/**
-	 * Retrieve all function names implemented by this instance.
-	 * The default behavior of this method is to return the names of methods
-	 * with {@link Distribute} annotation.
-	 *
-	 * @return function names
-	 */
-	public String[] getFunctions(){
-		List<String> dist = new ArrayList<String>(functions.keySet());
-		return dist.toArray(new String[dist.size()]);
-	}
-
-	// ======================================================================
-	// Retrieve Interfaces
-	// ======================================================================
-	/**
-	 * Retrieve distributed interfaces of this worker.
-	 *
-	 * @param context worker context
-	 */
-	public Object execute(Job job) throws JyroException {
-
-		// search distributed method on this instance
-		String func = job.getFunction();
-		Method method = functions.get(func);
-		try {
-			return method.invoke(this, job.getArguments());
-		} catch(InvocationTargetException ex){
-			if(ex.getCause() instanceof JyroException){
-				throw (JyroException)ex.getCause();
-			}
-			if(ex.getCause() instanceof RuntimeException){
-				throw (RuntimeException)ex.getCause();
-			}
-			if(ex.getCause() instanceof Error){
-				throw (Error)ex.getCause();
-			}
-			throw new JyroException(ex);
-		} catch(IllegalAccessException ex){
-			throw new JyroException(ex);
-		}
 	}
 
 }

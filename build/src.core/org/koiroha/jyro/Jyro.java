@@ -15,11 +15,11 @@ import java.util.ResourceBundle;
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Jyro:
+// Jyro: Constants and Functions
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * Common constant values and functions in Jyro.
  *
- * <p>
  * @version $Revision:$
  * @author torao
  * @since 2011/07/23 Java SE 6
@@ -38,8 +38,8 @@ public final class Jyro {
 	// Application ID
 	// ======================================================================
 	/**
-	 * Application ID to be able to use file or directory name, part of uri
-	 * and so on.
+	 * Application ID that can use for such as file, directory name or part
+	 * of uri.
 	 */
 	public static final String ID;
 

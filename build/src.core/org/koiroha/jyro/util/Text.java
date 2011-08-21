@@ -11,11 +11,8 @@ package org.koiroha.jyro.util;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.*;
+import java.util.regex.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Text: Text Utility Class
@@ -346,8 +343,8 @@ public final class Text {
 	/**
 	 * Literize specified value as JSON string.
 	 *
-	 * @param text value
-	 * @return instance of out parameter
+	 * @param value value to convert
+	 * @return json string
 	 */
 	public static String json(Object value){
 		StringBuilder buffer = new StringBuilder();
