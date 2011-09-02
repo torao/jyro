@@ -7,7 +7,7 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyro.workers.crawler;
+package org.koiroha.jyrobot;
 
 import java.io.Serializable;
 import java.net.URI;
@@ -76,7 +76,7 @@ public class Content implements Serializable {
 	 *
 	 * @return URI
 	 */
-	public URI getUri(){
+	public URI getURI(){
 		return uri;
 	}
 
@@ -162,6 +162,29 @@ public class Content implements Serializable {
 			return values;
 		}
 
+		// ==================================================================
+		// Set Content
+		// ==================================================================
+		/**
+		 * Set content of this message.
+		 * @param content binary content
+		 */
+		public void setConten(byte[] content){
+			this.content = content;
+			return;
+		}
+
+		// ==================================================================
+		// Retrieve Content
+		// ==================================================================
+		/**
+		 * Retrieve content of this message.
+		 * @return binary content
+		 */
+		public byte[] getConten(){
+			return content;
+		}
+
 	}
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -216,6 +239,36 @@ public class Content implements Serializable {
 			return;
 		}
 
+		// ==================================================================
+		// Method
+		// ==================================================================
+		/**
+		 * Retrieve request method.
+		 */
+		public String getMethod() {
+			return method;
+		}
+
+		// ==================================================================
+		//
+		// ==================================================================
+		/**
+		 * Retrieve URI to request.
+		 */
+		public URI getUri() {
+			return uri;
+		}
+
+		// ==================================================================
+		//
+		// ==================================================================
+		/**
+		 * Retrieve HTTP Version.
+		 */
+		public String getVersion() {
+			return version;
+		}
+
 	}
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -268,6 +321,33 @@ public class Content implements Serializable {
 			this.code = code;
 			this.phrase = phrase;
 			return;
+		}
+
+		// ==================================================================
+		// Retrieve HTTP Version
+		// ==================================================================
+		/**
+		 */
+		public String getVersion() {
+			return version;
+		}
+
+		// ==================================================================
+		// Retrieve Response Code
+		// ==================================================================
+		/**
+		 */
+		public int getCode() {
+			return code;
+		}
+
+		// ==================================================================
+		// Retrieve Response Phrase
+		// ==================================================================
+		/**
+		 */
+		public String getPhrase() {
+			return phrase;
 		}
 
 	}
