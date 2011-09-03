@@ -211,7 +211,7 @@ public class JyroMXBeanImpl implements JyroMXBean, Serializable {
 		int count = 0;
 		for(Cluster core: jyro.getClusters()){
 			for(Node node: core.getNodes()){
-				count += node.getActiveWorkers();
+				count += node.getThreadPool().getActiveWorkers();
 			}
 		}
 		return count;

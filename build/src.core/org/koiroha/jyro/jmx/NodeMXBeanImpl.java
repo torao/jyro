@@ -10,8 +10,14 @@
 */
 package org.koiroha.jyro.jmx;
 
+import java.lang.reflect.Method;
+import java.util.Arrays;
+
+import javax.management.*;
+
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.impl.Node;
+import org.koiroha.jyro.*;
+import org.koiroha.jyro.impl.*;
 
 
 
@@ -25,7 +31,7 @@ import org.koiroha.jyro.impl.Node;
  * @author torao
  * @since 2011/07/17 Java SE 6
  */
-public class NodeMXBeanImpl implements NodeMXBean {
+public class NodeMXBeanImpl extends StandardMBean implements NodeMXBean {
 
 	// ======================================================================
 	// Log Output
@@ -68,7 +74,8 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 * @param core core of specified node belong to
 	 * @param node node to management this MXBean
 	*/
-	public NodeMXBeanImpl(JyroMXBeanImpl mxbean, String core, String node){
+	public NodeMXBeanImpl(JyroMXBeanImpl mxbean, String core, String node) throws NotCompliantMBeanException{
+		super(NodeMXBean.class);
 		this.mxbean = mxbean;
 		this.core = core;
 		this.node = node;
@@ -89,19 +96,6 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	}
 
 	// ======================================================================
-	//
-	// ======================================================================
-	/**
-	 *
-	 *
-	 * @return
-	*/
-	@Override
-	public String[] getFunctions(){
-		return getNode().getFunctions();
-	}
-
-	// ======================================================================
 	// Refer Active Workers
 	// ======================================================================
 	/**
@@ -111,7 +105,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public int getActiveWorkers(){
-		return getNode().getActiveWorkers();
+		return getNode().getThreadPool().getActiveWorkers();
 	}
 
 	// ======================================================================
@@ -124,7 +118,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public int getMinimumWorkers(){
-		return getNode().getMinimumWorkers();
+		return getNode().getThreadPool().getMinimumWorkers();
 	}
 
 	// ======================================================================
@@ -137,7 +131,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public void setMinimumWorkers(int min){
-		getNode().setMinimumWorkers(min);
+		getNode().getThreadPool().setMinimumWorkers(min);
 		return;
 	}
 
@@ -151,7 +145,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public int getMaximumWorkers(){
-		return getNode().getMaximumWorkers();
+		return getNode().getThreadPool().getMaximumWorkers();
 	}
 
 	// ======================================================================
@@ -164,7 +158,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public void setMaximumWorkers(int max){
-		getNode().setMaximumWorkers(max);
+		getNode().getThreadPool().setMaximumWorkers(max);
 		return;
 	}
 
@@ -178,7 +172,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 */
 	@Override
 	public int getPriority(){
-		return getNode().getPriority();
+		return getNode().getThreadPool().getPriority();
 	}
 
 	// ======================================================================
@@ -191,7 +185,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 */
 	@Override
 	public void setPriority(int priority){
-		getNode().setPriority(priority);
+		getNode().getThreadPool().setPriority(priority);
 		return;
 	}
 
@@ -205,7 +199,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public boolean isDaemon(){
-		return getNode().isDaemon();
+		return getNode().getThreadPool().isDaemon();
 	}
 
 	// ======================================================================
@@ -218,7 +212,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public void setDaemon(boolean daemon){
-		getNode().setDaemon(true);
+		getNode().getThreadPool().setDaemon(daemon);
 		return;
 	}
 
@@ -232,7 +226,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public int getStackSize(){
-		return getNode().getStackSize();
+		return getNode().getThreadPool().getStackSize();
 	}
 
 	// ======================================================================
@@ -245,7 +239,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	*/
 	@Override
 	public void setStackSize(int stackSize){
-		getNode().setStackSize(stackSize);
+		getNode().getThreadPool().setStackSize(stackSize);
 		return;
 	}
 
@@ -254,7 +248,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 */
 	@Override
 	public double getLoadAverage1Min() {
-		return getNode().getLoadAverage()[0];
+		return getNode().getThreadPool().getLoadAverage()[0];
 	}
 
 	/** Refer load average for 5min.
@@ -262,7 +256,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 */
 	@Override
 	public double getLoadAverage5Min() {
-		return getNode().getLoadAverage()[1];
+		return getNode().getThreadPool().getLoadAverage()[1];
 	}
 
 	/** Refer load average for 15min.
@@ -270,7 +264,7 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	 */
 	@Override
 	public double getLoadAverage15Min() {
-		return getNode().getLoadAverage()[2];
+		return getNode().getThreadPool().getLoadAverage()[2];
 	}
 
 	// ======================================================================
@@ -297,6 +291,79 @@ public class NodeMXBeanImpl implements NodeMXBean {
 	@Override
 	public long getTotalJobTime(){
 		return getNode().getTotalJobTime();
+	}
+
+	// ======================================================================
+	// Retrieve MBeanInfo
+	// ======================================================================
+	/**
+	 * Retrieve node for this mxbean.
+	 *
+	 * @return MBeanInfo instance for this node
+	*/
+	@Override
+	public Object invoke(String actionName, Object[] params, String[] signature) throws MBeanException, ReflectionException {
+		logger.debug("invoke(" + actionName + ",{" + Arrays.toString(params) + "},{" + Arrays.toString(signature) + "})");
+		Job job = new Job(actionName, params, null);
+		return getNode().execute(job);
+	}
+
+	// ======================================================================
+	// Retrieve MBeanInfo
+	// ======================================================================
+	/**
+	 * Retrieve node for this mxbean.
+	 *
+	 * @return MBeanInfo instance for this node
+	*/
+	@Override
+	public MBeanInfo getMBeanInfo() {
+		logger.debug("getMBeanInfo()");
+
+		// build operation info
+		Method[] method = getNode().getDistributedMethods();
+		MBeanOperationInfo[] op = new MBeanOperationInfo[method.length];
+		for(int i=0; i<method.length; i++){
+			op[i] = new MBeanOperationInfo("", method[i]);
+		}
+
+		MBeanInfo info = super.getMBeanInfo();
+		return new MBeanInfo(
+			info.getClassName(),
+			"Node",
+			info.getAttributes(),
+			info.getConstructors(),
+			op,
+			info.getNotifications());
+	}
+
+	// ======================================================================
+	// Retrieve MBeanInfo
+	// ======================================================================
+	/**
+	 * Retrieve node for this mxbean.
+	 *
+	 * @return MBeanInfo instance for this node
+	*/
+	public static MBeanOperationInfo getMBeanOperationInfo(Method method) {
+		Distribute dist = method.getAnnotation(Distribute.class);
+
+		// build MBean parameter info
+		Class<?>[] params = method.getParameterTypes();
+		String[] paramNames = dist.params();
+		MBeanParameterInfo[] paramInfo = new MBeanParameterInfo[params.length];
+		for(int i=0; i<params.length; i++){
+			String name = paramNames[i];
+			String type = params[i].getCanonicalName();
+			String desc = "";
+			paramInfo[i] = new MBeanParameterInfo(name, type, desc);
+		}
+
+		// build MBean Operation info
+		String name = Jyro.getFunctionName(method);
+		String desc = "";
+		String type = method.getReturnType().getSimpleName();
+		return new MBeanOperationInfo(name, desc, paramInfo, type, MBeanOperationInfo.ACTION);
 	}
 
 	// ======================================================================

@@ -12,7 +12,6 @@ package org.koiroha.jyro.jmx;
 
 import javax.management.MXBean;
 
-import org.koiroha.jyro.JyroException;
 import org.koiroha.jyro.impl.Cluster;
 
 
@@ -104,19 +103,5 @@ public interface ClusterMXBean {
 	 * @return load average
 	 */
 	public double getLoadAverage15Min();
-
-	// ======================================================================
-	// Refer Uptime
-	// ======================================================================
-	/**
-	 * Refer uptime of core.
-	 *
-	 * @return uptime
-	*/
-	public void send(String func) throws JyroException;
-	public void send(String func, String a1) throws JyroException;
-	public void send(String func, String a1, String a2) throws JyroException;
-	public void send(String func, String a1, String a2, String a3) throws JyroException;
-	public void send(String func, String a1, String a2, String a3, String a4) throws JyroException;
 
 }

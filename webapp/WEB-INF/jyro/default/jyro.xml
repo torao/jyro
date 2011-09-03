@@ -3,24 +3,28 @@
 	<property name="a.b.c" value="foo"/>
 	<property name="classpath" value="/var/lib/java"/>
 
-	<queue factory="jvm">
-	</queue>
+	<bus factory="jvm">
+	</bus>
 
-	<node id="crawler" queue="hoge">
-		<worker min="5" max="10" class="org.koiroha.jyro.workers.crawler.Crawler"/>
+	<node id="crawler">
+		<filter class="org.koiroha.jyro.filters.JDBCTransaction">
+			<property name="url" value="jdbc:mysql://localhost/jyro"/>
+			<property name="username" value="mysql"/>
+			<property name="password" value="mysql"/>
+		</filter>
+		<worker class="org.koiroha.jyro.workers.crawler.Crawler"/>
+		<thread min="5" max="10"/>
 	</node>
 
-	<node id="parser" queue="hoge">
-		<worker min="5" max="10" class="org.koiroha.jyro.workers.crawler.Parser"/>
+	<node id="URL取得Java">
+		<worker class="org.koiroha.jyro.impl.SampleWorker"/>
+		<thread min="5" max="10"/>
 	</node>
 
-	<node id="URL取得Java" queue="hoge">
-		<worker min="5" max="10" class="org.koiroha.jyro.impl.SampleWorker"/>
-	</node>
-
-	<node id="URL取得Script" queue="hoge" classpath="${classpath}/hoge.jar">
-		<script min="5" max="10" type="application/javascript" includes="scripts/**/*.js" charset="UTF-8">
+	<node id="URL取得Script" classpath="${classpath}/hoge.jar">
+		<script type="application/javascript" includes="scripts/**/*.js" charset="UTF-8">
 		</script>
+		<thread min="5" max="10"/>
 	</node>
 
 </jyro>

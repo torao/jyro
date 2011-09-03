@@ -10,6 +10,7 @@
 */
 package org.koiroha.jyro;
 
+import java.lang.reflect.Method;
 import java.util.ResourceBundle;
 
 
@@ -93,6 +94,29 @@ public final class Jyro {
 	 */
 	private Jyro() {
 		return;
+	}
+
+	// ======================================================================
+	// Refer Function Name
+	// ======================================================================
+	/**
+	 * Refer distributed function name of specified method. If the method
+	 * is not distributed function (no {@link Distribute} present on method),
+	 * then null will return.
+	 *
+	 * @param method method
+	 * @return distributed function name
+	 */
+	public static String getFunctionName(Method method){
+		Distribute dist = method.getAnnotation(Distribute.class);
+		if(dist == null){
+			return null;
+		}
+		String name = dist.name();
+		if(name == null || name.length() == 0){
+			name = method.getDeclaringClass().getCanonicalName() + "." + method.getName();
+		}
+		return name;
 	}
 
 }

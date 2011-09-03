@@ -10,12 +10,10 @@
 */
 package org.koiroha.jyro.workers.crawler;
 
+import java.io.*;
 import java.net.URI;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Timestamp;
+import java.nio.charset.Charset;
+import java.sql.*;
 import java.util.*;
 
 import javax.xml.parsers.*;
@@ -27,10 +25,12 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
-import org.koiroha.jyro.impl.Job;
+import org.koiroha.jyro.filters.Transaction;
 import org.koiroha.jyro.util.IO;
+import org.koiroha.xml.Xml;
 import org.koiroha.xml.parser.HTMLDocumentBuilderFactory;
 import org.w3c.dom.*;
+import org.xml.sax.InputSource;
 
 
 
@@ -55,6 +55,22 @@ public class Crawler extends Worker {
 	private static final Logger logger = Logger.getLogger(Crawler.class);
 
 	// ======================================================================
+	// Max Content Length
+	// ======================================================================
+	/**
+	 * Max content length as byte to read.
+	 */
+	private long maxContentLength = 1 * 1024 * 1024;
+
+	// ======================================================================
+	// User-Agent
+	// ======================================================================
+	/**
+	 * The value of User-Agent header.
+	 */
+	private String userAgent = "Mozilla/5.0 (compatible; Jyrobot/" + Jyro.VERSION + "; +http://www.koiroha.org/jyro.html)";
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -73,21 +89,20 @@ public class Crawler extends Worker {
 	 * @return
 	 * @throws WorkerException
 	*/
-	@Override
-	public Object receive(Job job) throws WorkerException {
-		String url = job.getAttribute("url");
+	@Distribute(name="crawl",params={"url"})
+	public void crawl(String url) throws WorkerException {
 		List<URI> urls = retrieveLink(url);
 		WorkerContext context = getContext();
 
 		Connection con = null;
 		try{
-			con = DriverManager.getConnection("jdbc:mysql://localhost/jyro", "mysql", "mysql");
+			con = Transaction.getConnection();
 			con.setAutoCommit(false);
 
 			PreparedStatement stmt1 = con.prepareStatement(
-				"INSERT INTO jyro_retrieved_urls(scheme,host,port,path,retrieved_at,created_at) VALUES(?,?,?,?,?,?)");
+				"INSERT INTO jyro_urls(scheme,host,port,path,retrieved_at,created_at) VALUES(?,?,?,?,?,?)");
 			PreparedStatement stmt = con.prepareStatement(
-				"SELECT EXISTS(SELECT * FROM jyro_retrieved_urls WHERE scheme=? AND host=? AND port=? AND path=?)");
+				"SELECT EXISTS(SELECT * FROM jyro_urls WHERE scheme=? AND host=? AND port=? AND path=?)");
 			for(URI uri: urls){
 				int port = getPort(uri);
 				if(port < 0){
@@ -112,7 +127,7 @@ public class Crawler extends Worker {
 					stmt1.setTimestamp(6, now);
 					stmt1.executeUpdate();
 					con.commit();
-					context.send("crawler", Job.parse("f{ url:\"" + uri + "\" }"));
+					context.call("crawl", uri.toString());
 				} else {
 					logger.info("URL " + uri + " already retrieved");
 				}
@@ -122,10 +137,114 @@ public class Crawler extends Worker {
 			con.commit();
 		} catch(Exception ex){
 			throw new WorkerException(ex);
-		} finally {
-			IO.close(con);
 		}
-		return null;
+		return;
+	}
+
+	// ======================================================================
+	// URL Content Retrieve Stage
+	// ======================================================================
+	/**
+	 * Retrieve content of specified object.
+	 *
+	 * @param content content to retrieve
+	 * @throws WorkerException if fail to retrieve
+	*/
+	private void retrieveContent(URI uri, URI referer) throws IOException{
+
+		// execute request
+		HttpClient client = new DefaultHttpClient();
+		HttpGet request = new HttpGet(uri);
+		request.setHeader("User-Agent", userAgent);
+		if(referer != null){
+			request.setHeader("Referer", referer.toASCIIString());
+		}
+
+		String contentType = null;
+		byte[] content = null;
+		InputStream in = null;
+		try {
+
+			// read response content
+			HttpResponse response = client.execute(request);
+			HttpEntity entity = response.getEntity();
+			if(entity != null){
+				Header header = entity.getContentType();
+				if(header != null){
+					contentType = header.getValue();
+				}
+				in = entity.getContent();
+				ByteArrayOutputStream out = new ByteArrayOutputStream();
+				byte[] buffer = new byte[1024];
+				long remaining = maxContentLength;
+				while(true){
+					int len = (int)Math.min(buffer.length, remaining);
+					len = in.read(buffer, 0, len);
+					if(len < 0){
+						break;
+					}
+					out.write(buffer, 0, len);
+					remaining -= len;
+				}
+				content = out.toByteArray();
+			}
+		} finally {
+			IO.close(in);
+		}
+
+		return;
+	}
+
+	// ======================================================================
+	// Content Analyzer Stage
+	// ======================================================================
+	/**
+	 * Parse content.
+	 *
+	 * @param content content to analyze
+	 * @throws WorkerException if fail to retrieve
+	*/
+	private List<URI> analyzeContent(URI uri, String type, byte[] content) {
+		List<URI> urls = Collections.emptyList();
+		if(type.toLowerCase().startsWith("text/html")){
+			urls = parseHtmlContent(uri, type, content);
+		}
+		return urls;
+	}
+
+	// ======================================================================
+	// Content Analyzer Stage
+	// ======================================================================
+	/**
+	 * Parse content.
+	 *
+	 * @param content content to analyze
+	 * @throws WorkerException if fail to retrieve
+	*/
+	private List<URI> parseHtmlContent(URI uri, String type, byte[] content) {
+		List<URI> urls = new ArrayList<URI>();
+
+		try {
+			// parse html document
+			Charset def = Xml.getCharset(type);
+			HTMLDocumentBuilderFactory factory = new HTMLDocumentBuilderFactory();
+			factory.setNamespaceAware(false);
+			factory.setXIncludeAware(false);
+			InputSource is = factory.guessInputSource(new ByteArrayInputStream(content), def.name(), content.length);
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			Document doc = builder.parse(is);
+
+			// extract link
+			XPath xpath = XPathFactory.newInstance().newXPath();
+			NodeList nl = (NodeList)xpath.evaluate("//a/@href", doc, XPathConstants.NODESET);
+			for(int i=0; i<nl.getLength(); i++){
+				String href = ((Attr)nl.item(i)).getValue();
+				urls.add(uri.resolve(href));
+			}
+		} catch(Exception ex){
+			throw new IllegalStateException(ex);
+		}
+		return urls;
 	}
 
 	// ======================================================================
@@ -170,7 +289,7 @@ public class Crawler extends Worker {
 		try {
 			HttpClient client = new DefaultHttpClient();
 			HttpGet request = new HttpGet(url);
-			request.setHeader("User-Agent", "Mozilla/5.0 (compatible; Jyrobot/" + Jyro.VERSION + "; +http://www.koiroha.org/jyro.html)");
+			request.setHeader("User-Agent", userAgent);
 			HttpResponse response = client.execute(request);
 
 			Header header = response.getFirstHeader("Content-Type");

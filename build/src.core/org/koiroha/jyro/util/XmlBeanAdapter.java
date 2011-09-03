@@ -140,6 +140,28 @@ public class XmlBeanAdapter {
 	}
 
 	// ======================================================================
+	// Retrieve Nodeset
+	// ======================================================================
+	/**
+	 * Retrieve nodeset for specified xpath expression.
+	 *
+	 * @param expr xpath expression
+	 * @return iterable of nodes
+	 */
+	protected Iterable<Node> nodeset(Node node, String expr){
+		List<Node> list = new ArrayList<Node>();
+		try {
+			NodeList nl = (NodeList)xpath.evaluate(expr, node, XPathConstants.NODESET);
+			for(int i=0; i<nl.getLength(); i++){
+				list.add(nl.item(i));
+			}
+		} catch(XPathException ex){
+			throw new IllegalStateException("invalid xpath expression (this maybe bug): " + expr, ex);
+		}
+		return list;
+	}
+
+	// ======================================================================
 	// Retrieve Element
 	// ======================================================================
 	/**
@@ -176,9 +198,22 @@ public class XmlBeanAdapter {
 	 * @return iterable of elements
 	 */
 	protected Iterable<Element> elemset(String expr){
+		return elemset(node, expr);
+	}
+
+	// ======================================================================
+	// Retrieve Nodeset
+	// ======================================================================
+	/**
+	 * Retrieve nodeset for specified element.
+	 *
+	 * @param expr xpath expression
+	 * @return iterable of elements
+	 */
+	protected Iterable<Element> elemset(Node node, String expr){
 		List<Element> list = new ArrayList<Element>();
-		for(Node node: nodeset(expr)){
-			list.add((Element)node);
+		for(Node n: nodeset(node, expr)){
+			list.add((Element)n);
 		}
 		return list;
 	}

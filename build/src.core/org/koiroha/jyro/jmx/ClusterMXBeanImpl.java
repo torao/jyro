@@ -10,9 +10,13 @@
 */
 package org.koiroha.jyro.jmx;
 
+import java.lang.reflect.Method;
+import java.util.*;
+
 import javax.management.*;
 
-import org.koiroha.jyro.*;
+import org.apache.log4j.Logger;
+import org.koiroha.jyro.JyroException;
 import org.koiroha.jyro.impl.*;
 
 
@@ -29,7 +33,15 @@ import org.koiroha.jyro.impl.*;
  * @author torao
  * @since 2011/07/17 Java SE 6
  */
-public class ClusterMXBeanImpl implements ClusterMXBean {
+public class ClusterMXBeanImpl extends StandardMBean implements ClusterMXBean {
+
+	// ======================================================================
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output of this class.
+	 */
+	private static final Logger logger = Logger.getLogger(ClusterMXBeanImpl.class);
 
 	// ======================================================================
 	// JyroMXBean
@@ -53,8 +65,10 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	/**
 	 * @param mxbean MXBean to refer core instance
 	 * @param name core name that this instance mapped to
+	 * @throws NotCompliantMBeanException
 	*/
-	public ClusterMXBeanImpl(JyroMXBeanImpl mxbean, String name){
+	public ClusterMXBeanImpl(JyroMXBeanImpl mxbean, String name) throws NotCompliantMBeanException{
+		super(ClusterMXBean.class);
 		this.mxbean = mxbean;
 		this.name = name;
 		return;
@@ -137,7 +151,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	public int getActiveWorkers(){
 		int count = 0;
 		for(Node node: getCluster().getNodes()){
-			count += node.getActiveWorkers();
+			count += node.getThreadPool().getActiveWorkers();
 		}
 		return count;
 	}
@@ -149,7 +163,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	public double getLoadAverage1Min() {
 		double la = 0.0;
 		for(Node node: getCluster().getNodes()){
-			la += node.getLoadAverage()[0];
+			la += node.getThreadPool().getLoadAverage()[0];
 		}
 		return la;
 	}
@@ -161,7 +175,7 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	public double getLoadAverage5Min() {
 		double la = 0.0;
 		for(Node node: getCluster().getNodes()){
-			la += node.getLoadAverage()[1];
+			la += node.getThreadPool().getLoadAverage()[1];
 		}
 		return la;
 	}
@@ -173,50 +187,68 @@ public class ClusterMXBeanImpl implements ClusterMXBean {
 	public double getLoadAverage15Min() {
 		double la = 0.0;
 		for(Node node: getCluster().getNodes()){
-			la += node.getLoadAverage()[2];
+			la += node.getThreadPool().getLoadAverage()[2];
 		}
 		return la;
 	}
 
-	// ======================================================================
-	// Refer Uptime
-	// ======================================================================
-	/**
-	 * Refer uptime of core.
-	 *
-	 * @return uptime
-	*/
-	private void send0(String func, Object... args) throws JyroException{
-		Job job = new Job(func, args, null);
-		getCluster().send(job);
-		return;
-	}
-	@Override
-	public void send(String func) throws JyroException { send0(func); }
-	@Override
-	public void send(String func, String a1) throws JyroException { send0(func, a1); }
-	@Override
-	public void send(String func, String a1, String a2) throws JyroException { send0(func, a1, a2); }
-	@Override
-	public void send(String func, String a1, String a2, String a3) throws JyroException { send0(func, a1, a2, a3); }
-	@Override
-	public void send(String func, String a1, String a2, String a3, String a4) throws JyroException { send0(func, a1, a2, a3, a4); }
 
 	// ======================================================================
-	// Refer Operation Info
+	// Invoke Operation
 	// ======================================================================
 	/**
-	 * TODO How to describe MBeanOperationInfo?
+	 * Invoke specified operation.
 	 *
-	 * @return operation information
-	 */
-	protected MBeanOperationInfo[] createMBeanOperationInfo(){
-		return new MBeanOperationInfo[] {
-			new MBeanOperationInfo("post", "post specified job to this core", new MBeanParameterInfo[]{
-				new MBeanParameterInfo("nodeId", "String", "node id to post job"),
-				new MBeanParameterInfo("job", "String", "job content"),
-			}, "void", MBeanOperationInfo.ACTION),
-		};
+	 * @param actionName distributed function name
+	 * @param params invocation parameters
+	 * @param signature type name
+	 * @return result object
+	*/
+	@Override
+	public Object invoke(String actionName, Object[] params, String[] signature) throws MBeanException, ReflectionException {
+		logger.debug("invoke(" + actionName + "," + Arrays.toString(params) + "," + Arrays.toString(signature) + ")");
+		Job job = new Job(actionName, params, null);
+		try {
+			getCluster().send(job);
+		} catch(JyroException ex){
+			throw new ReflectionException(ex);
+		}
+		return null;
+	}
+
+	// ======================================================================
+	// Retrieve MBeanInfo
+	// ======================================================================
+	/**
+	 * Retrieve node for this mxbean.
+	 *
+	 * @return MBeanInfo instance for this node
+	*/
+	@Override
+	public MBeanInfo getMBeanInfo() {
+		logger.debug("getMBeanInfo()");
+
+		// retrieve all distributed functions
+		List<Method> list = new ArrayList<Method>();
+		for(Node node: getCluster().getNodes()){
+			list.addAll(Arrays.asList(node.getDistributedMethods()));
+		}
+
+		// build operation info
+		MBeanOperationInfo[] op = new MBeanOperationInfo[list.size()];
+		for(int i=0; i<list.size(); i++){
+			Method method = list.get(i);
+			op[i] = NodeMXBeanImpl.getMBeanOperationInfo(method);
+		}
+
+		MBeanInfo info = super.getMBeanInfo();
+		return new MBeanInfo(
+			info.getClassName(),
+			"The instance of cluster " + getName(),
+			info.getAttributes(),
+			info.getConstructors(),
+			op,
+			info.getNotifications());
 	}
 
 	// ======================================================================

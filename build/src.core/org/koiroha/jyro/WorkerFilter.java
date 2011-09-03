@@ -23,6 +23,24 @@ import org.koiroha.jyro.impl.Job;
 public interface WorkerFilter {
 
 	// ======================================================================
+	// Initialize
+	// ======================================================================
+	/**
+	 * Initialize filter.
+	 *
+	 * @throws JyroException if fail to initialize filter
+	*/
+	public void init() throws JyroException;
+
+	// ======================================================================
+	// Destroy
+	// ======================================================================
+	/**
+	 * Destory filter.
+	*/
+	public void destroy();
+
+	// ======================================================================
 	// Execute Worker
 	// ======================================================================
 	/**
@@ -31,20 +49,20 @@ public interface WorkerFilter {
 	 * @param job arguments for worker
 	 * @return result
 	*/
-	public void filter(Runnable r) throws WorkerException;
+	public Object filter(Job job, Next hop) throws JyroException;
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	// NodeThreadFactory
+	// Next: Next Filter
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	/**
-	 * The thread factory for this node.
+	 * Next filter instance to execute.
 	*/
-	public interface Hop {
+	public interface Next {
 
 		/**
 		 * Execute next runnable object.
 		 */
-		public void execute(Job job) throws WorkerException;
+		public Object execute(Job job) throws JyroException;
 	}
 
 }

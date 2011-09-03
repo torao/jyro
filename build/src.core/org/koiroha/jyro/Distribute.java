@@ -31,6 +31,16 @@ public @interface Distribute {
 	 * if empty string "" specified, the fully-qualified method name such as
 	 * "org.koiroha.sample.SampleWorker.helloWorld" will be used.
 	 */
-	public String value();
+	public String name();
+
+	// ======================================================================
+	// Distributed Function Name
+	// ======================================================================
+	/**
+	 * Distributed function name.
+	 * if empty string "" specified, the fully-qualified method name such as
+	 * "org.koiroha.sample.SampleWorker.helloWorld" will be used.
+	 */
+	public String[] params();
 
 }
