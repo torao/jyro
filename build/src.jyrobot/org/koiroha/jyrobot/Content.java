@@ -9,9 +9,17 @@
  */
 package org.koiroha.jyrobot;
 
-import java.io.Serializable;
+import java.io.*;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.util.*;
+
+import javax.xml.parsers.DocumentBuilder;
+
+import org.koiroha.xml.Xml;
+import org.koiroha.xml.parser.HTMLDocumentBuilderFactory;
+import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Content:
@@ -57,6 +65,22 @@ public class Content implements Serializable {
 	public final Response response;
 
 	// ======================================================================
+	// HTML/XML Document
+	// ======================================================================
+	/**
+	 * 内容を XML または HTML として解析した結果です。
+	 */
+	private Document doc = null;
+
+	// ======================================================================
+	// HTML/XML Document Charset
+	// ======================================================================
+	/**
+	 * この内容を HTML/XML ドキュメントとして解析した時の文字セットです。
+	 */
+	private Charset docCharset = null;
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -78,6 +102,55 @@ public class Content implements Serializable {
 	 */
 	public URI getURI(){
 		return uri;
+	}
+
+	// ======================================================================
+	// Refer XML Document
+	// ======================================================================
+	/**
+	 * この内容を XML ドキュメントとして参照します。
+	 *
+	 * @return URI
+	 */
+	public Document getDocument(){
+		if(doc == null){
+
+			// デフォルト文字セットの参照
+			String type = response.getHeader("Content-Type");
+			Charset def = Xml.getCharset(type);
+			if(def == null){
+				def = Charset.forName("UTF-8");
+			}
+
+			byte[] content = response.getContent();
+			HTMLDocumentBuilderFactory factory = new HTMLDocumentBuilderFactory();
+			factory.setNamespaceAware(false);
+			factory.setXIncludeAware(false);
+			try {
+				InputSource is = factory.guessInputSource(new ByteArrayInputStream(content), def.name(), content.length);
+				docCharset = Charset.forName(is.getEncoding());
+				DocumentBuilder builder = factory.newDocumentBuilder();
+				doc = builder.parse(is);
+			} catch(Exception ex){
+				throw new IllegalStateException(ex);
+			}
+		}
+		return doc;
+	}
+
+	// ======================================================================
+	// Refer XML Document Charset
+	// ======================================================================
+	/**
+	 * この内容を XML/HTML として解析した時に適用した文字セットを参照します。
+	 *
+	 * @return document character set
+	 */
+	public Charset getDocumentCharset() {
+		if(docCharset == null){
+			getDocument();
+		}
+		return docCharset;
 	}
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -163,13 +236,35 @@ public class Content implements Serializable {
 		}
 
 		// ==================================================================
+		// Refer Content-Type
+		// ==================================================================
+		/**
+		 * このメッセージの Content-Type を参照します。Content-Type が設定さ
+		 * れていない場合は null を返します。返値はすべて小文字となり
+		 * サブタイプは含まれません。
+		 *
+		 * @return Content-Type value
+		 */
+		public String getContentType(){
+			String contentType = getHeader("Content-Type");
+			if(contentType == null){
+				return null;
+			}
+			int sep = contentType.indexOf(';');
+			if(sep >= 0){
+				contentType = contentType.substring(0, sep);
+			}
+			return contentType.trim().toLowerCase();
+		}
+
+		// ==================================================================
 		// Set Content
 		// ==================================================================
 		/**
 		 * Set content of this message.
 		 * @param content binary content
 		 */
-		public void setConten(byte[] content){
+		public void setContent(byte[] content){
 			this.content = content;
 			return;
 		}
@@ -181,7 +276,7 @@ public class Content implements Serializable {
 		 * Retrieve content of this message.
 		 * @return binary content
 		 */
-		public byte[] getConten(){
+		public byte[] getContent(){
 			return content;
 		}
 

@@ -62,7 +62,7 @@ class Scheduler {
 	/**
 	 * 一度クロールしたサイトに再び訪れるまでの間隔です。
 	 */
-	private long visitInterval = 24 * 60 * 60 * 1000L;
+	private long siteAccessInterval = 24 * 60 * 60 * 1000L;
 
 	// ======================================================================
 	// アプリケーション ID
@@ -97,6 +97,9 @@ class Scheduler {
 		return;
 	}
 
+	// ======================================================================
+	// Refer Polling Interval
+	// ======================================================================
 	/**
 	 * セッションキューのポーリング間隔をミリ秒で参照します。
 	 *
@@ -106,32 +109,45 @@ class Scheduler {
 		return queuePollingInterval;
 	}
 
+	// ======================================================================
+	// Set Polling Interval
+	// ======================================================================
 	/**
 	 * セッションキューのポーリング間隔をミリ秒で設定します。
 	 *
 	 * @param queuePollingInterval queue polling interval in millis
 	 */
 	public void setQueuePollingInterval(long queuePollingInterval) {
+		if(queuePollingInterval <= 0){
+			throw new IllegalArgumentException("invalid polling interval: " + queuePollingInterval);
+		}
 		this.queuePollingInterval = queuePollingInterval;
 		return;
 	}
 
+	// ======================================================================
+	// Refer Site Access Interval
+	// ======================================================================
 	/**
 	 * 同一サイトに対してのアクセス間隔を参照します。
 	 *
 	 * @return visit interval in millis
 	 */
-	public long getVisitInterval() {
-		return visitInterval;
+	public long getSiteAccessInterval() {
+		return siteAccessInterval;
 	}
 
+	// ======================================================================
+	// Set Site Access Interval
+	// ======================================================================
 	/**
 	 * 同一サイトに対するアクセス間隔を設定します。
 	 *
-	 * @param visitInterval visit interval in milliseconds
+	 * @param siteAccessInterval visit interval in milliseconds
 	 */
-	public void setVisitInterval(long visitInterval) {
-		this.visitInterval = visitInterval;
+	public void setSiteAccessInterval(long siteAccessInterval) {
+		this.siteAccessInterval = siteAccessInterval;
+		return;
 	}
 
 	// ======================================================================
@@ -236,7 +252,7 @@ class Scheduler {
 			query.setParameter(2, host);
 			query.setParameter(3, port);
 			List<JPASession> list = query.getResultList();
-			assert(list.size() <= 1);
+			assert(list.size() <= 1): "重複セッション検出: " + scheme + "://" + host + ":" + port;
 
 			// セッションが存在しなければ新規に作成
 			JPASession session = null;
@@ -312,7 +328,7 @@ class Scheduler {
 				" where session.activated is null and (session.accessed is null or session.accessed<?1)" +
 				" order by session.priority desc, session.accessed, session.created asc", JPASession.class);
 			query.setLockMode(LockModeType.PESSIMISTIC_WRITE);
-			query.setParameter(1, new Timestamp(now - visitInterval));
+			query.setParameter(1, new Timestamp(now - siteAccessInterval));
 			List<JPASession> list = query.getResultList();
 			if(list.size() == 0){
 				return null;
@@ -339,7 +355,7 @@ class Scheduler {
 
 			// セッションをアクティブ状態に設定
 			jpaSession.setActivated(new Timestamp(now));
-			jpaSession.setAppid(appId);
+			jpaSession.setAppid(Thread.currentThread().getId() + "#" + appId);
 			manager.persist(jpaSession);
 
 			tran.commit();

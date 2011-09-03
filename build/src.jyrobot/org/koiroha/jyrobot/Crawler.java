@@ -10,7 +10,7 @@
 package org.koiroha.jyrobot;
 
 import java.io.*;
-import java.net.URI;
+import java.net.*;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -24,10 +24,8 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
 import org.koiroha.jyro.util.IO;
-import org.koiroha.xml.Xml;
 import org.koiroha.xml.parser.HTMLDocumentBuilderFactory;
 import org.w3c.dom.*;
-import org.xml.sax.InputSource;
 
 
 
@@ -72,7 +70,7 @@ class Crawler implements Runnable {
 	/**
 	 * 同一ホストに対するリクエストごとの待機時間です。
 	 */
-	private long waitInterval = 1 * 1000;
+	private long requestInterval = 1 * 1000;
 
 	// ======================================================================
 	// User-Agent
@@ -81,6 +79,14 @@ class Crawler implements Runnable {
 	 * The value of User-Agent header.
 	 */
 	private String userAgent = "Mozilla/5.0 (compatible; Jyrobot/" + Jyro.VERSION + "; +http://www.koiroha.org/jyro.html)";
+
+	// ======================================================================
+	// Jyrobot Adapter
+	// ======================================================================
+	/**
+	 * The stub object of Jyrobot.
+	 */
+	private JyrobotAdapter adapter = null;
 
 	// ======================================================================
 	// Constructor
@@ -95,6 +101,9 @@ class Crawler implements Runnable {
 		return;
 	}
 
+	// ======================================================================
+	// Refer User-Agent
+	// ======================================================================
 	/**
 	 * このクローラーのユーザエージェントを参照します。
 	 *
@@ -104,6 +113,9 @@ class Crawler implements Runnable {
 		return userAgent;
 	}
 
+	// ======================================================================
+	// Set User-Agent
+	// ======================================================================
 	/**
 	 * このクローラーが使用するユーザエージェントを設定します。
 	 *
@@ -114,6 +126,9 @@ class Crawler implements Runnable {
 		return;
 	}
 
+	// ======================================================================
+	// Refer Max Content Length
+	// ======================================================================
 	/**
 	 * クローリングで取得する内容の最大サイズを参照します。
 	 *
@@ -123,6 +138,9 @@ class Crawler implements Runnable {
 		return maxContentLength;
 	}
 
+	// ======================================================================
+	// Set Max Content Length
+	// ======================================================================
 	/**
 	 * クローリングで取得する内容の最大サイズを設定します。
 	 *
@@ -133,6 +151,44 @@ class Crawler implements Runnable {
 	}
 
 	// ======================================================================
+	// Refer Request Interval
+	// ======================================================================
+	/**
+	 * 同一サイトに対するリクエスト間隔を参照します。
+	 *
+	 * @return request interval
+	 */
+	public long getRequestInterval() {
+		return requestInterval;
+	}
+
+	// ======================================================================
+	// Set Request Interval
+	// ======================================================================
+	/**
+	 * 同一サイトに対するリクエスト間隔を瀬底します。
+	 *
+	 * @param requestInterval request interval
+	 */
+	public void setRequestInterval(long requestInterval) {
+		this.requestInterval = requestInterval;
+	}
+
+	/**
+	 * @return the adapter
+	 */
+	public JyrobotAdapter getAdapter() {
+		return adapter;
+	}
+
+	/**
+	 * @param adapter the adapter to set
+	 */
+	public void setAdapter(JyrobotAdapter adapter) {
+		this.adapter = adapter;
+	}
+
+	// ======================================================================
 	// Execute Crawling
 	// ======================================================================
 	/**
@@ -140,16 +196,12 @@ class Crawler implements Runnable {
 	*/
 	@Override
 	public void run(){
+		assert(adapter != null);
 		try {
 			while(! Thread.interrupted()){
 				Session session = scheduler.next();
 				try {
-					Session.Request request = session.take();
-					while(request != null){
-						crawl(request);
-						Thread.sleep(waitInterval);
-						request = session.take();
-					}
+					crawl(session);
 				} finally {
 					Util.close(session);
 				}
@@ -160,18 +212,42 @@ class Crawler implements Runnable {
 	}
 
 	// ======================================================================
-	// Crawl
+	// Execute Crawling
 	// ======================================================================
 	/**
-	 * 指定されたリクエストを実行します。
-	 *
-	 * @param job
-	 * @return
-	 * @throws WorkerException
+	 * クロール処理を開始します。
 	*/
-	private void crawl(Session.Request request) {
-		URI uri = request.getUri();
-		Content content = retrieve(uri);
+	private void crawl(Session session) throws InterruptedException{
+		assert(session != null);
+		Session.Request request = session.take();
+		while(request != null){
+
+			URI uri = request.getUri();
+			Content content = null;
+			long start = Util.getUptime();
+			try {
+				content = retrieve(uri);
+			} catch(IOException ex){
+				adapter.failure(request, ex);
+				return;
+			} finally {
+				session.save(request, content);
+			}
+			adapter.success(request, content);
+
+			for(URI u: analyzeContent(content)){
+				scheduler.put(new Session.Request(u));
+			}
+
+			// 次のリクエストまでスリープ
+			long interval = getRequestInterval() - (Util.getUptime() - start);
+			if(interval > 0){
+				Thread.sleep(interval);
+			}
+
+			// 次のリクエストを参照
+			request = session.take();
+		}
 		return;
 	}
 
@@ -185,11 +261,12 @@ class Crawler implements Runnable {
 	 * @throws WorkerException if fail to retrieve
 	*/
 	private Content retrieve(URI uri) throws IOException{
+		logger.debug("retrieve(" + uri + ")");
 
 		// リクエストを準備
 		HttpClient client = new DefaultHttpClient();
 		HttpGet request = new HttpGet(uri);
-		request.setHeader("User-Agent", userAgent);
+		request.setHeader("User-Agent", getUserAgent());
 		// TODO additional header not implemented
 
 		HttpResponse response = null;
@@ -206,7 +283,7 @@ class Crawler implements Runnable {
 				in = entity.getContent();
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				byte[] buffer = new byte[1024];
-				long remaining = maxContentLength;
+				long remaining = getMaxContentLength();
 				while(true){
 					int len = (int)Math.min(buffer.length, remaining);
 					len = in.read(buffer, 0, len);
@@ -230,7 +307,7 @@ class Crawler implements Runnable {
 		for(Header header: request.getAllHeaders()){
 			req.addHeader(header.getName(), header.getValue());
 		}
-		req.setConten(new byte[0]);	// TODO how to retrieve query string when post?
+		req.setContent(new byte[0]);	// TODO how to retrieve query string when post?
 
 		// build response
 		Content.Response res = new Content.Response(
@@ -240,7 +317,7 @@ class Crawler implements Runnable {
 		for(Header header: response.getAllHeaders()){
 			res.addHeader(header.getName(), header.getValue());
 		}
-		res.setConten(binary);
+		res.setContent(binary);
 
 		//
 		return new Content(uri, req, res);
@@ -255,10 +332,10 @@ class Crawler implements Runnable {
 	 * @param content content to analyze
 	 * @throws WorkerException if fail to retrieve
 	*/
-	private List<URI> analyzeContent(URI uri, String type, byte[] content) {
+	private List<URI> analyzeContent(Content content) {
 		List<URI> urls = Collections.emptyList();
-		if(type.toLowerCase().startsWith("text/html")){
-			urls = parseHtmlContent(uri, type, content);
+		if(content.response.getContentType().equals("text/html")){
+			urls = parseHtmlContent(content);
 		}
 		return urls;
 	}
@@ -272,56 +349,71 @@ class Crawler implements Runnable {
 	 * @param content content to analyze
 	 * @throws WorkerException if fail to retrieve
 	*/
-	private List<URI> parseHtmlContent(URI uri, String type, byte[] content) {
+	private List<URI> parseHtmlContent(Content content) {
 		List<URI> urls = new ArrayList<URI>();
 
+		// HTML ドキュメントの参照
+		Document doc = content.getDocument();
+		Charset charset = content.getDocumentCharset();
+		URI base = content.getURI();
 		try {
-			// HTML ドキュメントの解析
-			Charset def = Xml.getCharset(type);
-			HTMLDocumentBuilderFactory factory = new HTMLDocumentBuilderFactory();
-			factory.setNamespaceAware(false);
-			factory.setXIncludeAware(false);
-			InputSource is = factory.guessInputSource(new ByteArrayInputStream(content), def.name(), content.length);
-			DocumentBuilder builder = factory.newDocumentBuilder();
-			Document doc = builder.parse(is);
-
-			// リンク部分の抽出
 			XPath xpath = XPathFactory.newInstance().newXPath();
-			NodeList nl = (NodeList)xpath.evaluate("//a/@href", doc, XPathConstants.NODESET);
-			for(int i=0; i<nl.getLength(); i++){
-				String href = ((Attr)nl.item(i)).getValue();
-				urls.add(uri.resolve(href));
+			for(String expr: Util.HREF_XPATH){
+				NodeList nl = (NodeList)xpath.evaluate(expr, doc, XPathConstants.NODESET);
+				for(int i=0; i<nl.getLength(); i++){
+					String href = ((Attr)nl.item(i)).getValue();
+					URI uri = getURL(base, href, charset);
+					if(uri != null){
+						urls.add(uri);
+					}
+				}
 			}
-		} catch(Exception ex){
+		} catch(XPathException ex){
 			throw new IllegalStateException(ex);
 		}
 		return urls;
 	}
 
 	// ======================================================================
-	// Determine Port
+	// Content Analyzer Stage
 	// ======================================================================
 	/**
-	 * Determine the port number of specified uri. Return negative value if
-	 * URI scheme is not supported.
+	 * Parse content.
 	 *
-	 * @param uri URI
-	 * @return port number
+	 * @param content content to analyze
+	 * @throws WorkerException if fail to retrieve
 	*/
-	private static int getPort(URI uri){
-		int port = uri.getPort();
-		if(port >= 0){
-			return port;
+	private URI getURL(URI base, String href, Charset charset) {
+		href = href.trim();
+
+		// URL に含まれる日本語などの文字をエンコード
+		StringBuilder buffer = new StringBuilder();
+		for(int i=0; i<href.length(); i++){
+			char ch = href.charAt(i);
+			if(ch <= 0xFF && !Character.isISOControl(ch)){
+				buffer.append(ch);
+			} else {
+				String str = String.valueOf(ch);
+				byte[] bin = str.getBytes(charset);
+				buffer.append('%');
+				for(int j=0; j<bin.length; j++){
+					buffer.append(Integer.toString((bin[j] >> 4) & 0x0F, 16));
+					buffer.append(Integer.toString((bin[j] >> 0) & 0x0F, 16));
+				}
+			}
 		}
-		String scheme = uri.getScheme();
-		if(scheme.equals("http")){
-			return 80;
-		} else if(scheme.equals("https")){
-			return 443;
-		} else if(scheme.equals("ftp")){
-			return 21;
+		href = buffer.toString();
+
+		try {
+			URI sub = new URI(href);
+			URI uri = base.resolve(sub);
+			if(Util.getDefaultPort(uri.getScheme()) >= 0 && adapter.accept(uri)){
+				return uri;
+			}
+		} catch(URISyntaxException ex){
+			logger.debug("unsupported uri ignored: " + href);
 		}
-		return -1;
+		return null;
 	}
 
 	// ======================================================================

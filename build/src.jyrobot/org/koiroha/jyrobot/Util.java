@@ -10,6 +10,7 @@
 package org.koiroha.jyrobot;
 
 import java.io.*;
+import java.lang.management.*;
 import java.sql.*;
 import java.util.*;
 
@@ -36,12 +37,28 @@ final class Util {
 	private static final Logger logger = Logger.getLogger(Util.class);
 
 	// ======================================================================
-	// デフォルトポート
+	// Default Port
 	// ======================================================================
 	/**
 	 * URL スキームに対するデフォルトポートです。
 	 */
 	private static final Map<String,Integer> DEFAULT_PORT = new HashMap<String,Integer>();
+
+	// ======================================================================
+	// Hyper-Text Reference XPath
+	// ======================================================================
+	/**
+	 * HTML 上で別のコンテンツへのリンクを抽出するための XPath です。
+	 */
+	public static final Set<String> HREF_XPATH;
+
+	// ======================================================================
+	// Hyper-Text Reference XPath
+	// ======================================================================
+	/**
+	 * HTML 上で別のコンテンツへのリンクを抽出するための XPath です。
+	 */
+	private static final RuntimeMXBean RUNTIME = ManagementFactory.getRuntimeMXBean();
 
 	// ======================================================================
 	// デフォルトポート
@@ -50,9 +67,22 @@ final class Util {
 	 * URL スキームに対するデフォルトポートです。
 	 */
 	static {
-		DEFAULT_PORT.put("http", 80);
-		DEFAULT_PORT.put("https", 443);
-		DEFAULT_PORT.put("ftp", 21);
+		ResourceBundle res = ResourceBundle.getBundle("org.koiroha.jyrobot.jyrobot");
+
+		// デフォルトポートの参照
+		final String defPortPrefix = "defaultPort.";
+		Enumeration<String> en = res.getKeys();
+		while(en.hasMoreElements()){
+			String key = en.nextElement();
+			if(key.startsWith(defPortPrefix)){
+				String value = res.getString(key);
+				DEFAULT_PORT.put(key.substring(defPortPrefix.length()), Integer.parseInt(value));
+			}
+		}
+
+		// XPath リストを参照
+		String[] xpath = res.getString("href.xpath").split("\\s*,\\s");
+		HREF_XPATH = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(xpath)));
 	}
 
 	// ======================================================================
@@ -159,4 +189,15 @@ final class Util {
 		return;
 	}
 
+	// ======================================================================
+	// 起動時間の参照
+	// ======================================================================
+	/**
+	 * 起動時間をミリ秒単位で参照します。
+	 *
+	 * @return 起動時間
+	 */
+	public static long getUptime(){
+		return RUNTIME.getUptime();
+	}
 }

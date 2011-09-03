@@ -132,7 +132,7 @@ public class Session implements Serializable, Closeable {
 			// 一番過去にアクセスのあったリクエスト対象を参照
 			TypedQuery<JPARequest> query = manager.createQuery(
 				"select request from JPARequest request" +
-				" where request.accessed < :accessed" +
+				" where request.accessed is null or request.accessed < :accessed" +
 				" order by request.accessed, request.id", JPARequest.class);
 			query.setParameter("accessed", new Timestamp(access));
 			query.setFirstResult(0);
@@ -145,7 +145,8 @@ public class Session implements Serializable, Closeable {
 			// リクエスト対象の作成
 			JPARequest r = list.get(0);
 			URI uri = base.resolve(r.getPath());
-			request = new Request(uri);
+			String id = r.getId();
+			request = new Request(id, uri);
 
 			tran.commit();
 		} finally {
@@ -154,6 +155,39 @@ public class Session implements Serializable, Closeable {
 			}
 		}
 		return request;
+	}
+
+	// ======================================================================
+	// リクエスト結果の設定
+	// ======================================================================
+	/**
+	 * 指定されたリクエストの結果を設定します。
+	 *
+	 * @return リクエスト対象
+	 */
+	public void save(Request request, Content content){
+		assert(request.getId() != null);
+		EntityTransaction tran = manager.getTransaction();
+		try {
+			tran.begin();
+
+			// 一番過去にアクセスのあったリクエスト対象を参照
+			Query query = manager.createQuery(
+				"update JPARequest request" +
+				" set request.response=?1, request.accessed=?2" +
+				" where request.id=?3");
+			query.setParameter(1, content == null? -1: content.response.getCode());
+			query.setParameter(2, new Timestamp(access));
+			query.setParameter(3, request.getId());
+			query.executeUpdate();
+
+			tran.commit();
+		} finally {
+			if(tran.isActive()){
+				tran.rollback();
+			}
+		}
+		return;
 	}
 
 	// ======================================================================
@@ -219,6 +253,14 @@ public class Session implements Serializable, Closeable {
 		private static final long serialVersionUID = 1L;
 
 		// ==================================================================
+		// Request ID
+		// ==================================================================
+		/**
+		 * リクエスト ID です。
+		 */
+		private final String id;
+
+		// ==================================================================
 		// リクエスト URI
 		// ==================================================================
 		/**
@@ -236,8 +278,36 @@ public class Session implements Serializable, Closeable {
 		 */
 		public Request(URI uri){
 			assert(uri.isAbsolute());
+			this.id = null;
 			this.uri = uri;
 			return;
+		}
+
+		// ==================================================================
+		// コンストラクタ
+		// ==================================================================
+		/**
+		 * リクエスト URI を指定して構築を行います。
+		 *
+		 * @param uri リクエスト URI
+		 */
+		private Request(String id, URI uri){
+			assert(uri.isAbsolute());
+			this.id = id;
+			this.uri = uri;
+			return;
+		}
+
+		// ==================================================================
+		// リクエスト ID の参照
+		// ==================================================================
+		/**
+		 * リクエスト ID を参照します。
+		 *
+		 * @return リクエスト ID
+		 */
+		public String getId() {
+			return id;
 		}
 
 		// ==================================================================
@@ -250,6 +320,19 @@ public class Session implements Serializable, Closeable {
 		 */
 		public URI getUri() {
 			return uri;
+		}
+
+		// ==================================================================
+		// インスタンスの文字列化
+		// ==================================================================
+		/**
+		 * このインスタンスを文字列化します。
+		 *
+		 * @return インスタンスの文字列
+		 */
+		@Override
+		public String toString() {
+			return uri.toString();
 		}
 
 	}

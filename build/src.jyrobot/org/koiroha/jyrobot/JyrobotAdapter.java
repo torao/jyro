@@ -30,4 +30,26 @@ public interface JyrobotAdapter {
 	*/
 	public boolean accept(URI uri);
 
+	// ======================================================================
+	// Notify Success
+	// ======================================================================
+	/**
+	 * 指定されたリクエストに成功したときに呼び出されます。
+	 *
+	 * @param request 成功したリクエスト
+	 * @param content 取得した内容
+	*/
+	public void success(Session.Request request, Content content);
+
+	// ======================================================================
+	// Notify Error
+	// ======================================================================
+	/**
+	 * 例外の発生により処理が行えなかった場合に呼び出されます。
+	 *
+	 * @param request 失敗したリクエスト
+	 * @param ex 発生した例外
+	*/
+	public void failure(Session.Request request, Throwable ex);
+
 }
