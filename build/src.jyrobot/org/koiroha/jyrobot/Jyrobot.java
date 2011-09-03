@@ -15,7 +15,7 @@ import org.koiroha.jyrobot.Session.Request;
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Jyrobot:
+// Jyrobot: Web クローラーボット
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
  *
@@ -34,19 +34,44 @@ public class Jyrobot {
 	private static final long serialVersionUID = 1L;
 
 	// ======================================================================
+	// スケジューラ
+	// ======================================================================
+	/**
+	 * ジョブスケジューラーです。
+	 */
+	private final Scheduler scheduler;
+
+	// ======================================================================
+	// クローラー
+	// ======================================================================
+	/**
+	 * クローラーです。
+	 */
+	private final Crawler crawler;
+
+	// ======================================================================
 	// コンストラクタ
 	// ======================================================================
 	/**
-	 * コンストラクタは何も行いません。
+	 * JPA エンティティマネージャファクトリの名前を指定して構築を行います。
+	 *
+	 * @param name エンティティマネージャファクトリ名
 	 */
-	public Jyrobot() {
+	public Jyrobot(String name) {
+		this.scheduler = new Scheduler(name);
+		this.crawler = new Crawler(scheduler);
+		scheduler.
 		return;
 	}
+
+
 
 	public static void main(String[] args) throws Exception{
 		final Scheduler scheduler = new Scheduler();
 		scheduler.resetAllSessions();
-		scheduler.put(new Request(URI.create("http://www.yahoo.co.jp"), null));
+		scheduler.put(new Request(URI.create("http://www.yahoo.co.jp")));
+		scheduler.put(new Request(URI.create("http://www.google.co.jp")));
+		scheduler.put(new Request(URI.create("http://www.goo.co.jp")));
 		Runnable r = new Runnable(){
 			@Override
 			public void run(){

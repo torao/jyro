@@ -145,8 +145,7 @@ public class Session implements Serializable, Closeable {
 			// リクエスト対象の作成
 			JPARequest r = list.get(0);
 			URI uri = base.resolve(r.getPath());
-			URI referer = (r.getReferer()==null)? null: URI.create(r.getReferer());
-			request = new Request(uri, referer);
+			request = new Request(uri);
 
 			tran.commit();
 		} finally {
@@ -228,27 +227,16 @@ public class Session implements Serializable, Closeable {
 		private final URI uri;
 
 		// ==================================================================
-		// 参照元
-		// ==================================================================
-		/**
-		 * 参照元です。
-		 */
-		private final URI referer;
-
-		// ==================================================================
 		// コンストラクタ
 		// ==================================================================
 		/**
 		 * リクエスト URI を指定して構築を行います。
 		 *
 		 * @param uri リクエスト URI
-		 * @param referer 参照元 URI または null
 		 */
-		public Request(URI uri, URI referer){
+		public Request(URI uri){
 			assert(uri.isAbsolute());
-			assert(referer == null || referer.isAbsolute());
 			this.uri = uri;
-			this.referer = referer;
 			return;
 		}
 
@@ -262,19 +250,6 @@ public class Session implements Serializable, Closeable {
 		 */
 		public URI getUri() {
 			return uri;
-		}
-
-		// ==================================================================
-		// 参照元 URI の参照
-		// ==================================================================
-		/**
-		 * 参照元 URI を参照します。参照元が定義されていない場合は null を
-		 * 返します。
-		 *
-		 * @return 参照元 URI
-		 */
-		public URI getReferer() {
-			return referer;
 		}
 
 	}

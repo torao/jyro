@@ -11,6 +11,7 @@ package org.koiroha.jyrobot;
 
 import java.io.*;
 import java.sql.*;
+import java.util.*;
 
 import org.apache.log4j.Logger;
 
@@ -35,6 +36,26 @@ final class Util {
 	private static final Logger logger = Logger.getLogger(Util.class);
 
 	// ======================================================================
+	// デフォルトポート
+	// ======================================================================
+	/**
+	 * URL スキームに対するデフォルトポートです。
+	 */
+	private static final Map<String,Integer> DEFAULT_PORT = new HashMap<String,Integer>();
+
+	// ======================================================================
+	// デフォルトポート
+	// ======================================================================
+	/**
+	 * URL スキームに対するデフォルトポートです。
+	 */
+	static {
+		DEFAULT_PORT.put("http", 80);
+		DEFAULT_PORT.put("https", 443);
+		DEFAULT_PORT.put("ftp", 21);
+	}
+
+	// ======================================================================
 	// コンストラクタ
 	// ======================================================================
 	/**
@@ -42,6 +63,43 @@ final class Util {
 	 */
 	private Util() {
 		return;
+	}
+
+	// ======================================================================
+	// デフォルトポートの参照
+	// ======================================================================
+	/**
+	 * URL スキームに対するデフォルトのポートを参照します。
+	 *
+	 * @param scheme URL スキーム
+	 * @return デフォルトポート
+	 */
+	public static int getDefaultPort(String scheme){
+		scheme = scheme.toLowerCase();
+		Integer port = DEFAULT_PORT.get(scheme);
+		if(port == null){
+			return -1;
+		}
+		return port;
+	}
+
+	// ======================================================================
+	// デフォルトポートの判定
+	// ======================================================================
+	/**
+	 * 指定されたポート番号が URL スキームに対するデフォルトのポートかを判定
+	 * します。
+	 *
+	 * @param scheme URL スキーム
+	 * @param port ポート
+	 */
+	public static boolean isDefaultPort(String scheme, int port){
+		scheme = scheme.toLowerCase();
+		Integer p = DEFAULT_PORT.get(scheme);
+		if(p == null){
+			return false;
+		}
+		return p.intValue() == port;
 	}
 
 	// ======================================================================

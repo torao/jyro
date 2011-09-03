@@ -12,7 +12,6 @@ package org.koiroha.jyrobot;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.sql.*;
 import java.util.*;
 
 import javax.xml.parsers.*;
@@ -24,7 +23,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
-import org.koiroha.jyro.filters.Transaction;
 import org.koiroha.jyro.util.IO;
 import org.koiroha.xml.Xml;
 import org.koiroha.xml.parser.HTMLDocumentBuilderFactory;
@@ -34,16 +32,15 @@ import org.xml.sax.InputSource;
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Crawler: Crawler Worker
+// Crawler: クローラー
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * Worker class to crawl web sites.
  *
  * @version $Revision:$
  * @author torao
  * @since 2011/08/06 Java SE 6
  */
-public class Crawler extends Worker {
+class Crawler implements Runnable {
 
 	// ======================================================================
 	// Log Output
@@ -54,12 +51,28 @@ public class Crawler extends Worker {
 	private static final Logger logger = Logger.getLogger(Crawler.class);
 
 	// ======================================================================
+	// Scheduler
+	// ======================================================================
+	/**
+	 * このクローラーが使用するスケジューラです。
+	 */
+	private final Scheduler scheduler;
+
+	// ======================================================================
 	// Max Content Length
 	// ======================================================================
 	/**
 	 * Max content length as byte to read.
 	 */
 	private long maxContentLength = 1 * 1024 * 1024;
+
+	// ======================================================================
+	// Wait Interval
+	// ======================================================================
+	/**
+	 * 同一ホストに対するリクエストごとの待機時間です。
+	 */
+	private long waitInterval = 1 * 1000;
 
 	// ======================================================================
 	// User-Agent
@@ -73,33 +86,76 @@ public class Crawler extends Worker {
 	// Constructor
 	// ======================================================================
 	/**
+	 * コンストラクタは何も行いません。
 	 *
+	 * @param scheduler スケジューラー
 	 */
-	public Crawler() {
+	public Crawler(Scheduler scheduler) {
+		this.scheduler = scheduler;
 		return;
 	}
 
+	/**
+	 * このクローラーのユーザエージェントを参照します。
+	 *
+	 * @return the userAgent
+	 */
+	public String getUserAgent() {
+		return userAgent;
+	}
+
+	/**
+	 * このクローラーが使用するユーザエージェントを設定します。
+	 *
+	 * @param userAgent the userAgent to set
+	 */
+	public void setUserAgent(String userAgent) {
+		this.userAgent = userAgent;
+		return;
+	}
+
+	/**
+	 * クローリングで取得する内容の最大サイズを参照します。
+	 *
+	 * @return the maxContentLength
+	 */
+	public long getMaxContentLength() {
+		return maxContentLength;
+	}
+
+	/**
+	 * クローリングで取得する内容の最大サイズを設定します。
+	 *
+	 * @param maxContentLength the maxContentLength to set
+	 */
+	public void setMaxContentLength(long maxContentLength) {
+		this.maxContentLength = maxContentLength;
+	}
+
 	// ======================================================================
-	// Initialize Worker
+	// Execute Crawling
 	// ======================================================================
 	/**
-	 * Initialize this worker instance.
+	 * クロール処理を開始します。
 	*/
 	@Override
-	public void init() throws JyroException {
-		super.init();
-		return;
-	}
-
-	// ======================================================================
-	// Destroy Worker
-	// ======================================================================
-	/**
-	 * Destroy this worker.
-	 */
-	@Override
-	public void destroy() {
-		super.destroy();
+	public void run(){
+		try {
+			while(! Thread.interrupted()){
+				Session session = scheduler.next();
+				try {
+					Session.Request request = session.take();
+					while(request != null){
+						crawl(request);
+						Thread.sleep(waitInterval);
+						request = session.take();
+					}
+				} finally {
+					Util.close(session);
+				}
+			}
+		} catch(InterruptedException ex){
+		}
 		return;
 	}
 
@@ -107,68 +163,15 @@ public class Crawler extends Worker {
 	// Crawl
 	// ======================================================================
 	/**
-	 *
-	 * @return
-	*/
-	@Distribute(name="crawl",params={"hostId"})
-	public void crawl(int hostId) throws IOException, SQLException, JyroException {
-		return;
-	}
-
-	// ======================================================================
-	// Crawl
-	// ======================================================================
-	/**
+	 * 指定されたリクエストを実行します。
 	 *
 	 * @param job
 	 * @return
 	 * @throws WorkerException
 	*/
-	@Distribute(name="crawl",params={"url", "referer"})
-	public void crawl(String url, String referer) throws IOException, SQLException, JyroException {
-
-		List<URI> urls = retrieveLink(url);
-		WorkerContext context = getContext();
-
-		Connection con = Transaction.getConnection();
-		con.setAutoCommit(false);
-
-		PreparedStatement stmt1 = con.prepareStatement(
-			"INSERT INTO jyro_urls(scheme,host,port,path,retrieved_at,created_at) VALUES(?,?,?,?,?,?)");
-		PreparedStatement stmt = con.prepareStatement(
-			"SELECT EXISTS(SELECT * FROM jyro_urls WHERE scheme=? AND host=? AND port=? AND path=?)");
-		for(URI uri: urls){
-			int port = getPort(uri);
-			if(port < 0){
-				logger.debug(uri + " is not supported");
-				continue;
-			}
-
-			stmt.setString(1, uri.getScheme());
-			stmt.setString(2, uri.getHost());
-			stmt.setInt(3, port);
-			stmt.setString(4, uri.getPath());
-			ResultSet rs = stmt.executeQuery();
-			rs.next();
-			boolean exists = rs.getBoolean(1);
-			if(! exists){
-				Timestamp now = new Timestamp(System.currentTimeMillis());
-				stmt1.setString(1, uri.getScheme());
-				stmt1.setString(2, uri.getHost());
-				stmt1.setInt(3, port);
-				stmt1.setString(4, uri.getPath());
-				stmt1.setTimestamp(5, now);
-				stmt1.setTimestamp(6, now);
-				stmt1.executeUpdate();
-				con.commit();
-				context.call("crawl", uri.toString(), url);
-			} else {
-				logger.info("URL " + uri + " already retrieved");
-			}
-		}
-		stmt.close();
-		stmt1.close();
-		con.commit();
+	private void crawl(Session.Request request) {
+		URI uri = request.getUri();
+		Content content = retrieve(uri);
 		return;
 	}
 
@@ -181,15 +184,12 @@ public class Crawler extends Worker {
 	 * @param content content to retrieve
 	 * @throws WorkerException if fail to retrieve
 	*/
-	private Content retrieve(URI uri, URI referer) throws IOException{
+	private Content retrieve(URI uri) throws IOException{
 
-		// execute request
+		// リクエストを準備
 		HttpClient client = new DefaultHttpClient();
 		HttpGet request = new HttpGet(uri);
 		request.setHeader("User-Agent", userAgent);
-		if(referer != null){
-			request.setHeader("Referer", referer.toASCIIString());
-		}
 		// TODO additional header not implemented
 
 		HttpResponse response = null;
@@ -276,7 +276,7 @@ public class Crawler extends Worker {
 		List<URI> urls = new ArrayList<URI>();
 
 		try {
-			// parse html document
+			// HTML ドキュメントの解析
 			Charset def = Xml.getCharset(type);
 			HTMLDocumentBuilderFactory factory = new HTMLDocumentBuilderFactory();
 			factory.setNamespaceAware(false);
@@ -285,7 +285,7 @@ public class Crawler extends Worker {
 			DocumentBuilder builder = factory.newDocumentBuilder();
 			Document doc = builder.parse(is);
 
-			// extract link
+			// リンク部分の抽出
 			XPath xpath = XPathFactory.newInstance().newXPath();
 			NodeList nl = (NodeList)xpath.evaluate("//a/@href", doc, XPathConstants.NODESET);
 			for(int i=0; i<nl.getLength(); i++){

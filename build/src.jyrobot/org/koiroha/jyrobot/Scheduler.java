@@ -30,7 +30,7 @@ import org.koiroha.jyrobot.model.*;
  * @author Takami Torao
  * @since 2011/08/26 Java SE 6
  */
-public class Scheduler {
+class Scheduler {
 
 	// ======================================================================
 	// Log Output
@@ -62,15 +62,15 @@ public class Scheduler {
 	/**
 	 * 一度クロールしたサイトに再び訪れるまでの間隔です。
 	 */
-	private long revisitInterval = 24 * 60 * 60 * 1000L;
+	private long visitInterval = 24 * 60 * 60 * 1000L;
 
 	// ======================================================================
-	// サイト更新間隔
+	// アプリケーション ID
 	// ======================================================================
 	/**
-	 * 一度クロールしたサイトに再び訪れるまでの間隔です。
+	 * このアプリケーションの ID です。
 	 */
-	private String node = ManagementFactory.getRuntimeMXBean().getName();
+	private String appId = ManagementFactory.getRuntimeMXBean().getName();
 
 	// ======================================================================
 	// コンストラクタ
@@ -95,6 +95,43 @@ public class Scheduler {
 	public Scheduler(String name) {
 		this.factory = Persistence.createEntityManagerFactory(name);
 		return;
+	}
+
+	/**
+	 * セッションキューのポーリング間隔をミリ秒で参照します。
+	 *
+	 * @return queue polling interval in millis
+	 */
+	public long getQueuePollingInterval() {
+		return queuePollingInterval;
+	}
+
+	/**
+	 * セッションキューのポーリング間隔をミリ秒で設定します。
+	 *
+	 * @param queuePollingInterval queue polling interval in millis
+	 */
+	public void setQueuePollingInterval(long queuePollingInterval) {
+		this.queuePollingInterval = queuePollingInterval;
+		return;
+	}
+
+	/**
+	 * 同一サイトに対してのアクセス間隔を参照します。
+	 *
+	 * @return visit interval in millis
+	 */
+	public long getVisitInterval() {
+		return visitInterval;
+	}
+
+	/**
+	 * 同一サイトに対するアクセス間隔を設定します。
+	 *
+	 * @param visitInterval visit interval in milliseconds
+	 */
+	public void setVisitInterval(long visitInterval) {
+		this.visitInterval = visitInterval;
 	}
 
 	// ======================================================================
@@ -186,9 +223,12 @@ public class Scheduler {
 
 			// リクエストに該当するセッションを参照
 			URI uri = request.getUri();
-			String scheme = uri.getScheme();
-			String host = uri.getHost();
+			String scheme = uri.getScheme().toLowerCase();
 			int port = uri.getPort();
+			if(port < 0){
+				port = Util.getDefaultPort(scheme);
+			}
+			String host = uri.getHost().toLowerCase();
 			TypedQuery<JPASession> query = manager.createQuery(
 				"select session from JPASession session" +
 				" where session.scheme=?1 and session.host=?2 and session.port=?3", JPASession.class);
@@ -212,11 +252,17 @@ public class Scheduler {
 				session = list.get(0);
 			}
 
-			// リクエストキューに保存
-			String path = uri.getPath();
+			// パスの参照
+			String path = uri.normalize().getPath();
 			if(path == null){
-				path = "/";
+				path = "";
+			} else {
+				while(path.length() > 0 && path.charAt(0) == '/'){
+					path = path.substring(1);
+				}
 			}
+
+			// リクエストキューに保存
 			TypedQuery<Long> query2 = manager.createQuery(
 				"select count(request) from JPARequest request" +
 				" where request.session=?1 and request.path=?2", Long.class);
@@ -228,9 +274,6 @@ public class Scheduler {
 				JPARequest r = new JPARequest();
 				r.setSession(session.getId());
 				r.setPath(path);
-				if(request.getReferer() != null){
-					r.setReferer(request.getReferer().toString());
-				}
 				manager.persist(r);
 				logger.debug("add request: " + request);
 			}
@@ -269,7 +312,7 @@ public class Scheduler {
 				" where session.activated is null and (session.accessed is null or session.accessed<?1)" +
 				" order by session.priority desc, session.accessed, session.created asc", JPASession.class);
 			query.setLockMode(LockModeType.PESSIMISTIC_WRITE);
-			query.setParameter(1, new Timestamp(now - revisitInterval));
+			query.setParameter(1, new Timestamp(now - visitInterval));
 			List<JPASession> list = query.getResultList();
 			if(list.size() == 0){
 				return null;
@@ -278,9 +321,12 @@ public class Scheduler {
 
 			// セッションの復元
 			int id = jpaSession.getId();
-			String scheme = jpaSession.getScheme();
-			String host = jpaSession.getHost();
+			String scheme = jpaSession.getScheme().toLowerCase();
+			String host = jpaSession.getHost().toLowerCase();
 			int port = jpaSession.getPort();
+			if(Util.isDefaultPort(scheme, port)){
+				port = -1;
+			}
 			String path = "/";
 			try {
 				URI uri = new URI(scheme, null, host, port, path, null, null);
@@ -293,7 +339,7 @@ public class Scheduler {
 
 			// セッションをアクティブ状態に設定
 			jpaSession.setActivated(new Timestamp(now));
-			jpaSession.setAppid(node);
+			jpaSession.setAppid(appId);
 			manager.persist(jpaSession);
 
 			tran.commit();
