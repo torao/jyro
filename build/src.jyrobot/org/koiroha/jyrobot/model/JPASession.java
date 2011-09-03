@@ -1,39 +1,35 @@
 package org.koiroha.jyrobot.model;
 
 import java.io.Serializable;
-import java.sql.Timestamp;
-
 import javax.persistence.*;
+import java.sql.Timestamp;
 
 
 /**
  * The persistent class for the jyrobot_session_queue database table.
- *
+ * 
  */
 @Entity
 @Table(name="jyrobot_session_queue")
 public class JPASession implements Serializable {
 	private static final long serialVersionUID = 1L;
-
-	@Id
-	@GeneratedValue(strategy=GenerationType.AUTO)
 	private int id;
-
+	private Timestamp accessed;
 	private Timestamp activated;
-
+	private String appid;
 	private Timestamp created;
-
 	private String host;
-
 	private int port;
-
 	private int priority;
-
 	private String scheme;
 
     public JPASession() {
     }
 
+
+	@Id
+	@SequenceGenerator(name="JYROBOT_SESSION_QUEUE_ID_GENERATOR" )
+	@GeneratedValue(strategy=GenerationType.SEQUENCE, generator="JYROBOT_SESSION_QUEUE_ID_GENERATOR")
 	public int getId() {
 		return this.id;
 	}
@@ -41,6 +37,16 @@ public class JPASession implements Serializable {
 	public void setId(int id) {
 		this.id = id;
 	}
+
+
+	public Timestamp getAccessed() {
+		return this.accessed;
+	}
+
+	public void setAccessed(Timestamp accessed) {
+		this.accessed = accessed;
+	}
+
 
 	public Timestamp getActivated() {
 		return this.activated;
@@ -50,6 +56,16 @@ public class JPASession implements Serializable {
 		this.activated = activated;
 	}
 
+
+	public String getAppid() {
+		return this.appid;
+	}
+
+	public void setAppid(String appid) {
+		this.appid = appid;
+	}
+
+
 	public Timestamp getCreated() {
 		return this.created;
 	}
@@ -57,6 +73,7 @@ public class JPASession implements Serializable {
 	public void setCreated(Timestamp created) {
 		this.created = created;
 	}
+
 
 	public String getHost() {
 		return this.host;
@@ -66,6 +83,7 @@ public class JPASession implements Serializable {
 		this.host = host;
 	}
 
+
 	public int getPort() {
 		return this.port;
 	}
@@ -74,6 +92,7 @@ public class JPASession implements Serializable {
 		this.port = port;
 	}
 
+
 	public int getPriority() {
 		return this.priority;
 	}
@@ -81,6 +100,7 @@ public class JPASession implements Serializable {
 	public void setPriority(int priority) {
 		this.priority = priority;
 	}
+
 
 	public String getScheme() {
 		return this.scheme;

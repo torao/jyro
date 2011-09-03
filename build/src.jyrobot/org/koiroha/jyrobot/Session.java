@@ -16,13 +16,15 @@ import java.util.List;
 
 import javax.persistence.*;
 
-import org.koiroha.jyrobot.model.*;
+import org.koiroha.jyrobot.model.JPARequest;
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Session:
+// Session: セッション
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * クローラーの 1 セッションを表すクラスです。このセッション中にクロールすべき
+ * URL を参照することができます。
  *
  * @version $Revision:$
  * @author Takami Torao
@@ -113,91 +115,46 @@ public class Session implements Serializable, Closeable {
 	}
 
 	// ======================================================================
-	// ジョブの投入
+	// リクエスト対象の参照
 	// ======================================================================
 	/**
-	 * 指定されたセッションジョブをキューに追加します。
+	 * このセッションから次のリクエスト対象を参照します。セッション中にリク
+	 * エスト対象が存在しない場合は null を返します。
+	 *
+	 * @return リクエスト対象
 	 */
-	public void offer(Job job) {
+	public Request take() {
+		Request request = null;
 		EntityTransaction tran = manager.getTransaction();
 		try {
 			tran.begin();
-			URI uri = job.getUri();
-			String scheme = uri.getScheme();
-			String host = uri.getHost();
-			int port = uri.getPort();
 
-			TypedQuery<JPASession> query = manager.createQuery(
-				"select session from JPASession session " +
-				"where session.scheme=? and session.host=? and session.port=?", JPASession.class);
-			query.setParameter(1, scheme);
-			query.setParameter(2, host);
-			query.setParameter(3, port);
-			JPASession s = query.getSingleResult();
-
-			if(s == null){
-				s = new JPASession();
-				s.setScheme(scheme);
-				s.setHost(host);
-				s.setPort(port);
-				s.setCreated(new Timestamp(System.currentTimeMillis()));
-				manager.persist(s);
-			}
-
-			String path = uri.getPath();
-			if(path == null){
-				path = "/";
-			}
-			TypedQuery<JPAJob> query2 = manager.createQuery(
-				"select * from jyrobot_session_jobs " +
-				"where session=? and path=?", JPAJob.class);
-			query2.setParameter(1, s.getId());
-			query2.setParameter(2, path);
-			JPAJob j = query2.getSingleResult();
-
-			if(j == null){
-				j = new JPAJob();
-				j.setPath(path);
-				j.setReferer(job.getReferer().toString());
-				manager.persist(j);
-			}
-
-			tran.commit();
-		} finally {
-			tran.rollback();
-		}
-		return;
-	}
-
-	// ======================================================================
-	// ジョブの参照
-	// ======================================================================
-	/**
-	 * このセッション中の次のジョブを参照します。
-	 */
-	Job take() {
-		EntityTransaction tran = manager.getTransaction();
-		try {
-			tran.begin();
-			TypedQuery<JPAJob> query = manager.createQuery(
-				"select job from JPAJob job" +
-				" order by job.accessed", JPAJob.class);
+			// 一番過去にアクセスのあったリクエスト対象を参照
+			TypedQuery<JPARequest> query = manager.createQuery(
+				"select request from JPARequest request" +
+				" where request.accessed < :accessed" +
+				" order by request.accessed, request.id", JPARequest.class);
+			query.setParameter("accessed", new Timestamp(access));
 			query.setFirstResult(0);
 			query.setMaxResults(1);
-			List<JPAJob> list = query.getResultList();
+			List<JPARequest> list = query.getResultList();
 			if(list.isEmpty()){
 				return null;
 			}
-			JPAJob job = list.get(0);
+
+			// リクエスト対象の作成
+			JPARequest r = list.get(0);
+			URI uri = base.resolve(r.getPath());
+			URI referer = (r.getReferer()==null)? null: URI.create(r.getReferer());
+			request = new Request(uri, referer);
 
 			tran.commit();
-			tran = null;
 		} finally {
-			if(tran == null){
+			if(tran.isActive()){
 				tran.rollback();
 			}
 		}
-		return;
+		return request;
 	}
 
 	// ======================================================================
@@ -208,19 +165,22 @@ public class Session implements Serializable, Closeable {
 	 */
 	@Override
 	public void close() {
-
-		// 実行中フラグをオフに設定
 		EntityTransaction tran = manager.getTransaction();
+		tran.begin();
 		try {
-			tran.begin();
+
+			// 実行中フラグをオフに設定
 			Query query = manager.createQuery(
-				"update JPASession session set session.activated=null where session.id=?");
-			query.setParameter(1, getId());
+				"update JPASession session" +
+				" set session.activated=null, session.accessed=?1" +
+				" where session.id=?2");
+			query.setParameter(1, new Timestamp(access));
+			query.setParameter(2, getId());
 			query.executeUpdate();
+
 			tran.commit();
-			tran = null;
 		} finally {
-			if(tran != null){
+			if(tran.isActive()){
 				tran.rollback();
 			}
 
@@ -240,18 +200,16 @@ public class Session implements Serializable, Closeable {
 	 */
 	@Override
 	public String toString() {
-		return id + ":" + base;
+		return "[" + id + "]" + base;
 	}
 
-	// ======================================================================
-	// 接頭辞 URI の参照
-	// ======================================================================
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// Request: リクエストクラス
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	/**
-	 * このセッションでアクセスするサイトの接頭辞 URI を参照します。
-	 *
-	 * @return 接頭辞 URI
+	 * リクエスト情報を保持するためのクラスです。
 	 */
-	public static class Job implements Serializable {
+	public static class Request implements Serializable {
 
 		// ==================================================================
 		// Serial Version
@@ -261,19 +219,64 @@ public class Session implements Serializable, Closeable {
 		 */
 		private static final long serialVersionUID = 1L;
 
+		// ==================================================================
+		// リクエスト URI
+		// ==================================================================
+		/**
+		 * リクエスト URI です。
+		 */
 		private final URI uri;
+
+		// ==================================================================
+		// 参照元
+		// ==================================================================
+		/**
+		 * 参照元です。
+		 */
 		private final URI referer;
-		public Job(URI uri, URI referer){
+
+		// ==================================================================
+		// コンストラクタ
+		// ==================================================================
+		/**
+		 * リクエスト URI を指定して構築を行います。
+		 *
+		 * @param uri リクエスト URI
+		 * @param referer 参照元 URI または null
+		 */
+		public Request(URI uri, URI referer){
+			assert(uri.isAbsolute());
+			assert(referer == null || referer.isAbsolute());
 			this.uri = uri;
 			this.referer = referer;
 			return;
 		}
+
+		// ==================================================================
+		// リクエスト URI の参照
+		// ==================================================================
+		/**
+		 * リクエスト URI を参照します。
+		 *
+		 * @return リクエスト URI
+		 */
 		public URI getUri() {
 			return uri;
 		}
+
+		// ==================================================================
+		// 参照元 URI の参照
+		// ==================================================================
+		/**
+		 * 参照元 URI を参照します。参照元が定義されていない場合は null を
+		 * 返します。
+		 *
+		 * @return 参照元 URI
+		 */
 		public URI getReferer() {
 			return referer;
 		}
+
 	}
 
 }

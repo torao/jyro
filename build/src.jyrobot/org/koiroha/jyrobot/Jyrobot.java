@@ -9,6 +9,10 @@
  */
 package org.koiroha.jyrobot;
 
+import java.net.URI;
+
+import org.koiroha.jyrobot.Session.Request;
+
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Jyrobot:
@@ -41,12 +45,17 @@ public class Jyrobot {
 
 	public static void main(String[] args) throws Exception{
 		final Scheduler scheduler = new Scheduler();
+		scheduler.resetAllSessions();
+		scheduler.put(new Request(URI.create("http://www.yahoo.co.jp"), null));
 		Runnable r = new Runnable(){
 			@Override
 			public void run(){
 				try {
 					Session session = scheduler.next();
 					System.out.println(session);
+					for(Session.Request r=session.take(); r != null; r=session.take()){
+						System.out.println(r);
+					}
 					session.close();
 				} catch(InterruptedException ex){
 					System.err.println(ex);

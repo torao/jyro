@@ -1,13 +1,12 @@
 /* **************************************************************************
- * Copyright (C) 2008 BJoRFUAN. All Right Reserved
+ * Copyright (C) 2011 BJoRFUAN. All Rights Reserved
  * **************************************************************************
  * This module, contains source code, binary and documentation, is in the
- * BSD License, and comes with NO WARRANTY.
+ * Apache License Ver. 2.0, and comes with NO WARRANTY.
  *
- *                                                 torao <torao@bjorfuan.com>
- *                                                       http://www.moyo.biz/
- * $Id:$
-*/
+ *                                           takami torao <koiroha@gmail.com>
+ *                                                   http://www.bjorfuan.com/
+ */
 package org.koiroha.jyrobot;
 
 import java.io.*;
@@ -16,7 +15,6 @@ import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.*;
 
-import javax.persistence.*;
 import javax.xml.parsers.*;
 import javax.xml.xpath.*;
 
@@ -55,9 +53,6 @@ public class Crawler extends Worker {
 	 */
 	private static final Logger logger = Logger.getLogger(Crawler.class);
 
-	private EntityManagerFactory factory = null;
-	private EntityManager manager = null;
-
 	// ======================================================================
 	// Max Content Length
 	// ======================================================================
@@ -93,8 +88,6 @@ public class Crawler extends Worker {
 	@Override
 	public void init() throws JyroException {
 		super.init();
-		factory = Persistence.createEntityManagerFactory("jyro");
-		manager = factory.createEntityManager();
 		return;
 	}
 
@@ -107,12 +100,6 @@ public class Crawler extends Worker {
 	@Override
 	public void destroy() {
 		super.destroy();
-		if(manager != null){
-			manager.close();
-		}
-		if(factory != null){
-			factory.close();
-		}
 		return;
 	}
 
