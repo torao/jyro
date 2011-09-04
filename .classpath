@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="build/src.worker"/>
+	<classpathentry kind="src" path="build/src.jyrobot"/>
 	<classpathentry kind="src" path="build/src.env"/>
 	<classpathentry kind="src" path="build/src.core"/>
 	<classpathentry kind="src" path="build/src.unittest"/>
