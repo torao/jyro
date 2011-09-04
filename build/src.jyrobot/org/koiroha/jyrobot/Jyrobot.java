@@ -10,7 +10,9 @@
 package org.koiroha.jyrobot;
 
 import java.net.URI;
+import java.util.*;
 
+import org.apache.log4j.Logger;
 import org.koiroha.jyrobot.Session.Request;
 
 
@@ -26,7 +28,15 @@ import org.koiroha.jyrobot.Session.Request;
 public class Jyrobot {
 
 	// ======================================================================
-	// スケジューラ
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output of this class.
+	 */
+	private static final Logger logger = Logger.getLogger(Jyrobot.class);
+
+	// ======================================================================
+	// Scheduler
 	// ======================================================================
 	/**
 	 * ジョブスケジューラーです。
@@ -34,7 +44,7 @@ public class Jyrobot {
 	private final Scheduler scheduler;
 
 	// ======================================================================
-	// クローラー
+	// Crawler
 	// ======================================================================
 	/**
 	 * クローラーです。
@@ -42,7 +52,15 @@ public class Jyrobot {
 	private final Crawler crawler;
 
 	// ======================================================================
-	// コンストラクタ
+	// Threads
+	// ======================================================================
+	/**
+	 * クローラーを実行するスレッドです。
+	 */
+	private final List<Thread> threads = new ArrayList<Thread>();
+
+	// ======================================================================
+	// Constructor
 	// ======================================================================
 	/**
 	 * JPA エンティティマネージャファクトリの名前を指定して構築を行います。
@@ -230,11 +248,30 @@ public class Jyrobot {
 	 *
 	 * @param requestInterval request interval
 	 */
-	public void start(){
+	public synchronized void start(){
+		stop();
 		for(int i=0; i<5; i++){
 			Thread t = new Thread(crawler, "Crawler-" + i);
+			threads.add(t);
 			t.start();
 		}
+		return;
+	}
+
+	// ======================================================================
+	// Stop Crawling
+	// ======================================================================
+	/**
+	 * クローリングを停止します。
+	 */
+	public synchronized void stop(){
+		for(Thread t: threads){
+			t.interrupt();
+			try {
+				t.join();
+			} catch(InterruptedException ex){}
+		}
+		threads.clear();
 		return;
 	}
 
@@ -247,17 +284,25 @@ public class Jyrobot {
 			public void failure(Request request, Throwable ex) {
 			}
 			@Override
-			public boolean accept(URI uri) {
-				return true;
+			public boolean accept(Content referer, URI uri) {
+				return uri.getHost().equals("www.bjorfuan.com");
 			}
 		};
-		Jyrobot jyrobot = new Jyrobot("jyrobot");
+		final Jyrobot jyrobot = new Jyrobot("jyrobot");
 		jyrobot.setAdapter(adapter);
-		jyrobot.put("http://www.yahoo.co.jp");
-		jyrobot.put("http://www.google.co.jp");
-		jyrobot.put("http://www.goo.co.jp");
+//		jyrobot.put("http://www.yahoo.co.jp");
+//		jyrobot.put("http://www.google.co.jp");
+//		jyrobot.put("http://www.goo.co.jp");
+		jyrobot.put("http://www.bjorfuan.com");
 		jyrobot.reset();
 		jyrobot.start();
+
+		Runtime.getRuntime().addShutdownHook(new Thread(){
+			@Override
+			public void run() {
+				jyrobot.stop();
+			}
+		});
 		return;
 	}
 

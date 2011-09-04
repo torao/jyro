@@ -46,7 +46,7 @@ public class Content implements Serializable {
 	/**
 	 * URI of this content.
 	 */
-	public final URI uri;
+	private final URI uri;
 
 	// ======================================================================
 	// Resuest
@@ -122,6 +122,7 @@ public class Content implements Serializable {
 				def = Charset.forName("UTF-8");
 			}
 
+			// ドキュメントの読み込み
 			byte[] content = response.getContent();
 			HTMLDocumentBuilderFactory factory = new HTMLDocumentBuilderFactory();
 			factory.setNamespaceAware(false);
@@ -153,8 +154,21 @@ public class Content implements Serializable {
 		return docCharset;
 	}
 
+	// ======================================================================
+	// インスタンスの文字列化
+	// ======================================================================
+	/**
+	 * このインスタンスを文字列化します。
+	 *
+	 * @return インスタンスの文字列
+	 */
+	@Override
+	public String toString(){
+		return uri.toString();
+	}
+
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	// Message:
+	// Message: HTTP Message
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	/**
 	 *

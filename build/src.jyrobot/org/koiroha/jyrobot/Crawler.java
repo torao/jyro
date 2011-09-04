@@ -14,7 +14,6 @@ import java.net.*;
 import java.nio.charset.Charset;
 import java.util.*;
 
-import javax.xml.parsers.*;
 import javax.xml.xpath.*;
 
 import org.apache.http.*;
@@ -24,7 +23,6 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.*;
 import org.koiroha.jyro.util.IO;
-import org.koiroha.xml.parser.HTMLDocumentBuilderFactory;
 import org.w3c.dom.*;
 
 
@@ -47,6 +45,14 @@ class Crawler implements Runnable {
 	 * Log output of this class.
 	 */
 	private static final Logger logger = Logger.getLogger(Crawler.class);
+
+	// ======================================================================
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output of this class.
+	 */
+	private static final byte[] EMPTY_BYTES = new byte[0];
 
 	// ======================================================================
 	// Scheduler
@@ -219,6 +225,9 @@ class Crawler implements Runnable {
 	*/
 	private void crawl(Session session) throws InterruptedException{
 		assert(session != null);
+
+		// TODO read robots.txt...
+
 		Session.Request request = session.take();
 		while(request != null){
 
@@ -235,7 +244,7 @@ class Crawler implements Runnable {
 			}
 			adapter.success(request, content);
 
-			for(URI u: analyzeContent(content)){
+			for(URI u: extractURL(content)){
 				scheduler.put(new Session.Request(u));
 			}
 
@@ -252,10 +261,10 @@ class Crawler implements Runnable {
 	}
 
 	// ======================================================================
-	// URL Content Retrieve Stage
+	// Retrieve Content
 	// ======================================================================
 	/**
-	 * Retrieve content of specified URL.
+	 * 指定された URI の内容を取得します。
 	 *
 	 * @param content content to retrieve
 	 * @throws WorkerException if fail to retrieve
@@ -270,7 +279,7 @@ class Crawler implements Runnable {
 		// TODO additional header not implemented
 
 		HttpResponse response = null;
-		byte[] binary = null;
+		byte[] binary = EMPTY_BYTES;
 		InputStream in = null;
 		try {
 
@@ -299,7 +308,7 @@ class Crawler implements Runnable {
 			IO.close(in);
 		}
 
-		// build request
+		// リクエストの構築
 		Content.Request req = new Content.Request(
 				request.getRequestLine().getMethod(),
 				request.getURI(),
@@ -307,9 +316,9 @@ class Crawler implements Runnable {
 		for(Header header: request.getAllHeaders()){
 			req.addHeader(header.getName(), header.getValue());
 		}
-		req.setContent(new byte[0]);	// TODO how to retrieve query string when post?
+		req.setContent(EMPTY_BYTES);	// TODO how to retrieve query string when post?
 
-		// build response
+		// レスポンスの構築
 		Content.Response res = new Content.Response(
 				response.getStatusLine().getProtocolVersion().toString(),
 				response.getStatusLine().getStatusCode(),
@@ -324,46 +333,47 @@ class Crawler implements Runnable {
 	}
 
 	// ======================================================================
-	// Content Analyzer Stage
+	// Extract URI
 	// ======================================================================
 	/**
-	 * Parse content.
+	 * 指定された内容に含まれている URI を抽出します。
 	 *
-	 * @param content content to analyze
-	 * @throws WorkerException if fail to retrieve
+	 * @param content content to extract urls
+	 * @return list of url
 	*/
-	private List<URI> analyzeContent(Content content) {
-		List<URI> urls = Collections.emptyList();
-		if(content.response.getContentType().equals("text/html")){
-			urls = parseHtmlContent(content);
+	private Set<URI> extractURL(Content content) {
+		if("text/html".equals(content.response.getContentType())){
+			return extractURLFromHTML(content);
 		}
-		return urls;
+		return Collections.emptySet();
 	}
 
 	// ======================================================================
-	// Content Analyzer Stage
+	// Extract URI
 	// ======================================================================
 	/**
-	 * Parse content.
+	 * 指定された HTML に含まれている URI を抽出します。
 	 *
-	 * @param content content to analyze
-	 * @throws WorkerException if fail to retrieve
+	 * @param content content to extract urls
+	 * @return list of url
 	*/
-	private List<URI> parseHtmlContent(Content content) {
-		List<URI> urls = new ArrayList<URI>();
+	private Set<URI> extractURLFromHTML(Content content) {
+		Set<URI> urls = new HashSet<URI>();
+		// TODO <base> not considered
 
 		// HTML ドキュメントの参照
 		Document doc = content.getDocument();
 		Charset charset = content.getDocumentCharset();
 		URI base = content.getURI();
+		XPath xpath = XPathFactory.newInstance().newXPath();
 		try {
-			XPath xpath = XPathFactory.newInstance().newXPath();
 			for(String expr: Util.HREF_XPATH){
 				NodeList nl = (NodeList)xpath.evaluate(expr, doc, XPathConstants.NODESET);
 				for(int i=0; i<nl.getLength(); i++){
 					String href = ((Attr)nl.item(i)).getValue();
 					URI uri = getURL(base, href, charset);
-					if(uri != null){
+					if(uri != null && adapter.accept(content, uri)){
+						logger.debug(base + " + " + href + " =: " + uri);
 						urls.add(uri);
 					}
 				}
@@ -371,19 +381,29 @@ class Crawler implements Runnable {
 		} catch(XPathException ex){
 			throw new IllegalStateException(ex);
 		}
+
+		// 抽出した URL のログ出力
+		if(logger.isDebugEnabled()){
+			logger.debug(base);
+			for(URI u: urls){
+				logger.debug("  --> " + u);
+			}
+		}
 		return urls;
 	}
 
 	// ======================================================================
-	// Content Analyzer Stage
+	// Parse URI
 	// ======================================================================
 	/**
-	 * Parse content.
+	 * 文字列形式の URI からインスタンスを構築します。
 	 *
-	 * @param content content to analyze
-	 * @throws WorkerException if fail to retrieve
+	 * @param base base uri
+	 * @param href attribute value of href, src or else
+	 * @param charset page character set
+	 * @return absolute url
 	*/
-	private URI getURL(URI base, String href, Charset charset) {
+	private static URI getURL(URI base, String href, Charset charset) {
 		href = href.trim();
 
 		// URL に含まれる日本語などの文字をエンコード
@@ -404,56 +424,17 @@ class Crawler implements Runnable {
 		}
 		href = buffer.toString();
 
+		// URI がサポートしている形式であれば返す
 		try {
 			URI sub = new URI(href);
 			URI uri = base.resolve(sub);
-			if(Util.getDefaultPort(uri.getScheme()) >= 0 && adapter.accept(uri)){
+			if(Util.getDefaultPort(uri.getScheme()) >= 0){
 				return uri;
 			}
 		} catch(URISyntaxException ex){
-			logger.debug("unsupported uri ignored: " + href);
+			logger.debug("unsupported uri detected: " + href);
 		}
 		return null;
-	}
-
-	// ======================================================================
-	// Receive specified job
-	// ======================================================================
-	/**
-	 *
-	 * @param job
-	 * @return
-	 * @throws WorkerException
-	*/
-	public List<URI> retrieveLink(String url) throws WorkerException {
-		logger.debug("running crawler to: " + url);
-
-		List<URI> urls = new ArrayList<URI>();
-		try {
-			HttpClient client = new DefaultHttpClient();
-			HttpGet request = new HttpGet(url);
-			request.setHeader("User-Agent", userAgent);
-			HttpResponse response = client.execute(request);
-
-			Header header = response.getFirstHeader("Content-Type");
-			String contentType = header.getValue();
-			logger.debug("Content-Type: " + contentType);
-			if(contentType.toLowerCase().startsWith("text/html")){
-				DocumentBuilderFactory factory = new HTMLDocumentBuilderFactory();
-				DocumentBuilder builder = factory.newDocumentBuilder();
-				Document doc = builder.parse(response.getEntity().getContent());
-
-				XPath xpath = XPathFactory.newInstance().newXPath();
-				NodeList nl = (NodeList)xpath.evaluate("//a/@href", doc, XPathConstants.NODESET);
-				for(int i=0; i<nl.getLength(); i++){
-					String href = ((Attr)nl.item(i)).getValue();
-					urls.add(URI.create(url).resolve(href));
-				}
-			}
-		} catch(Exception ex){
-			throw new WorkerException(ex);
-		}
-		return urls;
 	}
 
 }

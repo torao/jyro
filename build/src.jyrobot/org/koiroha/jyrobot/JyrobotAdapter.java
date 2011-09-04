@@ -28,7 +28,7 @@ public interface JyrobotAdapter {
 	/**
 	 * 指定された URL を次回以降のクローリングに使用するかを判定します。
 	*/
-	public boolean accept(URI uri);
+	public boolean accept(Content referer, URI uri);
 
 	// ======================================================================
 	// Notify Success
