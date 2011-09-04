@@ -2,5 +2,6 @@ build/classes/
 webapp/WEB-INF/classes/
 .settings/
 .scala_dependencies
+.classpath
 Thumbs.db
 
