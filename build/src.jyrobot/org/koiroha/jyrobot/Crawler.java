@@ -406,6 +406,8 @@ class Crawler implements Runnable {
 	private static URI getURL(URI base, String href, Charset charset) {
 		href = href.trim();
 
+		// TODO remove hash
+
 		// URL に含まれる日本語などの文字をエンコード
 		StringBuilder buffer = new StringBuilder();
 		for(int i=0; i<href.length(); i++){
