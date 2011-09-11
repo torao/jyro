@@ -38,8 +38,9 @@ public interface JyrobotAdapter {
 	 *
 	 * @param request 成功したリクエスト
 	 * @param content 取得した内容
+	 * @return 処理を続行する場合 true
 	*/
-	public void success(Session.Request request, Content content);
+	public boolean success(Session.Request request, Content content);
 
 	// ======================================================================
 	// Notify Error
@@ -49,7 +50,8 @@ public interface JyrobotAdapter {
 	 *
 	 * @param request 失敗したリクエスト
 	 * @param ex 発生した例外
+	 * @return 処理を続行する場合 true
 	*/
-	public void failure(Session.Request request, Throwable ex);
+	public boolean failure(Session.Request request, Throwable ex);
 
 }

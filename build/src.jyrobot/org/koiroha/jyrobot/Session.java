@@ -73,6 +73,22 @@ public class Session implements Serializable, Closeable {
 	private final URI base;
 
 	// ======================================================================
+	// Total Retrieval URLs
+	// ======================================================================
+	/**
+	 * このセッションで取得したURLの総数です。
+	 */
+	private long totalUrl = 0;
+
+	// ======================================================================
+	// Total Retrieval Bytes
+	// ======================================================================
+	/**
+	 * このセッションで取得したデータの総バイト数です。
+	 */
+	private long totalRetrieval = 0;
+
+	// ======================================================================
 	// コンストラクタ
 	// ======================================================================
 	/**
@@ -112,6 +128,30 @@ public class Session implements Serializable, Closeable {
 	 */
 	public URI getPrefixURI(){
 		return base;
+	}
+
+	// ======================================================================
+	// Refer Total URLs
+	// ======================================================================
+	/**
+	 * このセッションで取得した URL 数を参照します。
+	 *
+	 * @return total urls
+	 */
+	public long getTotalUrl() {
+		return totalUrl;
+	}
+
+	// ======================================================================
+	// Refer Total Retrieval
+	// ======================================================================
+	/**
+	 * このセッションで取得した総データ数を参照します。
+	 *
+	 * @return total retrieval in bytes
+	 */
+	public long getTotalRetrieval() {
+		return totalRetrieval;
 	}
 
 	// ======================================================================
@@ -167,6 +207,12 @@ public class Session implements Serializable, Closeable {
 	 */
 	public void save(Request request, Content content){
 		assert(request.getId() != null);
+
+		synchronized(this){
+			totalUrl ++;
+			totalRetrieval += content.response.getContent().length;
+		}
+
 		EntityTransaction tran = manager.getTransaction();
 		try {
 			tran.begin();

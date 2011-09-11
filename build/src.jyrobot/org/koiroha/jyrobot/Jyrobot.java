@@ -190,7 +190,9 @@ public class Jyrobot {
 	// Set Request Interval
 	// ======================================================================
 	/**
-	 * 同一サイトに対するリクエスト間隔を瀬底します。
+	 * 同一サイトに対するリクエスト間隔を設定します。
+	 * クローラーはある URL の取得から次の URL の取得までに
+	 * requestInterval ミリ秒スリープします。
 	 *
 	 * @param requestInterval request interval
 	 */
@@ -215,12 +217,12 @@ public class Jyrobot {
 	}
 
 	// ======================================================================
-	// Start Crawling
+	// Put URL
 	// ======================================================================
 	/**
-	 * クローリングを開始します。
+	 * Web クローリング用の開始 URL を追加します。
 	 *
-	 * @param requestInterval request interval
+	 * @param uri URI to crawl
 	 */
 	public void put(String uri){
 		scheduler.put(new Request(URI.create(uri)));
@@ -228,12 +230,10 @@ public class Jyrobot {
 	}
 
 	// ======================================================================
-	// Start Crawling
+	// Reset Crawling Sessions
 	// ======================================================================
 	/**
-	 * クローリングを開始します。
-	 *
-	 * @param requestInterval request interval
+	 * クローリングのセッションをすべてリセットし実行可能状態にします。
 	 */
 	public void reset(){
 		scheduler.resetAllSessions();
@@ -245,8 +245,6 @@ public class Jyrobot {
 	// ======================================================================
 	/**
 	 * クローリングを開始します。
-	 *
-	 * @param requestInterval request interval
 	 */
 	public synchronized void start(){
 		stop();
@@ -262,7 +260,7 @@ public class Jyrobot {
 	// Stop Crawling
 	// ======================================================================
 	/**
-	 * クローリングを停止します。
+	 * すべてのクローリングを停止します。
 	 */
 	public synchronized void stop(){
 		for(Thread t: threads){
@@ -278,10 +276,12 @@ public class Jyrobot {
 	public static void main(String[] args) throws Exception{
 		JyrobotAdapter adapter = new JyrobotAdapter() {
 			@Override
-			public void success(Request request, Content content) {
+			public boolean success(Request request, Content content) {
+				return true;
 			}
 			@Override
-			public void failure(Request request, Throwable ex) {
+			public boolean failure(Request request, Throwable ex) {
+				return true;
 			}
 			@Override
 			public boolean accept(Content referer, URI uri) {
@@ -295,6 +295,7 @@ public class Jyrobot {
 //		jyrobot.put("http://www.goo.co.jp");
 		jyrobot.put("http://www.bjorfuan.com");
 		jyrobot.reset();
+		jyrobot.setRequestInterval(200);
 		jyrobot.start();
 
 		Runtime.getRuntime().addShutdownHook(new Thread(){

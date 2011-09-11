@@ -12,6 +12,7 @@ package org.koiroha.jyrobot;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.Charset;
+import java.text.NumberFormat;
 import java.util.*;
 
 import javax.xml.xpath.*;
@@ -21,7 +22,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.*;
+import org.koiroha.jyro.Jyro;
 import org.koiroha.jyro.util.IO;
 import org.w3c.dom.*;
 
@@ -172,12 +173,13 @@ class Crawler implements Runnable {
 	// Set Request Interval
 	// ======================================================================
 	/**
-	 * 同一サイトに対するリクエスト間隔を瀬底します。
+	 * 同一サイトに対するリクエスト間隔を設定します。
 	 *
 	 * @param requestInterval request interval
 	 */
 	public void setRequestInterval(long requestInterval) {
 		this.requestInterval = requestInterval;
+		return;
 	}
 
 	/**
@@ -192,6 +194,7 @@ class Crawler implements Runnable {
 	 */
 	public void setAdapter(JyrobotAdapter adapter) {
 		this.adapter = adapter;
+		return;
 	}
 
 	// ======================================================================
@@ -203,14 +206,22 @@ class Crawler implements Runnable {
 	@Override
 	public void run(){
 		assert(adapter != null);
+		NumberFormat nf = NumberFormat.getNumberInstance();
+
 		try {
 			while(! Thread.interrupted()){
 				Session session = scheduler.next();
+				long start = Util.getUptime();
 				try {
 					crawl(session);
 				} finally {
 					Util.close(session);
 				}
+				logger.info("finish crawling session for " + session.getPrefixURI());
+				logger.info("total " +
+					nf.format(Util.getUptime() - start) + "ms; " +
+					nf.format(session.getTotalUrl()) + " urls; " +
+					nf.format(session.getTotalRetrieval()) + " bytes retrieved");
 			}
 		} catch(InterruptedException ex){
 		}
@@ -221,40 +232,51 @@ class Crawler implements Runnable {
 	// Execute Crawling
 	// ======================================================================
 	/**
-	 * クロール処理を開始します。
+	 * 指定されたセッションに対するクローリング処理を実行します。
+	 *
+	 * @param session session for crawling
+	 * @throws InterruptedException if interrupted in sleep interval
 	*/
 	private void crawl(Session session) throws InterruptedException{
 		assert(session != null);
 
 		// TODO read robots.txt...
 
+		long start = Util.getUptime();
 		Session.Request request = session.take();
 		while(request != null){
-
-			URI uri = request.getUri();
-			Content content = null;
-			long start = Util.getUptime();
 			try {
-				content = retrieve(uri);
+
+				// リクエストを実行
+				URI uri = request.getUri();
+				Content content = null;
+				try {
+					content = retrieve(uri);
+				} finally {
+					session.save(request, content);
+				}
+
+				// 内容取得成功の通知
+				adapter.success(request, content);
+
+				// 取得した  URL をスケジューラーに投入
+				for(URI u: extractURL(content)){
+					scheduler.put(new Session.Request(u));
+				}
+
+				// 次のリクエストまでスリープ
+				long interval = getRequestInterval() - (Util.getUptime() - start);
+				if(interval > 0){
+					Thread.sleep(interval);
+				}
 			} catch(IOException ex){
-				adapter.failure(request, ex);
-				return;
-			} finally {
-				session.save(request, content);
-			}
-			adapter.success(request, content);
-
-			for(URI u: extractURL(content)){
-				scheduler.put(new Session.Request(u));
-			}
-
-			// 次のリクエストまでスリープ
-			long interval = getRequestInterval() - (Util.getUptime() - start);
-			if(interval > 0){
-				Thread.sleep(interval);
+				if(adapter.failure(request, ex)){
+					break;
+				}
 			}
 
 			// 次のリクエストを参照
+			start = Util.getUptime();
 			request = session.take();
 		}
 		return;
@@ -266,8 +288,9 @@ class Crawler implements Runnable {
 	/**
 	 * 指定された URI の内容を取得します。
 	 *
-	 * @param content content to retrieve
-	 * @throws WorkerException if fail to retrieve
+	 * @param uri URI of content
+	 * @return content
+	 * @throws IOException if fail to retrieve content from specified uri
 	*/
 	private Content retrieve(URI uri) throws IOException{
 		logger.debug("retrieve(" + uri + ")");
@@ -367,13 +390,14 @@ class Crawler implements Runnable {
 		URI base = content.getURI();
 		XPath xpath = XPathFactory.newInstance().newXPath();
 		try {
+			logger.debug(base);
 			for(String expr: Util.HREF_XPATH){
 				NodeList nl = (NodeList)xpath.evaluate(expr, doc, XPathConstants.NODESET);
 				for(int i=0; i<nl.getLength(); i++){
 					String href = ((Attr)nl.item(i)).getValue();
 					URI uri = getURL(base, href, charset);
-					if(uri != null && adapter.accept(content, uri)){
-						logger.debug(base + " + " + href + " =: " + uri);
+					if(uri != null && adapter.accept(content, uri) && !urls.contains(uri)){
+						logger.debug("  --> " + uri + " (" + href + ")");
 						urls.add(uri);
 					}
 				}
@@ -382,13 +406,6 @@ class Crawler implements Runnable {
 			throw new IllegalStateException(ex);
 		}
 
-		// 抽出した URL のログ出力
-		if(logger.isDebugEnabled()){
-			logger.debug(base);
-			for(URI u: urls){
-				logger.debug("  --> " + u);
-			}
-		}
 		return urls;
 	}
 
@@ -417,8 +434,8 @@ class Crawler implements Runnable {
 			} else {
 				String str = String.valueOf(ch);
 				byte[] bin = str.getBytes(charset);
-				buffer.append('%');
 				for(int j=0; j<bin.length; j++){
+					buffer.append('%');
 					buffer.append(Integer.toString((bin[j] >> 4) & 0x0F, 16));
 					buffer.append(Integer.toString((bin[j] >> 0) & 0x0F, 16));
 				}
