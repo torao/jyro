@@ -335,6 +335,7 @@ public class Session implements Serializable, Closeable {
 		/**
 		 * リクエスト URI を指定して構築を行います。
 		 *
+		 * @param id リクエスト ID
 		 * @param uri リクエスト URI
 		 */
 		private Request(String id, URI uri){

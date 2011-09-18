@@ -1,0 +1,198 @@
+/* **************************************************************************
+ * Copyright (C) 2011 BJoRFUAN. All Rights Reserved
+ * **************************************************************************
+ * This module, contains source code, binary and documentation, is in the
+ * Apache License Ver. 2.0, and comes with NO WARRANTY.
+ *
+ *                                           takami torao <koiroha@gmail.com>
+ *                                                   http://www.bjorfuan.com/
+ */
+package org.koiroha.jyro.bot;
+
+import java.io.IOException;
+import java.net.*;
+
+import org.apache.log4j.Logger;
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Request: リクエスト
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+/**
+ * リクエストを実行するためのクラスです。
+ *
+ * @version
+ * @author torao
+ * @since 2011/09/14 jyro 1.0
+ */
+public class Request extends Message{
+
+	// ======================================================================
+	// Serial Version
+	// ======================================================================
+	/**
+	 * Serial version of this class.
+	 */
+	private static final long serialVersionUID = 1L;
+
+	// ======================================================================
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output of this class.
+	 */
+	private static final Logger logger = Logger.getLogger(Request.class);
+
+	// ======================================================================
+	// Request URL
+	// ======================================================================
+	/**
+	 * リクエスト URI です。
+	 */
+	private final URL url;
+
+	// ======================================================================
+	// User-Agent Profile
+	// ======================================================================
+	/**
+	 * このユーザエージェントのプロフィールです。
+	 */
+	private final Profile profile;
+
+	// ======================================================================
+	// Constructor
+	// ======================================================================
+	/**
+	 * リクエスト URL を指定して構築を行います。
+	 *
+	 * @param url request URL
+	 * @param profile profile of this request
+	 */
+	public Request(URL url, Profile profile) {
+		this.url = url;
+		this.profile = new Profile(profile);
+		return;
+	}
+
+	// ======================================================================
+	// Refer URL
+	// ======================================================================
+	/**
+	 * リクエスト URL を参照します。
+	 *
+	 * @return request URL
+	 */
+	public URL getUrl() {
+		return url;
+	}
+
+	// ======================================================================
+	// Refer Request Profile
+	// ======================================================================
+	/**
+	 * このリクエストのプロフィールを参照します。返値への変更はこのインスタンスでのみ有効です。
+	 *
+	 * @return profile of this request
+	 */
+	public Profile getProfile() {
+		return profile;
+	}
+
+	// ======================================================================
+	// Action GET Request
+	// ======================================================================
+	/**
+	 * このインスタンスの設定を使用して GET リクエストを実行します。
+	 *
+	 * @return レスポンス
+	 * @throws IOException 接続に失敗した場合
+	 */
+	public Response get() throws IOException {
+		return execute("GET");
+	}
+
+	// ======================================================================
+	// Action Request
+	// ======================================================================
+	/**
+	 * このインスタンスの設定を使用してリクエストを実行します。
+	 *
+	 * @param method request method
+	 * @return response object
+	 * @throws IOException if fail to connect
+	 */
+	private Response execute(String method) throws IOException {
+
+		// リダイレクトループの実行
+		URL url = this.url;
+		for(int redirect = 0; redirect <= profile.getMaxRedirects(); redirect ++){
+
+			// リクエストの実行
+			URLConnection con = doRequest(url, method);
+
+			// リダイレクト処理の実行
+			if(con instanceof HttpURLConnection){
+				HttpURLConnection hcon = (HttpURLConnection)con;
+				int code = hcon.getResponseCode();
+				if(code >= 300 && code < 400){
+					String location = hcon.getHeaderField("Location");
+					if(location != null){
+						logger.debug("redirect response detected: [" + code + "] " + location);
+						url = new URL(url, location);
+						method = "GET";
+						continue;
+					}
+				}
+			}
+
+			// レスポンスを作成して返す
+			return new Response(this, con);
+		}
+
+		// リダイレクトの最大回数に達した場合
+		throw new IOException("max redirect reached: " + profile.getMaxRedirects());
+	}
+
+	// ======================================================================
+	// Execute Request
+	// ======================================================================
+	/**
+	 * このインスタンスの設定を使用してリクエストを実行します。
+	 *
+	 * @param url request URL
+	 * @param method request method
+	 * @return URL connection
+	 * @throws IOException if fail to connect
+	 */
+	private URLConnection doRequest(URL url, String method) throws IOException {
+		logger.debug(method + " " + url);
+		URLConnection con = url.openConnection();
+
+		// リクエストヘッダの設定
+		for(Header h: header.getAll()){
+			if(h.getName().equalsIgnoreCase("User-Agent")){
+				con.setRequestProperty(h.getName(), h.getValue());
+			} else {
+				con.addRequestProperty(h.getName(), h.getValue());
+			}
+		}
+
+		// 制御情報の設定
+		con.setConnectTimeout((int)profile.getConnectionTimeout());
+		con.setReadTimeout((int)profile.getReadTimeout());
+		con.setAllowUserInteraction(false);
+		con.setDefaultUseCaches(false);
+		con.setDoInput(true);
+		con.setDoOutput(! method.equalsIgnoreCase("GET"));
+
+		// HTTP 制御情報の設定
+		if(con instanceof HttpURLConnection){
+			HttpURLConnection hcon = (HttpURLConnection)con;
+			hcon.setInstanceFollowRedirects(false);
+			hcon.setRequestMethod(method);
+		}
+
+		con.connect();
+		return con;
+	}
+
+}
