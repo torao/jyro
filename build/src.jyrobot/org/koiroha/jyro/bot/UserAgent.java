@@ -19,7 +19,7 @@ package org.koiroha.jyro.bot;
  * @author torao
  * @since 2011/09/16 jyro 1.0
  */
-public abstract class UserAgent {
+public class UserAgent {
 
 	// ======================================================================
 	// User-Agent Profile
@@ -59,10 +59,12 @@ public abstract class UserAgent {
 	// Create Session
 	// ======================================================================
 	/**
-	 * このユーザエージェントから新しいセッションを作成します。
+	 * このユーザエージェントに対する新しいセッションを作成します。
 	 *
 	 * @return 新規のセッション
 	 */
-	public abstract Session newSession();
+	public Session newSession(){
+		return profile.createSession();
+	}
 
 }

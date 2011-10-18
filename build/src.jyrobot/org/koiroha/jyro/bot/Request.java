@@ -64,12 +64,12 @@ public class Request extends Message{
 	/**
 	 * リクエスト URL を指定して構築を行います。
 	 *
-	 * @param url request URL
 	 * @param profile profile of this request
+	 * @param url request URL
 	 */
-	public Request(URL url, Profile profile) {
-		this.url = url;
+	public Request(Profile profile, URL url) {
 		this.profile = new Profile(profile);
+		this.url = url;
 		return;
 	}
 
@@ -89,7 +89,8 @@ public class Request extends Message{
 	// Refer Request Profile
 	// ======================================================================
 	/**
-	 * このリクエストのプロフィールを参照します。返値への変更はこのインスタンスでのみ有効です。
+	 * このリクエストのプロフィールを参照します。
+	 * 返値のプロフィールに対する変更はこのインスタンスでのみ有効です。
 	 *
 	 * @return profile of this request
 	 */
@@ -122,7 +123,7 @@ public class Request extends Message{
 	 */
 	private Response execute(String method) throws IOException {
 
-		// リダイレクトループの実行
+		// リダイレクト回数の最大値までリダイレクト処理を実行
 		URL url = this.url;
 		for(int redirect = 0; redirect <= profile.getMaxRedirects(); redirect ++){
 

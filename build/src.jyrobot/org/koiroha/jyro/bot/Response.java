@@ -101,6 +101,8 @@ public class Response extends Message{
 		}
 
 		// メッセージ内容の取り込み
+		String ct = getContentType();
+		request.getProfile().getRetrievalLimitLength(ct);
 
 		return;
 	}
@@ -150,6 +152,7 @@ public class Response extends Message{
 	 * このレスポンスを生成したリクエストを参照します。
 	 *
 	 * @return request request
+	 * @throws IOException
 	 */
 	public InputStream getInputStream() throws IOException{
 		return con.getInputStream();

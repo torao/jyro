@@ -9,7 +9,11 @@
  */
 package org.koiroha.jyro.bot;
 
+import java.io.*;
+import java.net.URL;
 import java.util.*;
+
+import org.koiroha.jyro.bot.Session.Cookie;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Profile: User-Agent プロフィール
@@ -21,7 +25,15 @@ import java.util.*;
  * @author torao
  * @since 2011/09/16 jyro 1.0
  */
-public class Profile {
+public class Profile implements Serializable{
+
+	// ======================================================================
+	// Serial Version
+	// ======================================================================
+	/**
+	 * Serial version of this class.
+	 */
+	private static final long serialVersionUID = 1L;
 
 	// ======================================================================
 	// Configuration
@@ -43,15 +55,28 @@ public class Profile {
 	// Constructor
 	// ======================================================================
 	/**
-	 * 親プロフィールを設定して構築を行います。
-	 *
-	 * @param parent 親のプロフィール
+	 * 親を持たないプロフィールを構築します。
 	 */
-	public Profile(Profile parent) {
-		if(parent != null){
-			synchronized(parent){
-				this.config.putAll(parent.config);
-				this.header.addAll(parent.header);
+	public Profile() {
+		this(null);
+		return;
+	}
+
+	// ======================================================================
+	// Constructor
+	// ======================================================================
+	/**
+	 * デフォルトのプロフィールを指定して構築を行います。
+	 * このコンストラクタは {@code def} で指定したインスタンスの設定値をコピーするだけです。
+	 * {@code def} に対する設定変更はこのインスタンスに影響しません。
+	 *
+	 * @param def default profile
+	 */
+	public Profile(Profile def) {
+		if(def != null){
+			synchronized(def){
+				this.config.putAll(def.config);
+				this.header.addAll(def.header);
 			}
 		}
 		return;
@@ -139,25 +164,86 @@ public class Profile {
 	// Refer Max Content Length
 	// ======================================================================
 	/**
-	 * レスポンスとして取得する内容の最大長を参照します。
+	 * 指定された Content-Type のレスポンスから取得する内容の最大長を参照します。
 	 *
+	 * @param contentType MIME-Type or null if not defined
 	 * @return max content length to retrieve from response in bytes
 	 */
-	public int getRetrievalLimitLength() {
-		return getConfig("retrievalLimitLength", 0);
+	public int getRetrievalLimitLength(String contentType) {
+		String name = combine("retrievalLimitLength", contentType);
+		return getConfig(name, 0);
 	}
 
 	// ======================================================================
 	// Set Max Content Length
 	// ======================================================================
 	/**
-	 * レスポンスとして取得する内容の最大長を設定します。
+	 * 指定された Content-Type のレスポンスから取得する内容の最大長を設定します。
 	 *
+	 * @param contentType MIME-Type or null if not defined
 	 * @param retrievalLimitLength max content length to retrieve from response in bytes
 	 */
-	public void setRetrievalLimitLength(int retrievalLimitLength) {
-		setConfig("retrievalLimitLength", retrievalLimitLength);
+	public void setRetrievalLimitLength(String contentType, int retrievalLimitLength) {
+		String name = combine("retrievalLimitLength", contentType);
+		setConfig(name, retrievalLimitLength);
 		return;
+	}
+
+	// ======================================================================
+	// Create New Session
+	// ======================================================================
+	/**
+	 * このプロフィールの設定から新しいセッションを構築します。
+	 *
+	 * @return new session
+	 */
+	public Session createSession(){
+		return null;
+	}
+
+	// ======================================================================
+	// Load Persistent Cookie
+	// ======================================================================
+	/**
+	 * 指定された URL に対する永続 Cookie を参照します。
+	 *
+	 * @param url access URL
+	 * @return session cookies for specified url
+	 * @throws IOException fail to access backend strage
+	 */
+	public Iterable<Cookie> loadPersistentCookies(URL url) throws IOException{
+		return Collections.emptyList();
+	}
+
+	// ======================================================================
+	// Store Persistent Cookie
+	// ======================================================================
+	/**
+	 * 指定された URL に対する永続 Cookie を保存します。
+	 *
+	 * @param url access URL
+	 * @return session cookies for specified url
+	 * @throws IOException fail to access backend strage
+	 */
+	public void storePersistentCookies(URL url, Iterable<Cookie> cookies) throws IOException{
+		return;
+	}
+
+	// ======================================================================
+	// Combine Configuration Name
+	// ======================================================================
+	/**
+	 * オプション付きの設定名を参照します。
+	 *
+	 * @param base base name of configuration
+	 * @param option option value or null if default
+	 * @return combined string
+	 */
+	private static String combine(String base, String option) {
+		if(option == null){
+			return base;
+		}
+		return base + "." + option.toLowerCase();
 	}
 
 	// ======================================================================

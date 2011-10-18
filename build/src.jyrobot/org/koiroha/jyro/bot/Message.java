@@ -10,6 +10,7 @@
 package org.koiroha.jyro.bot;
 
 import java.io.Serializable;
+import java.nio.CharBuffer;
 import java.text.*;
 import java.util.*;
 
@@ -81,6 +82,92 @@ public class Message implements Serializable {
 		return;
 	}
 
+	// ======================================================================
+	// Refer Content-Type
+	// ======================================================================
+	/**
+	 * このメッセージの Content-Type を参照します。
+	 * 返値は "maintype/subtype" 形式で属性は付きません。
+	 * このメッセージの Content-Type が不明な場合は null を返します。
+	 *
+	 * @return Content-Type of this message
+	 */
+	public String getContentType(){
+		Header h = header.getHeader("Content-Type");
+		if(h != null){
+			return h.getMainValue();
+		}
+		return null;
+	}
+
+	// ======================================================================
+	// Read Next Token
+	// ======================================================================
+	/**
+	 * 指定された文字列バッファから次の ';' までの文字列を取得します。
+	 * このメソッドは引用記号で囲まれた文字列をそのまま残します。
+	 *
+	 * @param in character buffer
+	 * @return Content-Type of this message
+	 */
+	private static String next(CharBuffer in){
+		StringBuilder buffer = new StringBuilder();
+		while(in.hasRemaining()){
+			char ch = in.get();
+			if(ch == ';'){
+				break;
+			}
+			buffer.append(ch);
+
+			if(isQuote(ch)){
+				char quote = ch;
+				ch = '\0';
+				while(in.hasRemaining()){
+					ch = in.get();
+					buffer.append(ch);
+					if(ch == quote){
+						break;
+					}
+				}
+			}
+		}
+		String value = buffer.toString().trim();
+		return (! in.hasRemaining() && value.length() == 0)? null: value;
+	}
+
+	// ======================================================================
+	// Strip Quote
+	// ======================================================================
+	/**
+	 * 指定された文字列の前後の引用記号を削除します。
+	 *
+	 * @param value string to strip heading and trailing quote
+	 * @return Content-Type of this message
+	 */
+	private static String stripQuote(String value){
+		if(value.length() > 1){
+			char head = value.charAt(0);
+			char tail = value.charAt(value.length()-1);
+			if(isQuote(head) && head == tail){
+				return value.substring(1, value.length()-1);
+			}
+		}
+		return value;
+	}
+
+	// ======================================================================
+	// Evaluate Quote Character
+	// ======================================================================
+	/**
+	 * 指定された文字が引用記号かどうかを判断します。
+	 *
+	 * @param ch quote character
+	 * @return true if specified character is quote symbol
+	 */
+	private static boolean isQuote(char ch){
+		return (ch == '\"' || ch == '\'');
+	}
+
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	// HeaderContainer: ヘッダコンテナ
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -145,9 +232,28 @@ public class Message implements Serializable {
 		 * @return header value, or null if the header is not presence
 		 */
 		public String get(String name){
+			Header h = getHeader(name);
+			if(h != null){
+				return h.getValue();
+			}
+			return null;
+		}
+
+		// ======================================================================
+		// Refer Message Header
+		// ======================================================================
+		/**
+		 * 指定された名前のメッセージヘッダを参照します。
+		 * 名前に該当するヘッダが複数定義されている場合はどの値が返されるかは不定です。
+		 * 名前に対する値が定義されていない場合は null を返します。
+		 *
+		 * @param name header name
+		 * @return header value, or null if the header is not presence
+		 */
+		public Header getHeader(String name){
 			for(Header h: getAll()){
 				if(h.nameMatches(name)){
-					return h.getValue();
+					return h;
 				}
 			}
 			return null;
@@ -165,12 +271,30 @@ public class Message implements Serializable {
 		 */
 		public Iterable<String> getAll(String name){
 			List<String> values = new ArrayList<String>();
-			for(Header h: getAll()){
-				if(h.nameMatches(name)){
-					values.add(h.getValue());
-				}
+			for(Header h: getAllHeader(name)){
+				values.add(h.getValue());
 			}
 			return Collections.unmodifiableCollection(values);
+		}
+
+		// ======================================================================
+		// Refer Message Header
+		// ======================================================================
+		/**
+		 * 指定された名前のメッセージヘッダをすべて参照します。
+		 * 名前に該当するヘッダが定義されていない場合は空の列挙を返します。
+		 *
+		 * @param name header name
+		 * @return iteration of all fields for specified header name
+		 */
+		public Iterable<Header> getAllHeader(String name){
+			List<Header> fields = new ArrayList<Header>();
+			for(Header h: getAll()){
+				if(h.nameMatches(name)){
+					fields.add(h);
+				}
+			}
+			return Collections.unmodifiableCollection(fields);
 		}
 
 		// ======================================================================
@@ -396,6 +520,14 @@ public class Message implements Serializable {
 		private final String value;
 
 		// ==================================================================
+		// Parsed Value
+		// ==================================================================
+		/**
+		 * main value and attribute values
+		 */
+		private transient Map<String,String> parsedValue = null;
+
+		// ==================================================================
 		// Constructor
 		// ==================================================================
 		/**
@@ -432,6 +564,72 @@ public class Message implements Serializable {
 		 */
 		public String getValue() {
 			return value;
+		}
+
+		// ==================================================================
+		// Refer Main Value
+		// ==================================================================
+		/**
+		 * このヘッダフィールドのメイン値を参照します。
+		 *
+		 * @return メイン値
+		 */
+		public String getMainValue(){
+			Map<String,String> map = getParsedValue();
+			return map.get(null);
+		}
+
+		// ==================================================================
+		// Refer Attribute Value
+		// ==================================================================
+		/**
+		 * このヘッダ値の属性値を参照します。
+		 * 属性名に該当する値が設定されていない場合は null を返します。
+		 *
+		 * @param name attribute name
+		 * @return attribute value of this field
+		 */
+		public String getAttribute(String name){
+			Map<String,String> map = getParsedValue();
+			return map.get(name.toLowerCase());
+		}
+
+		// ==================================================================
+		// Parse Value
+		// ==================================================================
+		/**
+		 * このヘッダの値をメイン値、属性値に解析して返します。
+		 *
+		 * @return parsed value of this header field
+		 */
+		private Map<String,String> getParsedValue(){
+			if(parsedValue == null){
+				Map<String,String> map = new HashMap<String, String>();
+				CharBuffer buffer = CharBuffer.wrap(getValue());
+
+				// メイン値の参照
+				String mainValue = next(buffer);
+				map.put(null, mainValue);
+
+				// 属性値の参照
+				while(true){
+					String attr = next(buffer);
+					if(attr == null){
+						break;
+					}
+					int sep = attr.indexOf('=');
+					if(sep >= 0){
+						String name = attr.substring(0, sep).trim();
+						String value = stripQuote(attr.substring(sep+1).trim());
+						map.put(name.toLowerCase(), value);
+					} else {
+						map.put(attr.toLowerCase(), "");
+					}
+				}
+
+				parsedValue = map;
+			}
+			return parsedValue;
 		}
 
 		// ==================================================================
