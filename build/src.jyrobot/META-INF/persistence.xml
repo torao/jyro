@@ -4,7 +4,7 @@
 		<class>org.koiroha.jyrobot.model.JPASession</class>
 		<class>org.koiroha.jyrobot.model.JPARequest</class>
 		<properties>
-			<property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/jyro"/>
+			<property name="javax.persistence.jdbc.url" value="jdbc:mysql://cumin:3306/jyro"/>
 			<property name="javax.persistence.jdbc.user" value="mysql"/>
 			<property name="javax.persistence.jdbc.password" value="mysql"/>
 			<property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>

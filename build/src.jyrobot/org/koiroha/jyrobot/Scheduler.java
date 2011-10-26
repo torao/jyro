@@ -17,6 +17,7 @@ import java.util.List;
 import javax.persistence.*;
 
 import org.apache.log4j.Logger;
+import org.koiroha.jyro.util.Util;
 import org.koiroha.jyrobot.Session.Request;
 import org.koiroha.jyrobot.model.*;
 

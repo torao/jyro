@@ -34,12 +34,20 @@ public abstract class Session implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	// ======================================================================
+	// Session ID
+	// ======================================================================
+	/**
+	 * このセッションの ID です。
+	 */
+	private final long id;
+
+	// ======================================================================
 	// Profile of this session
 	// ======================================================================
 	/**
 	 * このセッションのプロフィールです。
 	 */
-	private final Profile profile;
+	private Profile profile = null;
 
 	// ======================================================================
 	// Session Cookies
@@ -53,12 +61,49 @@ public abstract class Session implements Serializable {
 	// Constructor
 	// ======================================================================
 	/**
-	 * このセッションが使用するプロフィールを指定して構築を行います。
+	 * このセッションの ID を指定して構築を行います。
 	 *
-	 * @param profile profile of this session
+	 * @param id ID of this session
 	 */
-	public Session(Profile profile) {
-		this.profile = new Profile(profile);
+	public Session(long id) {
+		this.id = id;
+		return;
+	}
+
+	// ======================================================================
+	// Refer ID
+	// ======================================================================
+	/**
+	 * このセッションの ID を参照します。
+	 *
+	 * @return id ID of this session
+	 */
+	public long getId() {
+		return id;
+	}
+
+	// ======================================================================
+	// Refer profile
+	// ======================================================================
+	/**
+	 * プロファイルを参照します。
+	 *
+	 * @return profile profile that this session uses
+	 */
+	public Profile getProfile() {
+		return profile;
+	}
+
+	// ======================================================================
+	// Set profile
+	// ======================================================================
+	/**
+	 * プロファイルを設定します。
+	 *
+	 * @param profile profile that this session uses
+	 */
+	public void setProfile(Profile profile) {
+		this.profile = profile;
 		return;
 	}
 
@@ -76,6 +121,18 @@ public abstract class Session implements Serializable {
 		Request request = new Request(profile, url);
 
 		return request;
+	}
+
+	// ======================================================================
+	// Close Session
+	// ======================================================================
+	/**
+	 * このセッションをクローズします。
+	 *
+	 * @throws CrawlerException セッションのクローズに失敗した場合
+	 */
+	public void close() throws CrawlerException{
+		return;
 	}
 
 	// ======================================================================

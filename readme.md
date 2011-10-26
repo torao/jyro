@@ -9,6 +9,7 @@ The goal of Jyro Project is to implement Web Crawler and supply distributed plat
 * [Apache HttpComponents 4.1.1](http://hc.apache.org/)
 * [Apache Log4j 1.2.16](http://logging.apache.org/log4j/)
 * [Apache Commons DBCP 1.4](http://commons.apache.org/dbcp/)
+* [snameyaml](http://code.google.com/p/snakeyaml/)
 
 # License
 All project source and binaries are available under Apache License, Version 2.0.

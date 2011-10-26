@@ -23,7 +23,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 import org.koiroha.jyro.Jyro;
-import org.koiroha.jyro.util.IO;
+import org.koiroha.jyro.util.*;
 import org.w3c.dom.*;
 
 

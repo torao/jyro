@@ -7,7 +7,7 @@
  *                                           takami torao <koiroha@gmail.com>
  *                                                   http://www.bjorfuan.com/
  */
-package org.koiroha.jyrobot;
+package org.koiroha.jyro.util;
 
 import java.io.*;
 import java.lang.management.*;
@@ -26,7 +26,7 @@ import org.apache.log4j.Logger;
  * @author Takami Torao
  * @since 2011/08/28 Java SE 6
  */
-final class Util {
+public final class Util {
 
 	// ======================================================================
 	// Log Output
@@ -96,13 +96,13 @@ final class Util {
 	}
 
 	// ======================================================================
-	// デフォルトポートの参照
+	// Refer Default Port
 	// ======================================================================
 	/**
 	 * URL スキームに対するデフォルトのポートを参照します。
 	 *
-	 * @param scheme URL スキーム
-	 * @return デフォルトポート
+	 * @param scheme URL scheme
+	 * @return default port
 	 */
 	public static int getDefaultPort(String scheme){
 		scheme = scheme.toLowerCase();
@@ -114,14 +114,15 @@ final class Util {
 	}
 
 	// ======================================================================
-	// デフォルトポートの判定
+	// Evaluate Default Port
 	// ======================================================================
 	/**
 	 * 指定されたポート番号が URL スキームに対するデフォルトのポートかを判定
 	 * します。
 	 *
-	 * @param scheme URL スキーム
-	 * @param port ポート
+	 * @param scheme URL scheme
+	 * @param port port number
+	 * @return true if specified port number is default port for scheme
 	 */
 	public static boolean isDefaultPort(String scheme, int port){
 		scheme = scheme.toLowerCase();
@@ -133,13 +134,13 @@ final class Util {
 	}
 
 	// ======================================================================
-	// オブジェクトのクローズ
+	// Close Objects
 	// ======================================================================
 	/**
 	 * 入出力ストリームやデータベースリソースを例外なしでクローズするための
 	 * ユーティリティ機能です。
 	 *
-	 * @param obj クローズするオブジェクト
+	 * @param objs the objects array to close
 	 */
 	public static void close(Object... objs){
 		for(Object obj: objs){
@@ -200,4 +201,5 @@ final class Util {
 	public static long getUptime(){
 		return RUNTIME.getUptime();
 	}
+
 }

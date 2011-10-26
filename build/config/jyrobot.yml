@@ -1,0 +1,15 @@
+# 
+scheduler:
+  class: org.koiroha.jyro.bot.JdbcScheduler
+  site_access_interval: 86400000
+  session_queue:
+    class: org.koiroha.jyro.bot.JdbcSessionQueue
+    queue_polling_interval: 1000
+    datasource:
+      url: jdbc:mysql://cumin:3306/jyro
+      user: mysql
+      password: mysql
+      driver: com.mysql.jdbc.Driver
+crawler:
+  max_content_length: 1028576
+  request_interval: 1000

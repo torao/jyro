@@ -9,13 +9,17 @@
  */
 package org.koiroha.jyro.util;
 
+import java.io.IOException;
+import java.net.URL;
 import java.util.*;
 
+import javax.xml.parsers.*;
 import javax.xml.xpath.*;
 
 import org.apache.log4j.Logger;
 import org.koiroha.xml.DefaultNamespaceContext;
 import org.w3c.dom.*;
+import org.xml.sax.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // XmlBeanWrapper: XML-Bean Wrapper
@@ -59,6 +63,19 @@ public class XmlBeanAdapter {
 	 * XML namespace context.
 	 */
 	private final DefaultNamespaceContext ns = new DefaultNamespaceContext();
+
+	// ======================================================================
+	// Constructor
+	// ======================================================================
+	/**
+	 * @param url xml document url
+	 * @throws IOException if fail to read stream
+	 * @throws SAXException if not well-formed xml
+	 */
+	public XmlBeanAdapter(URL url) throws IOException, SAXException{
+		this(parse(url));
+		return;
+	}
 
 	// ======================================================================
 	// Constructor
@@ -267,6 +284,29 @@ public class XmlBeanAdapter {
 			return (Boolean)xpath.evaluate(expr, node, XPathConstants.BOOLEAN);
 		} catch(XPathException ex){
 			throw new IllegalStateException("invalid xpath expression (this maybe bug): " + expr, ex);
+		}
+	}
+
+	// ======================================================================
+	// Parse XML Document
+	// ======================================================================
+	/**
+	 * Parse XML document from the stream for specified url and returns DOM.
+	 *
+	 * @param url URL of xml document
+	 * @throws IOException if fail to read stream
+	 * @throws SAXException if not well-formed xml
+	 * @return xml document
+	 */
+	public static Document parse(URL url) throws IOException, SAXException {
+		InputSource is = new InputSource(url.openStream());
+		is.setSystemId(url.toString());
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		try {
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			return builder.parse(is);
+		} catch(ParserConfigurationException ex){
+			throw new IllegalStateException(ex);
 		}
 	}
 
