@@ -12,6 +12,7 @@ package org.koiroha.jyro.util;
 import java.io.*;
 import java.lang.management.*;
 import java.lang.reflect.*;
+import java.nio.ByteBuffer;
 import java.sql.*;
 import java.util.*;
 
@@ -217,6 +218,45 @@ public final class Util {
 			Util.class.getClassLoader(),
 			new Class<?>[]{ Connection.class },
 			new IH(con));
+	}
+
+	public static InputStream wrap(final ByteBuffer buf){
+		return new InputStream(){
+			@Override
+			public synchronized int read() throws IOException {
+				if (! buf.hasRemaining()) {
+						return -1;
+				}
+				return buf.get();
+			}
+			@Override
+			public synchronized int read(byte[] bytes, int off, int len) throws IOException {
+				len = Math.min(len, buf.remaining());
+				buf.get(bytes, off, len);
+				return len;
+			}
+		};
+	}
+
+	// ======================================================================
+	// Name Conversion from YAML to Property Name
+	// ======================================================================
+	/**
+	 * 指定された名前を Java Beans のプロパティ名形式に変換します。
+	 * このメソッドは "foo_bar_xyz" に対して "fooBarXyz" を返します。
+	 *
+	 * @param name yaml name
+	 * @return converted property name
+	 */
+	public static String yaml2propertyName(String name){
+		StringBuilder buffer = new StringBuilder();
+		String[] names = name.split("_+");
+		buffer.append(names[0].toLowerCase());
+		for(int i=1; i<names.length; i++){
+			buffer.append(Character.toUpperCase(names[i].charAt(0)));
+			buffer.append(names[i].substring(1).toLowerCase());
+		}
+		return buffer.toString();
 	}
 
 	private static class IH implements InvocationHandler {

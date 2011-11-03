@@ -132,6 +132,26 @@ public class Config {
 	}
 
 	// ======================================================================
+	// Retrieve Boolean
+	// ======================================================================
+	/**
+	 * 指定されたパスの boolean 値を参照します。
+	 *
+	 * @param names name for Map, or index for List
+	 * @return specified int value, or false if not found
+	 */
+	public boolean getBoolean(Object... names){
+		String value = getString(names);
+		if(value == null){
+			return false;
+		}
+		if(value.equalsIgnoreCase("true") || value.equalsIgnoreCase("yes") || value.equalsIgnoreCase("on")){
+			return true;
+		}
+		return false;
+	}
+
+	// ======================================================================
 	// Retrieve Map
 	// ======================================================================
 	/**
@@ -278,6 +298,7 @@ public class Config {
 				return null;
 			}
 		}
+		logger.debug(getPathname(names) + "=" + value);
 		return value;
 	}
 

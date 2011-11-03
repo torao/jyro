@@ -42,7 +42,7 @@ public interface BotClient {
 	 * @param session the session to start
 	 * @return false if skip crawling this session
 	 */
-	public boolean startSession(Session session);
+	public boolean sessionStart(Session session);
 
 	// ======================================================================
 	// Notify End Session
@@ -52,7 +52,7 @@ public interface BotClient {
 	 *
 	 * @param session the session to start
 	 */
-	public void endSession(Session session);
+	public void sessionEnd(Session session);
 
 	// ======================================================================
 	// Notify Start Request
@@ -60,11 +60,10 @@ public interface BotClient {
 	/**
 	 * 指定された URL に対するリクエストが行われる時に呼び出されます。
 	 *
-	 * @param session session over request
-	 * @param url URL to request
+	 * @param request request
 	 * @return false if client has no need to request/response
 	 */
-	public boolean startRequest(Session session, URL url);
+	public boolean prepareRequest(Request request);
 
 	// ======================================================================
 	// Notify End Request
@@ -72,11 +71,10 @@ public interface BotClient {
 	/**
 	 * 指定されたリクエスト/レスポンスが完了した時に呼び出されます。
 	 *
-	 * @param session session over request
 	 * @param request request
 	 * @param response response
 	 */
-	public void endRequest(Session session, Request request, Response response);
+	public void requestSuccess(Request request, Response response);
 
 	// ======================================================================
 	// Notify Fail to Request
@@ -84,11 +82,10 @@ public interface BotClient {
 	/**
 	 * 指定されたリクエストが例外により失敗した時に呼び出されます。
 	 *
-	 * @param session session over request
 	 * @param request request
 	 * @param ex occurred exception
 	 */
-	public void requestFailed(Session session, Request request, Throwable ex);
+	public void requestFailed(Request request, Throwable ex);
 
 	// ======================================================================
 	// Evaluate URL
@@ -101,17 +98,6 @@ public interface BotClient {
 	 * @return true if application use specified URL in after crawling
 	 */
 	public boolean accept(URL url);
-
-	// ======================================================================
-	// Prepare Request
-	// ======================================================================
-	/**
-	 * リクエストの準備のために呼び出されます。
-	 * リクエストに対してヘッダの追加を行うことができます。
-	 *
-	 * @param request リクエスト
-	 */
-	public void prepare(Request request);
 
 	// ======================================================================
 	// Parse Content
@@ -127,16 +113,5 @@ public interface BotClient {
 	 * @throws CrawlerException if fail to parse content
 	 */
 	public Iterable<URL> parse(Session session, Request request, Response response) throws CrawlerException;
-
-	// ======================================================================
-	// Notify Failure
-	// ======================================================================
-	/**
-	 * リクエストで例外が発生したときに呼び出されます。
-	 *
-	 * @param request object that fail to request
-	 * @param ex exception
-	 */
-	public void failure(Request request, Throwable ex);
 
 }

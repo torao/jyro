@@ -189,7 +189,7 @@ public final class Jyrobot {
 	 * @throws InterruptedException if interrupted while waiting crawler stop
 	 */
 	public synchronized void shutdown(long maxWait) throws InterruptedException{
-		logger.debug("stop()");
+		logger.debug("shutdown()");
 
 		// 既に処理が停止している場合はなにもしない
 		if(crawlers == null){
@@ -307,6 +307,7 @@ public final class Jyrobot {
 		// インスタンスの作成
 		final Jyrobot jyrobot = newInstance(config);
 		for(URL url: urls){
+			jyrobot.getSessionQueue().reset(url, System.currentTimeMillis());
 			jyrobot.getSessionQueue().offer(url);
 		}
 		jyrobot.start();

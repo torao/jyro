@@ -2,20 +2,20 @@
 session_queue:
   class: org.koiroha.jyro.bot.JdbcSessionQueue
   site_access_interval: 86400000
+  persistent_polling: false
   queue_polling_interval: 1000
   datasource:
     url: jdbc:mysql://cumin:3306/jyro
     username: mysql
     password: mysql
-    driverClassName: com.mysql.jdbc.Driver
+    driver_class_name: com.mysql.jdbc.Driver
 crawler:
-  parallel: 1
+  parallel: 10
   request_interval: 1500
   clients:
     - id: sample
       class: sample.SampleBotClient
-
-user-agent:
+user_agent:
   connection_timeout: 30000
   read_timeout: 10000
   max_redirects: 10

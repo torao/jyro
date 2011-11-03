@@ -38,14 +38,6 @@ public class Crawler implements Runnable {
 	private static final Logger logger = Logger.getLogger(Crawler.class);
 
 	// ======================================================================
-	// Empty Byte Array
-	// ======================================================================
-	/**
-	 * 長さ 0 の配列です。
-	 */
-//	private static final byte[] EMPTY_BYTES = new byte[0];
-
-	// ======================================================================
 	// Jyrobot
 	// ======================================================================
 	/**
@@ -105,11 +97,14 @@ public class Crawler implements Runnable {
 
 				// スケジューラから次のセッションを取得
 				Session session = jyrobot.getSessionQueue().poll();
+				if(session == null){
+					break;
+				}
 				logger.info("start crawling session for " + session);
 
 				// クローリング開始を通知
 				for(BotClient c: jyrobot.getBotClients()){
-					c.startSession(session);
+					c.sessionStart(session);
 				}
 
 				// クローリング処理を実行
@@ -135,7 +130,7 @@ public class Crawler implements Runnable {
 
 				// クローリング終了を通知
 				for(BotClient c: jyrobot.getBotClients()){
-					c.endSession(session);
+					c.sessionEnd(session);
 				}
 			}
 		} catch(InterruptedException ex){
@@ -196,7 +191,7 @@ public class Crawler implements Runnable {
 		// リクエスト開始を通知してコールバックが必要なクライアントを取得
 		List<BotClient> clients = new ArrayList<BotClient>();
 		for(BotClient c: jyrobot.getBotClients()){
-			if(c.startRequest(session, request.getUrl())){
+			if(c.prepareRequest(request)){
 				clients.add(c);
 			}
 		}
@@ -211,7 +206,7 @@ public class Crawler implements Runnable {
 			// リクエストを実行し結果を通知
 			Response response = request.get();
 			for(BotClient c: clients){
-				c.endRequest(session, request, response);
+				c.requestSuccess(request, response);
 			}
 
 			// レスポンスから URL を取得
@@ -227,185 +222,12 @@ public class Crawler implements Runnable {
 				jyrobot.getSessionQueue().offer(url);
 			}
 		} catch(CrawlerException ex){
+			logger.error("", ex);
 			for(BotClient c: clients){
-				c.requestFailed(session, request, ex);
+				c.requestFailed(request, ex);
 			}
 		}
 		return;
 	}
-//
-//	// ======================================================================
-//	// Retrieve Content
-//	// ======================================================================
-//	/**
-//	 * 指定された URI の内容を取得します。
-//	 *
-//	 * @param uri URI of content
-//	 * @return content
-//	 * @throws IOException if fail to retrieve content from specified uri
-//	*/
-//	private Content retrieve(URI uri) throws IOException{
-//		logger.debug("retrieve(" + uri + ")");
-//
-//		// リクエストを準備
-//		HttpClient client = new DefaultHttpClient();
-//		HttpGet request = new HttpGet(uri);
-//		request.setHeader("User-Agent", getUserAgent());
-//		// TODO additional header not implemented
-//
-//		HttpResponse response = null;
-//		byte[] binary = EMPTY_BYTES;
-//		InputStream in = null;
-//		try {
-//
-//			// read response content
-//			response = client.execute(request);
-//			HttpEntity entity = response.getEntity();
-//			if(entity != null){
-//
-//				// read content
-//				in = entity.getContent();
-//				ByteArrayOutputStream out = new ByteArrayOutputStream();
-//				byte[] buffer = new byte[1024];
-//				long remaining = getMaxContentLength();
-//				while(true){
-//					int len = (int)Math.min(buffer.length, remaining);
-//					len = in.read(buffer, 0, len);
-//					if(len < 0){
-//						break;
-//					}
-//					out.write(buffer, 0, len);
-//					remaining -= len;
-//				}
-//				binary = out.toByteArray();
-//			}
-//		} finally {
-//			IO.close(in);
-//		}
-//
-//		// リクエストの構築
-//		Content.Request req = new Content.Request(
-//				request.getRequestLine().getMethod(),
-//				request.getURI(),
-//				request.getRequestLine().getProtocolVersion().toString());
-//		for(Header header: request.getAllHeaders()){
-//			req.addHeader(header.getName(), header.getValue());
-//		}
-//		req.setContent(EMPTY_BYTES);	// TODO how to retrieve query string when post?
-//
-//		// レスポンスの構築
-//		Content.Response res = new Content.Response(
-//				response.getStatusLine().getProtocolVersion().toString(),
-//				response.getStatusLine().getStatusCode(),
-//				response.getStatusLine().getReasonPhrase());
-//		for(Header header: response.getAllHeaders()){
-//			res.addHeader(header.getName(), header.getValue());
-//		}
-//		res.setContent(binary);
-//
-//		//
-//		return new Content(uri, req, res);
-//	}
-//
-//	// ======================================================================
-//	// Extract URI
-//	// ======================================================================
-//	/**
-//	 * 指定された内容に含まれている URI を抽出します。
-//	 *
-//	 * @param content content to extract urls
-//	 * @return list of url
-//	*/
-//	private Set<URI> extractURL(Content content) {
-//		if("text/html".equals(content.response.getContentType())){
-//			return extractURLFromHTML(content);
-//		}
-//		return Collections.emptySet();
-//	}
-//
-//	// ======================================================================
-//	// Extract URI
-//	// ======================================================================
-//	/**
-//	 * 指定された HTML に含まれている URI を抽出します。
-//	 *
-//	 * @param content content to extract urls
-//	 * @return list of url
-//	*/
-//	private Set<URI> extractURLFromHTML(Content content) {
-//		Set<URI> urls = new HashSet<URI>();
-//		// TODO <base> not considered
-//
-//		// HTML ドキュメントの参照
-//		Document doc = content.getDocument();
-//		Charset charset = content.getDocumentCharset();
-//		URI base = content.getURI();
-//		XPath xpath = XPathFactory.newInstance().newXPath();
-//		try {
-//			logger.debug(base);
-//			for(String expr: Util.HREF_XPATH){
-//				NodeList nl = (NodeList)xpath.evaluate(expr, doc, XPathConstants.NODESET);
-//				for(int i=0; i<nl.getLength(); i++){
-//					String href = ((Attr)nl.item(i)).getValue();
-//					URI uri = getURL(base, href, charset);
-//					if(uri != null && adapter.accept(content, uri) && !urls.contains(uri)){
-//						logger.debug("  --> " + uri + " (" + href + ")");
-//						urls.add(uri);
-//					}
-//				}
-//			}
-//		} catch(XPathException ex){
-//			throw new IllegalStateException(ex);
-//		}
-//
-//		return urls;
-//	}
-//
-//	// ======================================================================
-//	// Parse URI
-//	// ======================================================================
-//	/**
-//	 * 文字列形式の URI からインスタンスを構築します。
-//	 *
-//	 * @param base base uri
-//	 * @param href attribute value of href, src or else
-//	 * @param charset page character set
-//	 * @return absolute url
-//	*/
-//	private static URI getURL(URI base, String href, Charset charset) {
-//		href = href.trim();
-//
-//		// TODO remove hash
-//
-//		// URL に含まれる日本語などの文字をエンコード
-//		StringBuilder buffer = new StringBuilder();
-//		for(int i=0; i<href.length(); i++){
-//			char ch = href.charAt(i);
-//			if(ch <= 0xFF && !Character.isISOControl(ch)){
-//				buffer.append(ch);
-//			} else {
-//				String str = String.valueOf(ch);
-//				byte[] bin = str.getBytes(charset);
-//				for(int j=0; j<bin.length; j++){
-//					buffer.append('%');
-//					buffer.append(Integer.toString((bin[j] >> 4) & 0x0F, 16));
-//					buffer.append(Integer.toString((bin[j] >> 0) & 0x0F, 16));
-//				}
-//			}
-//		}
-//		href = buffer.toString();
-//
-//		// URI がサポートしている形式であれば返す
-//		try {
-//			URI sub = new URI(href);
-//			URI uri = base.resolve(sub);
-//			if(Util.getDefaultPort(uri.getScheme()) >= 0){
-//				return uri;
-//			}
-//		} catch(URISyntaxException ex){
-//			logger.debug("unsupported uri detected: " + href);
-//		}
-//		return null;
-//	}
 
 }

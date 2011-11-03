@@ -12,6 +12,17 @@ package org.koiroha.jyro.bot;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.text.NumberFormat;
+
+import javax.xml.parsers.DocumentBuilder;
+
+import org.apache.log4j.Logger;
+import org.koiroha.jyro.util.Util;
+import org.koiroha.xml.Xml;
+import org.koiroha.xml.parser.HTMLDocumentBuilderFactory;
+import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Response: レスポンス
@@ -32,6 +43,14 @@ public class Response extends Message{
 	 * Serial version of this class.
 	 */
 	private static final long serialVersionUID = 1L;
+
+	// ======================================================================
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output of this class.
+	 */
+	private static final Logger logger = Logger.getLogger(Response.class);
 
 	// ======================================================================
 	// Request
@@ -72,6 +91,14 @@ public class Response extends Message{
 	 * レスポンス内容です。
 	 */
 	private ByteBuffer content = null;
+
+	// ======================================================================
+	// Document
+	// ======================================================================
+	/**
+	 * HTML/XML形式のドキュメントです。
+	 */
+	private Document document = null;
 
 	// ======================================================================
 	// Constructor
@@ -174,9 +201,52 @@ public class Response extends Message{
 				baos.write(buffer, 0, len);
 				request.getSession().increaseTotalRetrieval(len);
 			}
-			content = ByteBuffer.wrap(baos.toByteArray()).asReadOnlyBuffer();
+			byte[] bin = baos.toByteArray();
+			content = ByteBuffer.wrap(bin).asReadOnlyBuffer();
+
+			// 読み込みをログ出力
+			NumberFormat nf = NumberFormat.getNumberInstance();
+			logger.debug("retrieve content: " + nf.format(bin.length) + " bytes; " + request);
 		}
 		return content;
+	}
+
+	// ======================================================================
+	// Refer Response Content
+	// ======================================================================
+	/**
+	 * このレスポンスの内容を参照します。
+	 *
+	 * @return request request
+	 * @throws IOException if fail to read content
+	 */
+	public Document getDocument() throws IOException{
+		if(document == null){
+
+			// レスポンス内容を入力ストリームとして参照
+			// TODO ByteBuffer -> InputStream のアダプタ
+			ByteBuffer buf = getContent();
+			InputStream in = Util.wrap(buf);
+
+			// ヘッダから文字セットを参照
+			String charset = "UTF-8";
+			Charset cs = Xml.getCharset(header.get("Content-Type"));
+			if(cs != null){
+				charset = cs.name();
+			}
+
+			// HTML/XML の解析
+			try {
+				HTMLDocumentBuilderFactory factory = new HTMLDocumentBuilderFactory();
+				DocumentBuilder builder = factory.newDocumentBuilder();
+				InputSource is = factory.guessInputSource(in, charset, buf.capacity());
+				document = builder.parse(is);
+			} catch(Exception ex){
+				// NOTE: HTMLDocumentBuilder is not throw any exception
+				throw new IllegalStateException(ex);
+			}
+		}
+		return document;
 	}
 
 }

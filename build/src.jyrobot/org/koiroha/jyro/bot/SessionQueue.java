@@ -46,15 +46,17 @@ public interface SessionQueue {
 	 * @return the number of sessions
 	 * @throws CrawlerException if fail to reset sessions
 	 */
-	public int resetAllSessions() throws CrawlerException;
+	public int resetAll() throws CrawlerException;
 
 	// ======================================================================
 	// Retrieve Next Session
 	// ======================================================================
 	/**
 	 * このスケジューラーから次に処理を行うセッションを参照します。
+	 * これ以上処理を行うセッションが存在しない場合 (クローラーを終了すべき場合) は null を返します。
 	 *
-	 * @return the session that will execute next
+	 * @return the session that will execute next, or null if no more
+	 * available session.
 	 * @throws InterruptedException if interrupted in waiting
 	 */
 	public Session poll() throws InterruptedException;
@@ -69,5 +71,22 @@ public interface SessionQueue {
 	 * @throws CrawlerException if fail to store request url
 	 */
 	public void offer(URL url) throws CrawlerException;
+
+	// ======================================================================
+	// Reset Crawling URL
+	// ======================================================================
+	/**
+	 * 指定された URL がキューに存在する場合、クローリングスケジュールをリセットし未アクセス状態にします。
+	 * このメソッドの呼び出しにより指定された URL は早い時期にクローリングが行われるようになります。
+	 * URL が存在しない場合や既に実行中の場合は何も行わず false を返します。
+	 *
+	 * @param url URL to reset crawling schedule
+	 * @param zombie accessed before timestamp of session that recognized
+	 * as zombie and force reset in milliseconds
+	 * @return true if crawling schedule reset normally, false if specified
+	 * URL is not enqueued or now on crawling
+	 * @throws CrawlerException if fail to reset schedule
+	 */
+	public boolean reset(URL url, long zombie) throws CrawlerException;
 
 }

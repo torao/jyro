@@ -9,11 +9,14 @@
  */
 package sample;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
+import java.net.*;
+import java.util.*;
 
+import javax.xml.xpath.*;
+
+import org.apache.log4j.Logger;
 import org.koiroha.jyro.bot.*;
+import org.w3c.dom.*;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // SampleBotClient:
@@ -27,6 +30,14 @@ import org.koiroha.jyro.bot.*;
 public class SampleBotClient implements BotClient {
 
 	// ======================================================================
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output of this class.
+	 */
+	private static final Logger logger = Logger.getLogger(SampleBotClient.class);
+
+	// ======================================================================
 	//
 	// ======================================================================
 	/**
@@ -34,8 +45,7 @@ public class SampleBotClient implements BotClient {
 	 */
 	@Override
 	public void configure(Config config) {
-		// TODO Auto-generated method stub
-
+		logger.info("configure(" + config + ")");
 	}
 
 	// ======================================================================
@@ -46,8 +56,8 @@ public class SampleBotClient implements BotClient {
 	 * @return
 	 */
 	@Override
-	public boolean startSession(Session session) {
-		// TODO Auto-generated method stub
+	public boolean sessionStart(Session session) {
+		logger.info("sessionStart(" + session + ")");
 		return true;
 	}
 
@@ -58,9 +68,8 @@ public class SampleBotClient implements BotClient {
 	 * @param session
 	 */
 	@Override
-	public void endSession(Session session) {
-		// TODO Auto-generated method stub
-
+	public void sessionEnd(Session session) {
+		logger.info("sessionEnd(" + session + ")");
 	}
 
 	// ======================================================================
@@ -72,8 +81,8 @@ public class SampleBotClient implements BotClient {
 	 * @return
 	 */
 	@Override
-	public boolean startRequest(Session session, URL url) {
-		// TODO Auto-generated method stub
+	public boolean prepareRequest(Request request) {
+		logger.info("prepareRequest(" + request + ")");
 		return true;
 	}
 
@@ -86,12 +95,8 @@ public class SampleBotClient implements BotClient {
 	 * @param response
 	 */
 	@Override
-	public void endRequest(Session session, Request request, Response response) {
-		try {
-			response.getContent();
-		} catch(IOException ex){
-
-		}
+	public void requestSuccess(Request request, Response response) {
+		logger.info("endRequest(" + request + "," + response + ")");
 	}
 
 	// ======================================================================
@@ -103,9 +108,8 @@ public class SampleBotClient implements BotClient {
 	 * @param ex
 	 */
 	@Override
-	public void requestFailed(Session session, Request request, Throwable ex) {
-		// TODO Auto-generated method stub
-
+	public void requestFailed(Request request, Throwable ex) {
+		logger.info("requestFailed(" + request + "," + ex + ")");
 	}
 
 	// ======================================================================
@@ -117,20 +121,8 @@ public class SampleBotClient implements BotClient {
 	 */
 	@Override
 	public boolean accept(URL url) {
-		// TODO Auto-generated method stub
+		logger.info("accept(" + url + ")");
 		return true;
-	}
-
-	// ======================================================================
-	//
-	// ======================================================================
-	/**
-	 * @param request
-	 */
-	@Override
-	public void prepare(Request request) {
-		// TODO Auto-generated method stub
-
 	}
 
 	// ======================================================================
@@ -144,23 +136,27 @@ public class SampleBotClient implements BotClient {
 	 * @throws CrawlerException
 	 */
 	@Override
-	public Iterable<URL> parse(Session session, Request request,
-			Response response) throws CrawlerException {
-		// TODO Auto-generated method stub
-		return new ArrayList<URL>();
-	}
+	public Iterable<URL> parse(Session session, Request request, Response response) throws CrawlerException {
+		logger.info("parse(" + session + "," + request + "," + response + ")");
+		URL base = request.getUrl();
+		List<URL> urls = new ArrayList<URL>();
+		try {
+			Document doc = response.getDocument();
 
-	// ======================================================================
-	//
-	// ======================================================================
-	/**
-	 * @param request
-	 * @param ex
-	 */
-	@Override
-	public void failure(Request request, Throwable ex) {
-		// TODO Auto-generated method stub
-
+			XPath xpath = XPathFactory.newInstance().newXPath();
+			NodeList nl = (NodeList)xpath.evaluate(
+				"//a/@href", doc, XPathConstants.NODESET);
+			for(int i=0; i<nl.getLength(); i++){
+				try {
+					urls.add(new URL(base, nl.item(i).getTextContent()));
+				} catch(MalformedURLException ex){
+					ex.printStackTrace();
+				}
+			}
+		} catch(Exception ex){
+			ex.printStackTrace();
+		}
+		return urls;
 	}
 
 }

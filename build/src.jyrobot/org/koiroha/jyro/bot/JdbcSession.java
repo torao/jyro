@@ -176,7 +176,7 @@ class JdbcSession extends Session {
 			stmt.setInt(2, getVisit());
 			rs = stmt.executeQuery();
 			while(rs.next()){
-				String path = rs.getString("path");
+				String path = "/" + rs.getString("path");
 
 				// 訪問回数の更新
 				rs.updateInt("visit", getVisit());

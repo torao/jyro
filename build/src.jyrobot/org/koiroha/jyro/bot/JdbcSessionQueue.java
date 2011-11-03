@@ -32,7 +32,7 @@ import org.koiroha.jyro.util.Util;
  * @author Takami Torao
  * @since 2011/08/26 Java SE 6
  */
-public class JdbcSessionQueue implements SessionQueue {
+public class JdbcSessionQueue extends AbstractSessionQueue {
 
 	// ======================================================================
 	// Log Output
@@ -41,22 +41,6 @@ public class JdbcSessionQueue implements SessionQueue {
 	 * Log output of this class.
 	 */
 	private static final Logger logger = Logger.getLogger(JdbcSessionQueue.class);
-
-	// ======================================================================
-	// Configuration
-	// ======================================================================
-	/**
-	 * このセッションキューの設定です。
-	 */
-	protected Jyrobot jyrobot = null;
-
-	// ======================================================================
-	// Configuration
-	// ======================================================================
-	/**
-	 * このセッションキューの設定です。
-	 */
-	protected Config config = null;
 
 	// ======================================================================
 	// Application ID
@@ -95,17 +79,21 @@ public class JdbcSessionQueue implements SessionQueue {
 	 */
 	@Override
 	public void configure(Jyrobot jyrobot, Config config) throws CrawlerException{
+		super.configure(jyrobot, config);
 		logger.debug("configure(" + config + ")");
-		this.jyrobot = jyrobot;
-		this.config = config;
 
 		// データソース設定の参照
 		Object value = config.getObject("datasource");
 		if(value instanceof Map<?,?>){
+
+			// データソース初期化用のプロパティを構築
 			Properties prop = new Properties();
 			for(Map.Entry<?,?> e: ((Map<?,?>)value).entrySet()){
-				prop.setProperty(e.getKey().toString(), e.getValue().toString());
+				String name = Util.yaml2propertyName(e.getKey().toString());
+				prop.setProperty(name, e.getValue().toString());
 			}
+
+			// データソースの構築
 			try {
 				this.dataSource = BasicDataSourceFactory.createDataSource(prop);
 			} catch(Exception ex){
@@ -125,123 +113,6 @@ public class JdbcSessionQueue implements SessionQueue {
 	}
 
 	// ======================================================================
-	// Refer Polling Interval
-	// ======================================================================
-	/**
-	 * セッションキューのポーリング間隔をミリ秒で参照します。
-	 *
-	 * @return queue polling interval in milliseconds
-	 */
-	public long getQueuePollingInterval() {
-		return config.getLong("queue_polling_interval");
-	}
-
-	// ======================================================================
-	// Set Polling Interval
-	// ======================================================================
-	/**
-	 * セッションキューのポーリング間隔をミリ秒で設定します。
-	 *
-	 * @param queuePollingInterval queue polling interval in milliseconds
-	 */
-	public void setQueuePollingInterval(long queuePollingInterval) {
-		if(queuePollingInterval <= 0){
-			throw new IllegalArgumentException("invalid polling interval: " + queuePollingInterval);
-		}
-		config.getMap().put("queue_polling_interval", queuePollingInterval);
-		return;
-	}
-
-	// ======================================================================
-	// Session Available Interval
-	// ======================================================================
-	/**
-	 * 前回のアクセスからセッションがクローリング対象となるまでの時間をミリ秒で参照します。
-	 *
-	 * @return session available interval in milliseconds
-	 */
-	public long getSiteAccessInterval() {
-		return config.getLong("site_access_interval");
-	}
-
-	// ======================================================================
-	// Set Polling Interval
-	// ======================================================================
-	/**
-	 * セッションキューのポーリング間隔をミリ秒で設定します。
-	 *
-	 * @param sessionAvailableInterval queue polling interval in milliseconds
-	 */
-	public void setSessionAvailableInterval(long sessionAvailableInterval) {
-		if(sessionAvailableInterval <= 0){
-			throw new IllegalArgumentException("invalid polling interval: " + sessionAvailableInterval);
-		}
-		config.getMap().put("session_available_interval", sessionAvailableInterval);
-		return;
-	}
-
-	// ======================================================================
-	// 全セッションのリセット
-	// ======================================================================
-	/**
-	 * すべてのセッションの実行中フラグと前回アクセス日時をリセットし、次回の
-	 * 処理で即時実行されるようにします。
-	 *
-	 * @throws CrawlerException if fail to reset sessions
-	 */
-	@Override
-	public int resetAllSessions() throws CrawlerException{
-		Connection con = null;
-		PreparedStatement stmt = null;
-		try {
-			con = dataSource.getConnection();
-			stmt = con.prepareStatement("UPDATE jyrobot_sessions SET activated=NULL, accessed=NULL");
-			int count = stmt.executeUpdate();
-			con.commit();
-			logger.info("reset all " + count + " sessions");
-			return count;
-		} catch(SQLException ex){
-			throw new CrawlerException(ex);
-		} finally {
-			Util.close(stmt, con);
-		}
-	}
-
-	// ======================================================================
-	// セッションの参照
-	// ======================================================================
-	/**
-	 * このスケジューラーから次のセッションを参照します。
-	 *
-	 * @return 次のセッション
-	 * @throws InterruptedException ジョブの待機中に割り込まれた場合
-	 */
-	@Override
-	public Session poll() throws InterruptedException {
-		boolean errorReported = false;
-		while(true){
-
-			// セッションの復元に成功したらそれを返す
-			try {
-				JdbcSession session = pull();
-				if(session != null){
-					logger.debug("next(): " + session);
-					return session;
-				}
-				errorReported = false;
-			} catch(SQLException ex){
-				if(! errorReported){
-					logger.fatal("unexpected exception in poll session", ex);
-				}
-				errorReported = true;
-			}
-
-			// 次のポーリングまでしばらく待機
-			java.lang.Thread.sleep(getQueuePollingInterval());
-		}
-	}
-
-	// ======================================================================
 	// Register Request URL
 	// ======================================================================
 	/**
@@ -251,7 +122,6 @@ public class JdbcSessionQueue implements SessionQueue {
 	 */
 	@Override
 	public void offer(URL url) throws CrawlerException{
-
 		Connection con = null;
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
@@ -260,18 +130,15 @@ public class JdbcSessionQueue implements SessionQueue {
 
 			// データベースに保存する情報を取得
 			URI uri = url.toURI();
-			String scheme = uri.getScheme().toLowerCase();
-			int port = uri.getPort();
-			if(port < 0){
-				port = Util.getDefaultPort(scheme);
-			}
-			String host = uri.getHost().toLowerCase();
+			Key key = new Key(url);
 
 			// URL に対応するセッションを取得
-			long sessionId = find(con, scheme, host, port);
+			long sessionId = find(con, key);
+
+			// セッションが存在しなければ新規に作成
 			if(sessionId < 0){
-				create(con, scheme, host, port);
-				sessionId = find(con, scheme, host, port);
+				create(con, key);
+				sessionId = find(con, key);
 			}
 
 			// パスの参照
@@ -300,19 +167,139 @@ public class JdbcSessionQueue implements SessionQueue {
 	}
 
 	// ======================================================================
+	// Reset Crawling URL
+	// ======================================================================
+	/**
+	 * 指定された URL がキューに存在する場合、クローリングスケジュールをリセットし未アクセス状態にします。
+	 * このメソッドの呼び出しにより指定された URL は早い時期にクローリングが行われるようになります。
+	 * URL が存在しない場合や既に実行中の場合は何も行わず false を返します。
+	 *
+	 * @param url URL to reset crawling schedule
+	 * @param zombie accessed before timestamp of session that recognized
+	 * as zombie and force reset
+	 * @return true if crawling schedule reset normally, false if specified
+	 * URL is not enqueued or now on crawling
+	 * @throws CrawlerException if fail to reset schedule
+	 */
+	@Override
+	public boolean reset(URL url, long zombie) throws CrawlerException{
+		logger.debug("reset(" + url + "," + zombie + ")");
+		Connection con = null;
+		PreparedStatement stmt = null;
+		try {
+			con = getConnection();
+			Key key = new Key(url);
+			stmt = con.prepareStatement(
+				"UPDATE jyrobot_sessions SET appid=NULL, accessed=NULL, activated=NULL" +
+				" WHERE scheme=? AND host=? AND port=? AND (activated IS NULL OR accessed<=?)");
+			stmt.setString(1, key.scheme);
+			stmt.setString(2, key.host);
+			stmt.setInt(3, key.port);
+			stmt.setTimestamp(4, new Timestamp(zombie));
+			int count = stmt.executeUpdate();
+			assert(count == 1 || count == 0): count;
+			con.commit();
+			return (count == 1);
+		} catch(SQLException ex){
+			throw new CrawlerException(ex);
+		} finally {
+			Util.close(stmt, con);
+		}
+	}
+
+	// ======================================================================
+	// 全セッションのリセット
+	// ======================================================================
+	/**
+	 * すべてのセッションの実行中フラグと前回アクセス日時をリセットし、次回の
+	 * 処理で即時実行されるようにします。
+	 *
+	 * @throws CrawlerException if fail to reset sessions
+	 */
+	@Override
+	public int resetAll() throws CrawlerException{
+		Connection con = null;
+		PreparedStatement stmt = null;
+		try {
+			con = getConnection();
+			stmt = con.prepareStatement("UPDATE jyrobot_sessions SET activated=NULL, accessed=NULL");
+			int count = stmt.executeUpdate();
+			con.commit();
+			logger.info("reset all " + count + " sessions");
+			return count;
+		} catch(SQLException ex){
+			throw new CrawlerException(ex);
+		} finally {
+			Util.close(stmt, con);
+		}
+	}
+
+	// ======================================================================
+	// Pull Session
+	// ======================================================================
+	/**
+	 * セッションを取得します。
+	 *
+	 * @param lastAccessBefore target session that last access before
+	 * @return next session, or null if no available session exists
+	 * @throws CrawlerException if fail to retrieve session
+	 */
+	@Override
+	protected Session take(long lastAccessBefore) throws CrawlerException{
+		logger.debug("take()");
+
+		// 絞り込みの期限を参照
+		Timestamp limit = new Timestamp(lastAccessBefore);
+
+		JdbcSession session = null;
+		Connection con = null;
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			con = getConnection();
+			stmt = con.prepareStatement(
+				"SELECT * FROM jyrobot_sessions" +
+				" WHERE activated IS NULL AND (accessed IS NULL OR accessed < ?)" +
+				" ORDER BY priority DESC, accessed ASC LIMIT 1 FOR UPDATE",
+				ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
+			stmt.setTimestamp(1, limit);
+			rs = stmt.executeQuery();
+			rs.setFetchSize(1);
+
+			String appid = java.lang.Thread.currentThread().getId() + "#" + this.appId;
+			Timestamp now = new Timestamp(System.currentTimeMillis());
+			if(rs.next()){
+				// 既存のセッションを実行状態に設定
+				rs.updateString("appid", appid);
+				rs.updateTimestamp("activated", now);
+				rs.updateTimestamp("accessed", now);
+				rs.updateInt("visit", rs.getInt("visit") + 1);
+				rs.updateRow();
+
+				// セッションを参照
+				session = new JdbcSession(jyrobot, dataSource, rs);
+			}
+			con.commit();
+		} catch(SQLException ex){
+			throw new ConfigurationException(ex);
+		} finally {
+			Util.close(rs, stmt, con);
+		}
+		return session;
+	}
+
+	// ======================================================================
 	// Find Session ID
 	// ======================================================================
 	/**
 	 * 指定された URL に対するセッション ID を参照します。
 	 *
 	 * @param con database connection
-	 * @param scheme URL scheme
-	 * @param host hostname
-	 * @param port port number
+	 * @param key session key
 	 * @return session ID, or negative value if not found
 	 * @throws SQLException if fail to execute query
 	 */
-	private long find(Connection con, String scheme, String host, int port) throws SQLException{
+	private long find(Connection con, Key key) throws SQLException{
 		long sessionId = -1;
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
@@ -320,16 +307,15 @@ public class JdbcSessionQueue implements SessionQueue {
 			stmt = con.prepareStatement(
 				"SELECT id FROM jyrobot_sessions WHERE scheme=? AND host=? AND port=?",
 				ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-			stmt.setString(1, scheme);
-			stmt.setString(2, host);
-			stmt.setInt(3, port);
+			stmt.setString(1, key.scheme);
+			stmt.setString(2, key.host);
+			stmt.setInt(3, key.port);
 			rs = stmt.executeQuery();
 			rs.setFetchSize(1);
 
 			// セッションを取得
 			if(rs.next()){
 				sessionId = rs.getLong("id");
-				assert(! rs.next()): "重複セッション検出: " + scheme + "://" + host + ":" + port;
 			}
 		} finally {
 			Util.close(rs, stmt);
@@ -344,20 +330,18 @@ public class JdbcSessionQueue implements SessionQueue {
 	 * 指定された URL に対するセッションを新規に構築します。
 	 *
 	 * @param con database connection
-	 * @param scheme URL scheme
-	 * @param host hostname
-	 * @param port port number
+	 * @param key session key
 	 * @throws SQLException if fail to execute query
 	 */
-	private void create(Connection con, String scheme, String host, int port) throws SQLException{
+	private void create(Connection con, Key key) throws SQLException{
 		Timestamp now = new Timestamp(System.currentTimeMillis());
 		PreparedStatement stmt = null;
 		try {
 			stmt = con.prepareStatement(
 				"INSERT INTO jyrobot_sessions(scheme,host,port,created) VALUES(?,?,?,?)");
-			stmt.setString(1, scheme);
-			stmt.setString(2, host);
-			stmt.setInt(3, port);
+			stmt.setString(1, key.scheme);
+			stmt.setString(2, key.host);
+			stmt.setInt(3, key.port);
 			stmt.setTimestamp(4, now);
 			stmt.executeUpdate();
 		} finally {
@@ -405,56 +389,6 @@ public class JdbcSessionQueue implements SessionQueue {
 	}
 
 	// ======================================================================
-	// Pull Session
-	// ======================================================================
-	/**
-	 * セッションを取得します。
-	 *
-	 * @return session instance, or null if not found
-	 * @throws SQLException if fail to execute query
-	 */
-	private JdbcSession pull() throws SQLException{
-		logger.debug("poll()");
-
-		// 絞り込みの期限を参照
-		Timestamp limit = new Timestamp(System.currentTimeMillis() - getSiteAccessInterval());
-
-		JdbcSession session = null;
-		Connection con = null;
-		PreparedStatement stmt = null;
-		ResultSet rs = null;
-		try {
-			con = getConnection();
-			stmt = con.prepareStatement(
-				"SELECT * FROM jyrobot_sessions" +
-				" WHERE activated IS NULL AND accessed < ?" +
-				" ORDER BY priority DESC, accessed ASC LIMIT 1 FOR UPDATE",
-				ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
-			stmt.setTimestamp(1, limit);
-			rs = stmt.executeQuery();
-			rs.setFetchSize(1);
-
-			String appid = java.lang.Thread.currentThread().getId() + "#" + this.appId;
-			Timestamp now = new Timestamp(System.currentTimeMillis());
-			if(rs.next()){
-				// 既存のセッションを実行状態に設定
-				rs.updateString("appid", appid);
-				rs.updateTimestamp("activated", now);
-				rs.updateTimestamp("accessed", now);
-				rs.updateInt("visit", rs.getInt("visit") + 1);
-				rs.updateRow();
-
-				// セッションを参照
-				session = new JdbcSession(jyrobot, dataSource, rs);
-			}
-			con.commit();
-		} finally {
-			Util.close(rs, stmt, con);
-		}
-		return session;
-	}
-
-	// ======================================================================
 	// Retrieve Connection
 	// ======================================================================
 	/**
@@ -470,4 +404,32 @@ public class JdbcSessionQueue implements SessionQueue {
 		return Util.wrap(con);
 	}
 
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// Key: セッションキー
+	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	/**
+	 * セッションテーブル検索用に使用するキークラスです。
+	 */
+	private static class Key {
+		/** スキーム */
+		public final String scheme;
+		/** ホスト名 */
+		public final String host;
+		/** ポート番号 */
+		public final int port;
+		/**
+		 * コンストラクタ
+		 * @param url
+		 */
+		public Key(URL url){;
+			this.scheme = url.getProtocol().toLowerCase();
+			this.host = url.getHost().toLowerCase();
+			if(url.getPort() >= 0){
+				this.port = url.getPort();
+			} else {
+				this.port = Util.getDefaultPort(scheme);
+			}
+			return;
+		}
+	}
 }
