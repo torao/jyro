@@ -34,20 +34,20 @@ public abstract class Session implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	// ======================================================================
+	// Jyrobot
+	// ======================================================================
+	/**
+	 * このセッションのアプリケーションです。
+	 */
+	private final Jyrobot jyrobot;
+
+	// ======================================================================
 	// Session ID
 	// ======================================================================
 	/**
 	 * このセッションの ID です。
 	 */
 	private final long id;
-
-	// ======================================================================
-	// Profile of this session
-	// ======================================================================
-	/**
-	 * このセッションのプロフィールです。
-	 */
-	private Profile profile = null;
 
 	// ======================================================================
 	// Session Cookies
@@ -58,16 +58,46 @@ public abstract class Session implements Serializable {
 	private final Collection<Cookie> cookies = new ArrayList<Cookie>();
 
 	// ======================================================================
+	// Request Count
+	// ======================================================================
+	/**
+	 * このセッション上で処理されたリクエスト数です。
+	 */
+	private volatile int totalRequests = 0;
+
+	// ======================================================================
+	// Total Retrieval Size
+	// ======================================================================
+	/**
+	 * このセッション上でダウンロードされたデータ量です。
+	 */
+	private volatile long totalRetrieval = 0;
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
 	 * このセッションの ID を指定して構築を行います。
 	 *
+	 * @param jyrobot application instance
 	 * @param id ID of this session
 	 */
-	public Session(long id) {
+	protected Session(Jyrobot jyrobot, long id) {
 		this.id = id;
+		this.jyrobot = jyrobot;
 		return;
+	}
+
+	// ======================================================================
+	// Refer Application
+	// ======================================================================
+	/**
+	 * アプリケーションを参照します。
+	 *
+	 * @return jyrobot
+	 */
+	public Jyrobot getJyrobot() {
+		return jyrobot;
 	}
 
 	// ======================================================================
@@ -83,43 +113,49 @@ public abstract class Session implements Serializable {
 	}
 
 	// ======================================================================
-	// Refer profile
+	// Refer Total Requests
 	// ======================================================================
 	/**
-	 * プロファイルを参照します。
+	 * このセッション上で処理を行ったリクエスト数を参照します。
 	 *
-	 * @return profile profile that this session uses
+	 * @return requests count over this session
 	 */
-	public Profile getProfile() {
-		return profile;
+	public int getTotalRequests(){
+		return totalRequests;
 	}
 
 	// ======================================================================
-	// Set profile
+	// Refer Total Retrieval Size
 	// ======================================================================
 	/**
-	 * プロファイルを設定します。
+	 * このセッション上でダウンロードされたデータ量を参照します。
 	 *
-	 * @param profile profile that this session uses
+	 * @return total retrieval byte-size over this session
 	 */
-	public void setProfile(Profile profile) {
-		this.profile = profile;
-		return;
+	public long getTotalRetrieval() {
+		return totalRetrieval;
 	}
 
 	// ======================================================================
-	// Create Request
+	// Poll Request
 	// ======================================================================
 	/**
-	 * このセッションを使用して指定された URL に対するリクエストを作成します。
+	 * このセッションから次に処理を行うリクエストを参照します。
 	 *
-	 * @param url URL for request
 	 * @return request object
-	 * @throws IOException if specified URL is invalid
+	 * @throws CrawlerException if fail to retrieve next request
 	 */
-	public Request newRequest(URL url) throws IOException{
-		Request request = new Request(profile, url);
+	public Request poll() throws CrawlerException {
 
+		// 次に処理を行う URL を参照
+		URL url = pollURL();
+		if(url == null){
+			return null;
+		}
+
+		// リクエストを構築して返す
+		Request request = new Request(this, url);
+		totalRequests ++;
 		return request;
 	}
 
@@ -134,6 +170,18 @@ public abstract class Session implements Serializable {
 	public void close() throws CrawlerException{
 		return;
 	}
+
+	// ======================================================================
+	// Poll Next URL
+	// ======================================================================
+	/**
+	 * このセッション上で次にリクエストすべき URL を参照します。これ以上リクエスト対象の URL が存在しない
+	 * 場合は null を返します。
+	 *
+	 * @return URL to request over this session
+	 * @throws CrawlerException fail if retrieve request url
+	 */
+	protected abstract URL pollURL() throws CrawlerException;
 
 	// ======================================================================
 	// Retrieve Cookies
@@ -154,6 +202,19 @@ public abstract class Session implements Serializable {
 			}
 		}
 		return c;
+	}
+
+	// ======================================================================
+	// Increase Total Retrieval Size
+	// ======================================================================
+	/**
+	 * このセッション上で取得したデータ量を加算します。
+	 *
+	 * @param size increase amount in bytes
+	 */
+	void increaseTotalRetrieval(long size){
+		totalRetrieval += size;
+		return;
 	}
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

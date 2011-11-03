@@ -30,9 +30,11 @@ public interface SessionQueue {
 	 * 指定された設定でインスタンスの初期設定を行うために呼び出されます。
 	 * config parameter is map that defined on /scheduler/session_queue in jyrobot.yml
 	 *
+	 * @param jyrobot application instance
 	 * @param config configuration of this session queue
+	 * @throws CrawlerException
 	 */
-	public void configure(Config config);
+	public void configure(Jyrobot jyrobot, Config config) throws CrawlerException;
 
 	// ======================================================================
 	// Reset All Sessions

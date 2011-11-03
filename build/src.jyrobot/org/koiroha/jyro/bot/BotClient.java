@@ -9,7 +9,6 @@
  */
 package org.koiroha.jyro.bot;
 
-import java.io.IOException;
 import java.net.URL;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -23,6 +22,73 @@ import java.net.URL;
  * @since 2011/10/18 jyro 1.0
  */
 public interface BotClient {
+
+	// ======================================================================
+	// Initialize
+	// ======================================================================
+	/**
+	 * クライアントの処理開始時にこのクライアント用の設定を指定して呼び出されます。
+	 *
+	 * @param config settings for this client instance
+	 */
+	public void configure(Config config);
+
+	// ======================================================================
+	// Notify Start Session
+	// ======================================================================
+	/**
+	 * 指定されたセッションの処理を開始する時に呼び出されます。
+	 *
+	 * @param session the session to start
+	 * @return false if skip crawling this session
+	 */
+	public boolean startSession(Session session);
+
+	// ======================================================================
+	// Notify End Session
+	// ======================================================================
+	/**
+	 * 指定されたセッションの処理が終了した時に呼び出されます。
+	 *
+	 * @param session the session to start
+	 */
+	public void endSession(Session session);
+
+	// ======================================================================
+	// Notify Start Request
+	// ======================================================================
+	/**
+	 * 指定された URL に対するリクエストが行われる時に呼び出されます。
+	 *
+	 * @param session session over request
+	 * @param url URL to request
+	 * @return false if client has no need to request/response
+	 */
+	public boolean startRequest(Session session, URL url);
+
+	// ======================================================================
+	// Notify End Request
+	// ======================================================================
+	/**
+	 * 指定されたリクエスト/レスポンスが完了した時に呼び出されます。
+	 *
+	 * @param session session over request
+	 * @param request request
+	 * @param response response
+	 */
+	public void endRequest(Session session, Request request, Response response);
+
+	// ======================================================================
+	// Notify Fail to Request
+	// ======================================================================
+	/**
+	 * 指定されたリクエストが例外により失敗した時に呼び出されます。
+	 *
+	 * @param session session over request
+	 * @param request request
+	 * @param ex occurred exception
+	 */
+	public void requestFailed(Session session, Request request, Throwable ex);
 
 	// ======================================================================
 	// Evaluate URL
@@ -54,12 +120,13 @@ public interface BotClient {
 	 * レスポンス完了後に呼び出されます。
 	 * 次回以降の
 	 *
-	 * @param request リクエスト
-	 * @param response レスポンス
+	 * @param session session
+	 * @param request request
+	 * @param response response
 	 * @return URL iterator of extracted in response
-	 * @throws IOException
+	 * @throws CrawlerException if fail to parse content
 	 */
-	public Iterable<URL> parse(Request request, Response response) throws IOException;
+	public Iterable<URL> parse(Session session, Request request, Response response) throws CrawlerException;
 
 	// ======================================================================
 	// Notify Failure

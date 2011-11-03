@@ -11,6 +11,7 @@ package org.koiroha.jyro.bot;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
@@ -43,6 +44,14 @@ public class Request extends Message{
 	private static final Logger logger = Logger.getLogger(Request.class);
 
 	// ======================================================================
+	// Session
+	// ======================================================================
+	/**
+	 * このリクエストのセッションです。
+	 */
+	private final Session session;
+
+	// ======================================================================
 	// Request URL
 	// ======================================================================
 	/**
@@ -51,26 +60,30 @@ public class Request extends Message{
 	private final URL url;
 
 	// ======================================================================
-	// User-Agent Profile
-	// ======================================================================
-	/**
-	 * このユーザエージェントのプロフィールです。
-	 */
-	private final Profile profile;
-
-	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
 	 * リクエスト URL を指定して構築を行います。
 	 *
-	 * @param profile profile of this request
+	 * @param session session of this request
 	 * @param url request URL
 	 */
-	public Request(Profile profile, URL url) {
-		this.profile = new Profile(profile);
+	public Request(Session session, URL url) {
 		this.url = url;
+		this.session = session;
 		return;
+	}
+
+	// ======================================================================
+	// Refer session
+	// ======================================================================
+	/**
+	 * このリクエストのセッションを参照します。
+	 *
+	 * @return session session of this request
+	 */
+	public Session getSession() {
+		return session;
 	}
 
 	// ======================================================================
@@ -86,29 +99,33 @@ public class Request extends Message{
 	}
 
 	// ======================================================================
-	// Refer Request Profile
-	// ======================================================================
-	/**
-	 * このリクエストのプロフィールを参照します。
-	 * 返値のプロフィールに対する変更はこのインスタンスでのみ有効です。
-	 *
-	 * @return profile of this request
-	 */
-	public Profile getProfile() {
-		return profile;
-	}
-
-	// ======================================================================
 	// Action GET Request
 	// ======================================================================
 	/**
 	 * このインスタンスの設定を使用して GET リクエストを実行します。
 	 *
 	 * @return レスポンス
-	 * @throws IOException 接続に失敗した場合
+	 * @throws CrawlerException 接続に失敗した場合
 	 */
-	public Response get() throws IOException {
-		return execute("GET");
+	public Response get() throws CrawlerException {
+		try {
+			return execute("GET");
+		} catch(IOException ex){
+			throw new CrawlerException(ex);
+		}
+	}
+
+	// ======================================================================
+	// Literalize Instance
+	// ======================================================================
+	/**
+	 * このインスタンスを文字列化します。
+	 *
+	 * @return string for this instance
+	 */
+	@Override
+	public String toString() {
+		return url.toString();
 	}
 
 	// ======================================================================
@@ -124,8 +141,9 @@ public class Request extends Message{
 	private Response execute(String method) throws IOException {
 
 		// リダイレクト回数の最大値までリダイレクト処理を実行
+		int maxRedirects = session.getJyrobot().getUserAgent().getMaxRedirects();
 		URL url = this.url;
-		for(int redirect = 0; redirect <= profile.getMaxRedirects(); redirect ++){
+		for(int redirect = 0; redirect <= maxRedirects; redirect ++){
 
 			// リクエストの実行
 			URLConnection con = doRequest(url, method);
@@ -150,7 +168,7 @@ public class Request extends Message{
 		}
 
 		// リダイレクトの最大回数に達した場合
-		throw new IOException("max redirect reached: " + profile.getMaxRedirects());
+		throw new IOException("max redirect reached: " + maxRedirects);
 	}
 
 	// ======================================================================
@@ -178,12 +196,18 @@ public class Request extends Message{
 		}
 
 		// 制御情報の設定
-		con.setConnectTimeout((int)profile.getConnectionTimeout());
-		con.setReadTimeout((int)profile.getReadTimeout());
+		UserAgent ua = session.getJyrobot().getUserAgent();
+		con.setConnectTimeout((int)ua.getConnectionTimeout());
+		con.setReadTimeout((int)ua.getReadTimeout());
 		con.setAllowUserInteraction(false);
 		con.setDefaultUseCaches(false);
 		con.setDoInput(true);
 		con.setDoOutput(! method.equalsIgnoreCase("GET"));
+
+		// デフォルトのリクエストヘッダを設定
+		for(Map.Entry<String,String> e: ua.getDefaultRequestHeader().entrySet()){
+			con.setRequestProperty(e.getKey(), e.getValue());
+		}
 
 		// HTTP 制御情報の設定
 		if(con instanceof HttpURLConnection){

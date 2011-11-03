@@ -11,6 +11,7 @@ package org.koiroha.jyro.util;
 
 import java.io.*;
 import java.lang.management.*;
+import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
 
@@ -200,6 +201,172 @@ public final class Util {
 	 */
 	public static long getUptime(){
 		return RUNTIME.getUptime();
+	}
+
+	// ======================================================================
+	// Wrap Logging Connection
+	// ======================================================================
+	/**
+	 * 指定されたデータベース接続を SQL ログ出力でラップします。
+	 *
+	 * @param con ラップするデータベース接続
+	 * @return SQL ログを出力するデータベース接続
+	 */
+	public static Connection wrap(Connection con){
+		return (Connection)Proxy.newProxyInstance(
+			Util.class.getClassLoader(),
+			new Class<?>[]{ Connection.class },
+			new IH(con));
+	}
+
+	private static class IH implements InvocationHandler {
+
+		// ==================================================================
+		//
+		// ==================================================================
+		/**
+		 */
+		private final Object value;
+
+		// ==================================================================
+		//
+		// ==================================================================
+		/**
+		 */
+		private final String sql;
+
+		// ==================================================================
+		//
+		// ==================================================================
+		/**
+		 */
+		private final Map<String,Object> params = new HashMap<String,Object>();
+
+		// ==================================================================
+		//
+		// ==================================================================
+		/**
+		 */
+		public IH(Connection con){
+			this.value = con;
+			this.sql = null;
+			logger.debug("BEGIN");
+			return;
+		}
+
+		// ==================================================================
+		//
+		// ==================================================================
+		/**
+		 */
+		public IH(Statement stmt){
+			this.value = stmt;
+			this.sql = null;
+			return;
+		}
+
+		// ==================================================================
+		//
+		// ==================================================================
+		/**
+		 */
+		public IH(PreparedStatement stmt, String sql){
+			this.value = stmt;
+			this.sql = sql;
+			return;
+		}
+
+		// ==================================================================
+		//
+		// ==================================================================
+		/**
+		 */
+		public IH(ResultSet rs){
+			this.value = rs;
+			this.sql = null;
+			return;
+		}
+
+		// ==================================================================
+		//
+		// ==================================================================
+		/**
+		 * @param proxy
+		 * @param method
+		 * @param args
+		 * @return
+		 * @throws Throwable
+		 */
+		@Override
+		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+			if(method.getDeclaringClass().equals(Connection.class)){
+				assert(value instanceof Connection);
+				if(method.getName().equals("commit")){
+					logger.debug("COMMIT");
+				} else if(method.getName().equals("rollback")){
+					logger.debug("ROLLBACK");
+				}
+				Object result = method.invoke(value, args);
+				if(result instanceof CallableStatement){
+					result = Proxy.newProxyInstance(Util.class.getClassLoader(),
+						new Class<?>[]{ CallableStatement.class }, new IH((CallableStatement)result, (String)args[0]));
+				} else if(result instanceof PreparedStatement){
+					result = Proxy.newProxyInstance(Util.class.getClassLoader(),
+						new Class<?>[]{ PreparedStatement.class }, new IH((PreparedStatement)result, (String)args[0]));
+				} else if(result instanceof Statement){
+					result = Proxy.newProxyInstance(Util.class.getClassLoader(),
+						new Class<?>[]{ Statement.class }, new IH((Statement)result));
+				}
+				return result;
+			}
+
+			if(method.getDeclaringClass().equals(PreparedStatement.class)){
+				assert(value instanceof PreparedStatement);
+				if(method.getName().equals("execute") || method.getName().equals("executeQuery") || method.getName().equals("executeUpdate")){
+					logger.debug(this.sql + "; " + params);
+				} else if(method.getName().startsWith("set") && args.length > 0 && args[0] instanceof Integer){
+					params.put(args[0].toString(), args[1]);
+				}
+				Object result = method.invoke(value, args);
+				if(result instanceof ResultSet){
+					result = Proxy.newProxyInstance(Util.class.getClassLoader(),
+						new Class<?>[]{ ResultSet.class }, new IH((ResultSet)result));
+				}
+				return result;
+			}
+
+			if(method.getDeclaringClass().equals(Statement.class)){
+				assert(value instanceof Statement);
+				if(method.getName().equals("execute") || method.getName().equals("executeQuery") || method.getName().equals("executeUpdate")){
+					logger.debug(args[0]);
+				}
+				Object result = method.invoke(value, args);
+				if(result instanceof ResultSet){
+					result = Proxy.newProxyInstance(Util.class.getClassLoader(),
+						new Class<?>[]{ ResultSet.class }, new IH((ResultSet)result));
+				}
+				return result;
+			}
+
+			if(method.getDeclaringClass().equals(ResultSet.class)){
+				assert(value instanceof ResultSet);
+				if(method.getName().equals("updateRow")){
+					ResultSet rs = (ResultSet)value;
+					ResultSetMetaData meta = rs.getMetaData();
+					logger.debug("UPDATE " + meta.getTableName(1) + " " + params + " WHERE id=" + rs.getLong("id"));
+				} else if(method.getName().equals("insertRow")){
+					ResultSet rs = (ResultSet)value;
+					ResultSetMetaData meta = rs.getMetaData();
+					logger.debug("INSERT " + meta.getTableName(1) + " " + params + " WHERE id=" + rs.getLong("id"));
+				} else if(method.getName().startsWith("update")){
+					params.put(args[0].toString(), args[1]);
+				}
+				Object result = method.invoke(value, args);
+				return result;
+			}
+			return method.invoke(value, args);
+		}
+
 	}
 
 }

@@ -11,6 +11,7 @@ package org.koiroha.jyro.bot;
 
 import java.io.*;
 import java.net.*;
+import java.nio.ByteBuffer;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Response: レスポンス
@@ -65,6 +66,14 @@ public class Response extends Message{
 	private final String message;
 
 	// ======================================================================
+	// Response Message
+	// ======================================================================
+	/**
+	 * レスポンス内容です。
+	 */
+	private ByteBuffer content = null;
+
+	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
@@ -99,10 +108,6 @@ public class Response extends Message{
 			}
 			this.header.add(key, value);
 		}
-
-		// メッセージ内容の取り込み
-		String ct = getContentType();
-		request.getProfile().getRetrievalLimitLength(ct);
 
 		return;
 	}
@@ -146,16 +151,32 @@ public class Response extends Message{
 	}
 
 	// ======================================================================
-	// Refer Request
+	// Refer Response Content
 	// ======================================================================
 	/**
-	 * このレスポンスを生成したリクエストを参照します。
+	 * このレスポンスの内容を参照します。
 	 *
 	 * @return request request
-	 * @throws IOException
+	 * @throws IOException if fail to read content
 	 */
-	public InputStream getInputStream() throws IOException{
-		return con.getInputStream();
+	public ByteBuffer getContent() throws IOException{
+		if(content == null){
+			int maxLength = request.getSession().getJyrobot().getUserAgent().getMaxContentLength();
+			InputStream in = con.getInputStream();
+			byte[] buffer = new byte[1024];
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			int length = 0;
+			while(length < maxLength){
+				int len = in.read(buffer, 0, Math.min(buffer.length, maxLength - length));
+				if(len < 0){
+					break;
+				}
+				baos.write(buffer, 0, len);
+				request.getSession().increaseTotalRetrieval(len);
+			}
+			content = ByteBuffer.wrap(baos.toByteArray()).asReadOnlyBuffer();
+		}
+		return content;
 	}
 
 }

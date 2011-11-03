@@ -12,6 +12,7 @@ package org.koiroha.jyro.bot;
 import java.io.*;
 import java.util.*;
 
+import org.apache.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -25,6 +26,14 @@ import org.yaml.snakeyaml.Yaml;
  * @since 2011/10/20 jyro 1.0
  */
 public class Config {
+
+	// ======================================================================
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output of this class.
+	 */
+	private static final Logger logger = Logger.getLogger(Config.class);
 
 	// ======================================================================
 	// Prefix
@@ -99,7 +108,7 @@ public class Config {
 	 * 指定されたパスの long 値を参照します。
 	 *
 	 * @param names name for Map, or index for List
-	 * @return specified long, or 01 if not found
+	 * @return specified long, or -1 if not found
 	 */
 	public long getLong(Object... names){
 		Object value = getObject(names);
@@ -107,6 +116,19 @@ public class Config {
 			return -1;
 		}
 		return ((Number)value).longValue();
+	}
+
+	// ======================================================================
+	// Retrieve Int
+	// ======================================================================
+	/**
+	 * 指定されたパスの long 値を参照します。
+	 *
+	 * @param names name for Map, or index for List
+	 * @return specified int value, or -1 if not found
+	 */
+	public int getInt(Object... names){
+		return (int)getLong(names);
 	}
 
 	// ======================================================================
@@ -126,6 +148,29 @@ public class Config {
 		@SuppressWarnings("unchecked")
 		Map<String,Object> map = (Map<String,Object>)value;
 		return map;
+	}
+
+	// ======================================================================
+	// Retrieve Map
+	// ======================================================================
+	/**
+	 * 指定されたパスの Map 値を参照します。
+	 *
+	 * @param names name for Map, or index for List
+	 * @return specified map, or null if not found
+	 */
+	public Iterable<Map<String,Object>> getMaps(Object... names){
+		List<Object> list = getList(names);
+		List<Map<String,Object>> maps = new ArrayList<Map<String,Object>>();
+		for(Object value: list){
+			if(value == null || !(value instanceof Map<?,?>)){
+				return null;
+			}
+			@SuppressWarnings("unchecked")
+			Map<String,Object> map = (Map<String,Object>)value;
+			maps.add(map);
+		}
+		return maps;
 	}
 
 	// ======================================================================
@@ -165,6 +210,36 @@ public class Config {
 	}
 
 	// ======================================================================
+	// Retrieve Sub-Configurations
+	// ======================================================================
+	/**
+	 * 指定されたパス直下の Map 配列を新しいコンフィギュレーションとして参照します。
+	 *
+	 * @param names name for List of configuration Map
+	 * @return subconfigurations, or empty configuration if specified name not defined
+	 */
+	public Iterable<Config> getSubconfigs(Object... names){
+		List<Config> list = new ArrayList<Config>();
+		for(Map<String,Object> map: getMaps(names)){
+			list.add(new Config(getPathname(names) + "/", map));
+		}
+		return list;
+	}
+
+	// ======================================================================
+	// Literalize Instance
+	// ======================================================================
+	/**
+	 * このインスタンスを文字列化します。
+	 *
+	 * @return string of this instance
+	 */
+	@Override
+	public String toString() {
+		return getPathname();
+	}
+
+	// ======================================================================
 	// Create Instance
 	// ======================================================================
 	/**
@@ -175,6 +250,7 @@ public class Config {
 	 * @throws IOException
 	 */
 	public static Config newInstance(InputStream in) throws IOException {
+		logger.debug("newInstance(in)");
 		Yaml yaml = new Yaml();
 		@SuppressWarnings("unchecked")
 		Map<String,Object> config = (Map<String,Object>)yaml.load(in);
@@ -190,7 +266,7 @@ public class Config {
 	 * @param names name for Map, or index for List
 	 * @return specified object
 	 */
-	private Object getObject(Object... names){
+	public Object getObject(Object... names){
 		Object value = config;
 		for(int i=0; i<names.length; i++){
 			if(value instanceof Map<?,?> && names[i] instanceof String){
@@ -198,6 +274,7 @@ public class Config {
 			} else if(value instanceof List<?> && names[i] instanceof Number){
 				value = ((List<?>)value).get(((Number)names[i]).intValue());
 			} else {
+				logger.warn(getPathname(names) + " not found in configuration");
 				return null;
 			}
 		}

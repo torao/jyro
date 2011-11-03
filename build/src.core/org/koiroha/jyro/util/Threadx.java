@@ -23,7 +23,7 @@ import org.apache.log4j.*;
  * @author torao
  * @since 2011/07/10 Java SE 6
  */
-public final class Thread {
+public final class Threadx {
 
 	// ======================================================================
 	// Log Output
@@ -31,7 +31,7 @@ public final class Thread {
 	/**
 	 * Log output of this class.
 	 */
-	private static final Logger logger = Logger.getLogger(Thread.class);
+	private static final Logger logger = Logger.getLogger(Threadx.class);
 
 	// ======================================================================
 	// Constructor
@@ -39,7 +39,7 @@ public final class Thread {
 	/**
 	 * Constructor hidden in class.
 	 */
-	private Thread() {
+	private Threadx() {
 		return;
 	}
 

@@ -12,11 +12,14 @@ package org.koiroha.jyro.bot;
 import java.lang.management.ManagementFactory;
 import java.net.*;
 import java.sql.*;
+import java.util.*;
 
+import javax.naming.*;
 import javax.sql.DataSource;
 
+import org.apache.commons.dbcp.BasicDataSourceFactory;
 import org.apache.log4j.Logger;
-import org.koiroha.jyro.util.*;
+import org.koiroha.jyro.util.Util;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // JdbcSessionQueue: DB セッションキュー
@@ -45,7 +48,15 @@ public class JdbcSessionQueue implements SessionQueue {
 	/**
 	 * このセッションキューの設定です。
 	 */
-	private Config config = null;
+	protected Jyrobot jyrobot = null;
+
+	// ======================================================================
+	// Configuration
+	// ======================================================================
+	/**
+	 * このセッションキューの設定です。
+	 */
+	protected Config config = null;
 
 	// ======================================================================
 	// Application ID
@@ -61,7 +72,7 @@ public class JdbcSessionQueue implements SessionQueue {
 	/**
 	 * このスケジューラーが使用するデータソースです。
 	 */
-	private DataSource dataSource;
+	private DataSource dataSource = null;
 
 	// ======================================================================
 	// Constructor
@@ -79,11 +90,37 @@ public class JdbcSessionQueue implements SessionQueue {
 	/**
 	 * このキューの設定を行います。
 	 *
+	 * @param jyrobot application instance
 	 * @param config configuration for this queue
 	 */
 	@Override
-	public void configure(Config config) {
+	public void configure(Jyrobot jyrobot, Config config) throws CrawlerException{
+		logger.debug("configure(" + config + ")");
+		this.jyrobot = jyrobot;
 		this.config = config;
+
+		// データソース設定の参照
+		Object value = config.getObject("datasource");
+		if(value instanceof Map<?,?>){
+			Properties prop = new Properties();
+			for(Map.Entry<?,?> e: ((Map<?,?>)value).entrySet()){
+				prop.setProperty(e.getKey().toString(), e.getValue().toString());
+			}
+			try {
+				this.dataSource = BasicDataSourceFactory.createDataSource(prop);
+			} catch(Exception ex){
+				throw new CrawlerException(ex);
+			}
+		} else if(value instanceof String){
+			try {
+				InitialContext ic = new InitialContext();
+				this.dataSource = (DataSource)ic.lookup((String)value);
+			} catch(NamingException ex){
+				throw new CrawlerException(ex);
+			}
+		} else {
+			throw new CrawlerException("invalid datasource configuration: " + config.getPathname("datasource") + "=" + value);
+		}
 		return;
 	}
 
@@ -123,8 +160,8 @@ public class JdbcSessionQueue implements SessionQueue {
 	 *
 	 * @return session available interval in milliseconds
 	 */
-	public long getSessionAvailableInterval() {
-		return config.getLong("session_available_interval");
+	public long getSiteAccessInterval() {
+		return config.getLong("site_access_interval");
 	}
 
 	// ======================================================================
@@ -158,7 +195,7 @@ public class JdbcSessionQueue implements SessionQueue {
 		PreparedStatement stmt = null;
 		try {
 			con = dataSource.getConnection();
-			stmt = con.prepareStatement("UPDATE jyrobot_sessions SET activated=NULL,accessed=NULL");
+			stmt = con.prepareStatement("UPDATE jyrobot_sessions SET activated=NULL, accessed=NULL");
 			int count = stmt.executeUpdate();
 			con.commit();
 			logger.info("reset all " + count + " sessions");
@@ -166,7 +203,7 @@ public class JdbcSessionQueue implements SessionQueue {
 		} catch(SQLException ex){
 			throw new CrawlerException(ex);
 		} finally {
-			IO.close(con);
+			Util.close(stmt, con);
 		}
 	}
 
@@ -345,7 +382,7 @@ public class JdbcSessionQueue implements SessionQueue {
 		ResultSet rs = null;
 		try {
 			stmt = con.prepareStatement(
-				"SELECT * FROM jyrobot_requests WHERE session_id=? AND path=? LIMIT 1",
+				"SELECT * FROM jyrobot_locations WHERE session_id=? AND path=? LIMIT 1",
 				ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
 			stmt.setLong(1, sessionId);
 			stmt.setString(2, path);
@@ -357,6 +394,7 @@ public class JdbcSessionQueue implements SessionQueue {
 				rs.moveToInsertRow();
 				rs.updateLong("session_id", sessionId);
 				rs.updateString("path", path);
+				rs.updateInt("visit", 0);
 				rs.insertRow();
 			}
 		} finally {
@@ -376,9 +414,10 @@ public class JdbcSessionQueue implements SessionQueue {
 	 * @throws SQLException if fail to execute query
 	 */
 	private JdbcSession pull() throws SQLException{
+		logger.debug("poll()");
 
 		// 絞り込みの期限を参照
-		Timestamp limit = new Timestamp(System.currentTimeMillis() - getSessionAvailableInterval());
+		Timestamp limit = new Timestamp(System.currentTimeMillis() - getSiteAccessInterval());
 
 		JdbcSession session = null;
 		Connection con = null;
@@ -388,8 +427,8 @@ public class JdbcSessionQueue implements SessionQueue {
 			con = getConnection();
 			stmt = con.prepareStatement(
 				"SELECT * FROM jyrobot_sessions" +
-				" WHERE activated IS NULL AND accessed<?" +
-				" ORDER BY priority desc, accessed asc LIMIT 1 FOR UPDATE",
+				" WHERE activated IS NULL AND accessed < ?" +
+				" ORDER BY priority DESC, accessed ASC LIMIT 1 FOR UPDATE",
 				ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
 			stmt.setTimestamp(1, limit);
 			rs = stmt.executeQuery();
@@ -402,10 +441,11 @@ public class JdbcSessionQueue implements SessionQueue {
 				rs.updateString("appid", appid);
 				rs.updateTimestamp("activated", now);
 				rs.updateTimestamp("accessed", now);
+				rs.updateInt("visit", rs.getInt("visit") + 1);
 				rs.updateRow();
 
 				// セッションを参照
-				session = new JdbcSession(dataSource, rs);
+				session = new JdbcSession(jyrobot, dataSource, rs);
 			}
 			con.commit();
 		} finally {
@@ -423,11 +463,11 @@ public class JdbcSessionQueue implements SessionQueue {
 	 * @return database connection
 	 * @throws SQLException if fail to retrieve connection
 	 */
-	private Connection getConnection() throws SQLException{
+	protected Connection getConnection() throws SQLException{
 		Connection con = dataSource.getConnection();
 		con.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 		con.setAutoCommit(false);
-		return con;
+		return Util.wrap(con);
 	}
 
 }

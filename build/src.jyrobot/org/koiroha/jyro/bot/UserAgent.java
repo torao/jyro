@@ -9,6 +9,8 @@
  */
 package org.koiroha.jyro.bot;
 
+import java.util.*;
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // UserAgent: ユーザエージェント
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -22,49 +24,90 @@ package org.koiroha.jyro.bot;
 public class UserAgent {
 
 	// ======================================================================
-	// User-Agent Profile
+	// User-Agent Configuration
 	// ======================================================================
 	/**
-	 * このユーザエージェントのプロフィールです。
+	 * このユーザエージェント設定です。
 	 */
-	private final Profile profile;
+	private final Config config;
 
 	// ======================================================================
 	// Constructor
 	// ======================================================================
 	/**
-	 * このユーザエージェントのプロフィールを指定して構築を行います。
+	 * このユーザエージェントの設定を指定して構築を行います。
 	 *
-	 * @param profile profile of this user-agent
+	 * @param config profile of this user-agent
 	 */
-	public UserAgent(Profile profile){
-		this.profile = new Profile(profile);
+	public UserAgent(Config config){
+		this.config = config;
 		return;
 	}
 
 	// ======================================================================
-	// Refer User-Agent Profile
+	// Refer Connection Timeout
 	// ======================================================================
 	/**
-	 * このユーザエージェントのプロフィールを参照します。返値のプロフィールへの変更は
-	 * このインスタンスに反映されます。
+	 * 接続タイムアウトを参照します。
 	 *
-	 * @return profile of this user-agent
+	 * @return connection timeout in milliseconds
 	 */
-	public Profile getProfile() {
-		return profile;
+	public long getConnectionTimeout(){
+		return config.getLong("connection_timeout");
 	}
 
 	// ======================================================================
-	// Create Session
+	// Refer Read Timeout
 	// ======================================================================
 	/**
-	 * このユーザエージェントに対する新しいセッションを作成します。
+	 * 読み込みタイムアウトを参照します。
 	 *
-	 * @return 新規のセッション
+	 * @return read timeout in milliseconds
 	 */
-	public Session newSession(){
-		return profile.createSession();
+	public long getReadTimeout(){
+		return config.getLong("read_timeout");
+	}
+
+	// ======================================================================
+	// Refer Max Redirect
+	// ======================================================================
+	/**
+	 * リダイレクト回数の最大値を参照します。
+	 *
+	 * @return redirect limit
+	 */
+	public int getMaxRedirects(){
+		return config.getInt("max_redirects");
+	}
+
+	// ======================================================================
+	// Refer Max Content Length
+	// ======================================================================
+	/**
+	 * レスポンスの読み込み料を参照します。
+	 *
+	 * @return read limit in bytes
+	 */
+	public int getMaxContentLength(){
+		return config.getInt("max_content_length");
+	}
+
+	// ======================================================================
+	// Refer Default Header Settings
+	// ======================================================================
+	/**
+	 * リクエストにデフォルトで付加するヘッダを参照します。
+	 *
+	 * @return map of default request header
+	 */
+	public Map<String,String> getDefaultRequestHeader(){
+		Map<String,String> header = new HashMap<String,String>();
+		if(config.getMap("header") != null){
+			for(Map.Entry<String,Object> e: config.getMap("header").entrySet()){
+				header.put(e.getKey(), e.getValue().toString());
+			}
+		}
+		return header;
 	}
 
 }

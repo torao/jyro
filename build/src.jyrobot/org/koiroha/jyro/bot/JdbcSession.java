@@ -9,10 +9,12 @@
  */
 package org.koiroha.jyro.bot;
 
+import java.net.*;
 import java.sql.*;
 
 import javax.sql.DataSource;
 
+import org.apache.log4j.Logger;
 import org.koiroha.jyro.util.Util;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -33,6 +35,14 @@ class JdbcSession extends Session {
 	 * Serial version of this class.
 	 */
 	private static final long serialVersionUID = 1L;
+
+	// ======================================================================
+	// Log Output
+	// ======================================================================
+	/**
+	 * Log output of this class.
+	 */
+	private static final Logger logger = Logger.getLogger(JdbcSession.class);
 
 	// ======================================================================
 	// データソース
@@ -67,25 +77,12 @@ class JdbcSession extends Session {
 	private final int port;
 
 	// ======================================================================
-	// Constructor
+	// Visit Number
 	// ======================================================================
 	/**
-	 * コンストラクタは何も行いません。
-	 *
-	 * @param id
-	 * @param ds data source that used in this session
-	 * @param scheme URL scheme
-	 * @param host host name
-	 * @param port port number
+	 * このセッションに対する訪問回数です。
 	 */
-	public JdbcSession(long id, DataSource ds, String scheme, String host, int port) {
-		super(id);
-		this.dataSource = ds;
-		this.scheme = scheme;
-		this.host = host;
-		this.port = port;
-		return;
-	}
+	private final int visit;
 
 	// ======================================================================
 	// Constructor
@@ -93,16 +90,18 @@ class JdbcSession extends Session {
 	/**
 	 * コンストラクタは何も行いません。
 	 *
+	 * @param jyrobot application instance
 	 * @param ds data source that used in this session
 	 * @param rs database record of this session
 	 * @throws SQLException if fail to retrieve fields
 	 */
-	JdbcSession(DataSource ds, ResultSet rs) throws SQLException {
-		super(rs.getLong("id"));
+	JdbcSession(Jyrobot jyrobot, DataSource ds, ResultSet rs) throws SQLException {
+		super(jyrobot, rs.getLong("id"));
 		this.dataSource = ds;
 		this.scheme = rs.getString("scheme");
 		this.host = rs.getString("host");
 		this.port = rs.getInt("port");
+		this.visit = rs.getInt("visit") + 1;
 		return;
 	}
 
@@ -143,6 +142,64 @@ class JdbcSession extends Session {
 	}
 
 	// ======================================================================
+	// Refer visit
+	// ======================================================================
+	/**
+	 * このセッションでの訪問回数を参照します。
+	 *
+	 * @return visit visit count over this session
+	 */
+	public int getVisit() {
+		return visit;
+	}
+
+	// ======================================================================
+	// Retrieve Request URL
+	// ======================================================================
+	/**
+	 * このセッションから次のリクエスト対象となる URL を参照します。
+	 *
+	 * @return request url, or null if no more url remained
+	 * @throws CrawlerException if fail to retrieve URL
+	 */
+	@Override
+	protected URL pollURL() throws CrawlerException {
+		Connection con = null;
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			con = getConnection();
+			stmt = con.prepareStatement(
+				"SELECT * FROM jyrobot_locations WHERE session_id=? AND visit<>? LIMIT 1 FOR UPDATE",
+				ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
+			stmt.setLong(1, getId());
+			stmt.setInt(2, getVisit());
+			rs = stmt.executeQuery();
+			while(rs.next()){
+				String path = rs.getString("path");
+
+				// 訪問回数の更新
+				rs.updateInt("visit", getVisit());
+				rs.updateRow();
+				con.commit();
+
+				// URL の構築
+				try {
+					return new URL(getScheme(), getHost(), getPort(), path);
+				} catch(MalformedURLException ex){
+					logger.warn("invalid url contains: ", ex);
+				}
+			}
+			con.commit();
+		} catch(SQLException ex){
+			throw new CrawlerException(ex);
+		} finally {
+			Util.close(rs, stmt, con);
+		}
+		return null;
+	}
+
+	// ======================================================================
 	// Close Session
 	// ======================================================================
 	/**
@@ -150,12 +207,13 @@ class JdbcSession extends Session {
 	 */
 	@Override
 	public void close() throws CrawlerException{
+		logger.debug("close()");
 		Connection con = null;
 		PreparedStatement stmt = null;
 		try {
 			con = getConnection();
 			stmt = con.prepareStatement(
-				"UPDATE jyro_sessions SET appid=NULL, activated=NULL, accessed=? WHERE id=?");
+				"UPDATE jyrobot_sessions SET appid=NULL, activated=NULL, accessed=? WHERE id=?");
 			stmt.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
 			stmt.setLong(2, getId());
 			stmt.executeUpdate();
@@ -163,17 +221,17 @@ class JdbcSession extends Session {
 		} catch(SQLException ex){
 			throw new CrawlerException(ex);
 		} finally {
-			Util.close(stmt);
-			Util.close(con);
+			Util.close(stmt, con);
 		}
 		return;
 	}
 
 	// ======================================================================
-	//
+	// Refer Instance String
 	// ======================================================================
 	/**
 	 * このインスタンスを文字列化します。
+	 *
 	 * @return インスタンスの文字列
 	 */
 	@Override
@@ -194,7 +252,7 @@ class JdbcSession extends Session {
 		Connection con = dataSource.getConnection();
 		con.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 		con.setAutoCommit(false);
-		return con;
+		return Util.wrap(con);
 	}
 
 }
