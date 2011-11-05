@@ -26,15 +26,7 @@ import org.koiroha.jyro.util.Util;
  * @author torao
  * @since 2011/10/25 jyro 1.0
  */
-class JdbcSession extends Session {
-
-	// ======================================================================
-	// Serial Version
-	// ======================================================================
-	/**
-	 * Serial version of this class.
-	 */
-	private static final long serialVersionUID = 1L;
+class JdbcSession extends AbstractSession {
 
 	// ======================================================================
 	// Log Output
@@ -197,6 +189,40 @@ class JdbcSession extends Session {
 			Util.close(rs, stmt, con);
 		}
 		return null;
+	}
+
+	// ======================================================================
+	// Response Callback
+	// ======================================================================
+	/**
+	 * このセッション上で実行したリクエストの実行結果をコールバックします。
+	 *
+	 * @param response result of request over this session
+	 */
+	@Override
+	public void callback(Response response){
+		super.callback(response);
+
+		Connection con = null;
+		PreparedStatement stmt = null;
+		try {
+			con = getConnection();
+			stmt = con.prepareStatement(
+				"UPDATE jyrobot_locations" +
+				" SET response=?, accessed=?" +
+				" WHERE session_id=? AND path=?");
+			stmt.setInt(1, response.getCode());
+			stmt.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
+			stmt.setLong(3, response.getRequest().getSession().getId());
+			stmt.setString(4, new JdbcSessionQueue.Key(response.getRequest().getUrl()).path);
+			stmt.executeUpdate();
+			con.commit();
+		} catch(SQLException ex){
+			logger.warn("fail to update result of location: " + response, ex);
+		} finally {
+			Util.close(stmt, con);
+		}
+		return;
 	}
 
 	// ======================================================================

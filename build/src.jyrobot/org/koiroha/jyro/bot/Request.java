@@ -141,7 +141,7 @@ public class Request extends Message{
 	private Response execute(String method) throws IOException {
 
 		// リダイレクト回数の最大値までリダイレクト処理を実行
-		int maxRedirects = session.getJyrobot().getUserAgent().getMaxRedirects();
+		int maxRedirects = session.getUserAgent().getMaxRedirects();
 		URL url = this.url;
 		for(int redirect = 0; redirect <= maxRedirects; redirect ++){
 
@@ -164,11 +164,13 @@ public class Request extends Message{
 			}
 
 			// レスポンスを作成して返す
-			return new Response(this, con);
+			Response response = new Response(this, con);
+			session.callback(response);
+			return response;
 		}
 
 		// リダイレクトの最大回数に達した場合
-		throw new IOException("max redirect reached: " + maxRedirects);
+		throw new IOException("max redirection reached: " + maxRedirects);
 	}
 
 	// ======================================================================
@@ -186,28 +188,25 @@ public class Request extends Message{
 		logger.debug(method + " " + url);
 		URLConnection con = url.openConnection();
 
-		// リクエストヘッダの設定
+		// デフォルトのリクエストヘッダを設定
+		UserAgent ua = session.getUserAgent();
+		for(Map.Entry<String,String> e: ua.getDefaultRequestHeader().entrySet()){
+			con.setRequestProperty(e.getKey(), e.getValue());
+		}
+
+		// プログラムで設定したリクエストヘッダの設定
+		// TODO set or add? for RequestProperty
 		for(Header h: header.getAll()){
-			if(h.getName().equalsIgnoreCase("User-Agent")){
-				con.setRequestProperty(h.getName(), h.getValue());
-			} else {
-				con.addRequestProperty(h.getName(), h.getValue());
-			}
+			con.setRequestProperty(h.getName(), h.getValue());
 		}
 
 		// 制御情報の設定
-		UserAgent ua = session.getJyrobot().getUserAgent();
 		con.setConnectTimeout((int)ua.getConnectionTimeout());
 		con.setReadTimeout((int)ua.getReadTimeout());
 		con.setAllowUserInteraction(false);
 		con.setDefaultUseCaches(false);
 		con.setDoInput(true);
 		con.setDoOutput(! method.equalsIgnoreCase("GET"));
-
-		// デフォルトのリクエストヘッダを設定
-		for(Map.Entry<String,String> e: ua.getDefaultRequestHeader().entrySet()){
-			con.setRequestProperty(e.getKey(), e.getValue());
-		}
 
 		// HTTP 制御情報の設定
 		if(con instanceof HttpURLConnection){

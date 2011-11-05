@@ -13,9 +13,10 @@ import org.apache.log4j.Logger;
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// AbstractSessionQueue:
+// AbstractSessionQueue: セッションキュー
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
+ * セッションキューの抽象クラスです。
  *
  * @version
  * @author torao
@@ -32,10 +33,10 @@ public abstract class AbstractSessionQueue implements SessionQueue {
 	private static final Logger logger = Logger.getLogger(AbstractSessionQueue.class);
 
 	// ======================================================================
-	// Configuration
+	// Application
 	// ======================================================================
 	/**
-	 * このセッションキューの設定です。
+	 * このセッションキューのアプリケーションインスタンスです。
 	 */
 	protected Jyrobot jyrobot = null;
 
@@ -52,7 +53,6 @@ public abstract class AbstractSessionQueue implements SessionQueue {
 	// ======================================================================
 	/**
 	 * コンストラクタは何も行いません。
-	 *
 	 */
 	protected AbstractSessionQueue() {
 		return;
@@ -64,6 +64,7 @@ public abstract class AbstractSessionQueue implements SessionQueue {
 	// ======================================================================
 	/**
 	 * このキューの設定を行います。
+	 * サブクラスはこのメソッドをオーバーライドした場合、必ずスーパークラスのメソッドを呼び出す必要があります。
 	 *
 	 * @param jyrobot application instance
 	 * @param config configuration for this queue
@@ -82,7 +83,7 @@ public abstract class AbstractSessionQueue implements SessionQueue {
 	 * このスケジューラーから次のセッションを参照します。
 	 *
 	 * @return next session, or null if crawler end
-	 * @throws InterruptedException ジョブの待機中に割り込まれた場合
+	 * @throws InterruptedException if interrupted while waiting session
 	 */
 	@Override
 	public Session poll() throws InterruptedException {
@@ -99,7 +100,7 @@ public abstract class AbstractSessionQueue implements SessionQueue {
 					return session;
 				}
 
-				// 永続低ポーリングでなければ終了する
+				// 永続ポーリングでなければ終了する
 				if(! config.getBoolean("persistent_polling")) {
 					return null;
 				}

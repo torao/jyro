@@ -147,10 +147,13 @@ public class SampleBotClient implements BotClient {
 			NodeList nl = (NodeList)xpath.evaluate(
 				"//a/@href", doc, XPathConstants.NODESET);
 			for(int i=0; i<nl.getLength(); i++){
-				try {
-					urls.add(new URL(base, nl.item(i).getTextContent()));
-				} catch(MalformedURLException ex){
-					ex.printStackTrace();
+				String href = nl.item(i).getTextContent();
+				if(! href.startsWith("javascript:")){
+					try {
+						urls.add(new URL(base, href));
+					} catch(MalformedURLException ex){
+						ex.printStackTrace();
+					}
 				}
 			}
 		} catch(Exception ex){

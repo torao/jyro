@@ -10,7 +10,7 @@
 package org.koiroha.jyro.bot;
 
 import java.lang.management.ManagementFactory;
-import java.net.*;
+import java.net.URL;
 import java.sql.*;
 import java.util.*;
 
@@ -122,15 +122,12 @@ public class JdbcSessionQueue extends AbstractSessionQueue {
 	 */
 	@Override
 	public void offer(URL url) throws CrawlerException{
+		Key key = new Key(url);
 		Connection con = null;
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
 		try {
 			con = getConnection();
-
-			// データベースに保存する情報を取得
-			URI uri = url.toURI();
-			Key key = new Key(url);
 
 			// URL に対応するセッションを取得
 			long sessionId = find(con, key);
@@ -141,23 +138,10 @@ public class JdbcSessionQueue extends AbstractSessionQueue {
 				sessionId = find(con, key);
 			}
 
-			// パスの参照
-			String path = uri.normalize().getPath();
-			if(path == null){
-				path = "";
-			} else {
-				// 先頭の連続した '/' を削除
-				while(path.length() > 0 && path.charAt(0) == '/'){
-					path = path.substring(1);
-				}
-			}
-
 			// ロケーションを登録
-			offer(con, sessionId, path);
+			offer(con, sessionId, key.path);
 
 			con.commit();
-		} catch(URISyntaxException ex){
-			throw new CrawlerException(ex);
 		} catch(SQLException ex){
 			throw new CrawlerException(ex);
 		} finally {
@@ -404,19 +388,65 @@ public class JdbcSessionQueue extends AbstractSessionQueue {
 		return Util.wrap(con);
 	}
 
+	// ======================================================================
+	// Normalize Path
+	// ======================================================================
+	/**
+	 * 指定された URL のパスを正規化して返します。
+	 *
+	 * @param url URL
+	 * @return 正規化されたパス
+	 */
+	private static String normalizePath(URL url){
+		String path = url.getPath();
+		if(path == null || path.length() == 0){
+			return "";
+		}
+
+		// 相対パスを解決
+		Stack<String> stack = new Stack<String>();
+		for(String cmp: path.split("/+")){
+			if(cmp.equals(".")){
+				/* do nothing */
+			} else if(cmp.equals("..") && ! stack.isEmpty()){
+				stack.pop();
+			} else {
+				stack.push(cmp);
+			}
+		}
+
+		// パスの再構築
+		StringBuilder buffer = new StringBuilder();
+		while(! stack.isEmpty()){
+			if(buffer.length() > 0){
+				buffer.append('/');
+			}
+			buffer.append(stack.remove(0));
+		}
+
+		// ディレクトリ指定の場合は最後のスラッシュを連結
+		if(path.endsWith("/") && path.length() != 0){
+			buffer.append('/');
+		}
+
+		return buffer.toString();
+	}
+
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	// Key: セッションキー
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	/**
 	 * セッションテーブル検索用に使用するキークラスです。
 	 */
-	private static class Key {
+	static class Key {
 		/** スキーム */
 		public final String scheme;
 		/** ホスト名 */
 		public final String host;
 		/** ポート番号 */
 		public final int port;
+		/** パス */
+		public final String path;
 		/**
 		 * コンストラクタ
 		 * @param url
@@ -429,6 +459,7 @@ public class JdbcSessionQueue extends AbstractSessionQueue {
 			} else {
 				this.port = Util.getDefaultPort(scheme);
 			}
+			this.path = normalizePath(url);
 			return;
 		}
 	}

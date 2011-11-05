@@ -15,7 +15,7 @@ import java.net.URL;
 // SessionQueue: セッションキュー
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * セッションを保持するキューです。
+ * セッションを参照するためのキューです。
  *
  * @version
  * @author torao
@@ -35,18 +35,6 @@ public interface SessionQueue {
 	 * @throws CrawlerException
 	 */
 	public void configure(Jyrobot jyrobot, Config config) throws CrawlerException;
-
-	// ======================================================================
-	// Reset All Sessions
-	// ======================================================================
-	/**
-	 * すべてのセッションの実行中フラグと前回アクセス日時をリセットし、次回の
-	 * 処理で即時実行されるようにします。
-	 *
-	 * @return the number of sessions
-	 * @throws CrawlerException if fail to reset sessions
-	 */
-	public int resetAll() throws CrawlerException;
 
 	// ======================================================================
 	// Retrieve Next Session
@@ -88,5 +76,17 @@ public interface SessionQueue {
 	 * @throws CrawlerException if fail to reset schedule
 	 */
 	public boolean reset(URL url, long zombie) throws CrawlerException;
+
+	// ======================================================================
+	// Reset All Sessions
+	// ======================================================================
+	/**
+	 * すべてのセッションの実行中フラグと前回アクセス日時をリセットし、次回の
+	 * 処理で即時実行されるようにします。
+	 *
+	 * @return the number of sessions
+	 * @throws CrawlerException if fail to reset sessions
+	 */
+	public int resetAll() throws CrawlerException;
 
 }

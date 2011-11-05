@@ -28,7 +28,7 @@ import org.xml.sax.InputSource;
 // Response: レスポンス
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- *
+ * レスポンスを表すクラスです。
  *
  * @version
  * @author torao
@@ -88,7 +88,7 @@ public class Response extends Message{
 	// Response Message
 	// ======================================================================
 	/**
-	 * レスポンス内容です。
+	 * レスポンス内容です。遅延構築が行われます。
 	 */
 	private ByteBuffer content = null;
 
@@ -96,7 +96,7 @@ public class Response extends Message{
 	// Document
 	// ======================================================================
 	/**
-	 * HTML/XML形式のドキュメントです。
+	 * HTML/XML形式のドキュメントです。遅延構築が行われます。
 	 */
 	private Document document = null;
 
@@ -104,7 +104,7 @@ public class Response extends Message{
 	// Constructor
 	// ======================================================================
 	/**
-	 * コンストラクタは何も行いません。
+	 * 指定された URL 接続から構築を行います。
 	 *
 	 * @param request request object that create this instance
 	 * @param con URL connection
@@ -188,8 +188,24 @@ public class Response extends Message{
 	 */
 	public ByteBuffer getContent() throws IOException{
 		if(content == null){
-			int maxLength = request.getSession().getJyrobot().getUserAgent().getMaxContentLength();
-			InputStream in = con.getInputStream();
+
+			// コンテンツの取得制限サイズを参照
+			int maxLength = request.getSession().getUserAgent().getMaxContentLength();
+
+			// コンテンツの入力ストリームを参照
+			InputStream in = null;
+			try {
+				in = con.getInputStream();
+			} catch(IOException ex){
+				if(con instanceof HttpURLConnection){
+					HttpURLConnection hcon = (HttpURLConnection)con;
+					in = hcon.getErrorStream();
+				} else {
+					throw ex;
+				}
+			}
+
+			// コンテンツの読み込み
 			byte[] buffer = new byte[1024];
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			int length = 0;
@@ -199,12 +215,12 @@ public class Response extends Message{
 					break;
 				}
 				baos.write(buffer, 0, len);
-				request.getSession().increaseTotalRetrieval(len);
+				request.getSession().getStat().increaseInputBytes(len);
 			}
 			byte[] bin = baos.toByteArray();
 			content = ByteBuffer.wrap(bin).asReadOnlyBuffer();
 
-			// 読み込みをログ出力
+			// 読み込み結果をログ出力
 			NumberFormat nf = NumberFormat.getNumberInstance();
 			logger.debug("retrieve content: " + nf.format(bin.length) + " bytes; " + request);
 		}
@@ -224,7 +240,6 @@ public class Response extends Message{
 		if(document == null){
 
 			// レスポンス内容を入力ストリームとして参照
-			// TODO ByteBuffer -> InputStream のアダプタ
 			ByteBuffer buf = getContent();
 			InputStream in = Util.wrap(buf);
 

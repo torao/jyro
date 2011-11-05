@@ -10,7 +10,7 @@ session_queue:
     password: mysql
     driver_class_name: com.mysql.jdbc.Driver
 crawler:
-  parallel: 10
+  parallel: 100
   request_interval: 1500
   clients:
     - id: sample
@@ -22,3 +22,6 @@ user_agent:
   max_content_length: 1028576
   header:
     user-agent: Mozilla/5.0 (compatible; Jyrobot/0.1; +http://www.koiroha.org/jyro.html)
+  site:
+    - match: .*\.google\.co\.jp
+      proxy: 

@@ -124,9 +124,7 @@ public class Crawler implements Runnable {
 				// クロール結果をログ出力
 				NumberFormat nf = NumberFormat.getNumberInstance();
 				logger.info("finish crawling session for " + session + "; total " +
-					nf.format(Util.getUptime() - start) + "ms; " +
-					nf.format(session.getTotalRequests()) + " requests; " +
-					nf.format(session.getTotalRetrieval()) + " bytes retrieved");
+					nf.format(Util.getUptime() - start) + "ms; " + session.getStat());
 
 				// クローリング終了を通知
 				for(BotClient c: jyrobot.getBotClients()){

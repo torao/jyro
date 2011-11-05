@@ -9,132 +9,51 @@
  */
 package org.koiroha.jyro.bot;
 
-import java.io.*;
+import java.io.Serializable;
 import java.net.URL;
-import java.util.*;
+import java.util.Date;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Session: セッションインターフェース
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /**
- * クローリングのセッションを表すインターフェースです。
+ * 1 クローリング単位を表すセッションのインターフェースです。
  *
  * @version
  * @author torao
- * @since 2011/09/14 jyro 1.0
+ * @since 2011/11/05 jyro 1.0
  */
-public abstract class Session implements Serializable {
+public interface Session {
 
 	// ======================================================================
-	// Serial Version
+	// Refer User Agent
 	// ======================================================================
 	/**
-	 * Serial version of this class.
-	 */
-	private static final long serialVersionUID = 1L;
-
-	// ======================================================================
-	// Jyrobot
-	// ======================================================================
-	/**
-	 * このセッションのアプリケーションです。
-	 */
-	private final Jyrobot jyrobot;
-
-	// ======================================================================
-	// Session ID
-	// ======================================================================
-	/**
-	 * このセッションの ID です。
-	 */
-	private final long id;
-
-	// ======================================================================
-	// Session Cookies
-	// ======================================================================
-	/**
-	 * このセッションが保持している Cookie です。
-	 */
-	private final Collection<Cookie> cookies = new ArrayList<Cookie>();
-
-	// ======================================================================
-	// Request Count
-	// ======================================================================
-	/**
-	 * このセッション上で処理されたリクエスト数です。
-	 */
-	private volatile int totalRequests = 0;
-
-	// ======================================================================
-	// Total Retrieval Size
-	// ======================================================================
-	/**
-	 * このセッション上でダウンロードされたデータ量です。
-	 */
-	private volatile long totalRetrieval = 0;
-
-	// ======================================================================
-	// Constructor
-	// ======================================================================
-	/**
-	 * このセッションの ID を指定して構築を行います。
+	 * このセッションを実行しているユーザエージェントを参照します。
 	 *
-	 * @param jyrobot application instance
-	 * @param id ID of this session
+	 * @return user agent of this session
 	 */
-	protected Session(Jyrobot jyrobot, long id) {
-		this.id = id;
-		this.jyrobot = jyrobot;
-		return;
-	}
+	public UserAgent getUserAgent();
 
 	// ======================================================================
-	// Refer Application
+	// Refer Statistics
 	// ======================================================================
 	/**
-	 * アプリケーションを参照します。
+	 * このセッションの統計情報を参照します。
 	 *
-	 * @return jyrobot
+	 * @return statistics of this session
 	 */
-	public Jyrobot getJyrobot() {
-		return jyrobot;
-	}
+	public Stat.Session getStat();
 
 	// ======================================================================
-	// Refer ID
+	// Refer Session ID
 	// ======================================================================
 	/**
 	 * このセッションの ID を参照します。
 	 *
 	 * @return id ID of this session
 	 */
-	public long getId() {
-		return id;
-	}
-
-	// ======================================================================
-	// Refer Total Requests
-	// ======================================================================
-	/**
-	 * このセッション上で処理を行ったリクエスト数を参照します。
-	 *
-	 * @return requests count over this session
-	 */
-	public int getTotalRequests(){
-		return totalRequests;
-	}
-
-	// ======================================================================
-	// Refer Total Retrieval Size
-	// ======================================================================
-	/**
-	 * このセッション上でダウンロードされたデータ量を参照します。
-	 *
-	 * @return total retrieval byte-size over this session
-	 */
-	public long getTotalRetrieval() {
-		return totalRetrieval;
-	}
+	public long getId();
 
 	// ======================================================================
 	// Poll Request
@@ -145,77 +64,27 @@ public abstract class Session implements Serializable {
 	 * @return request object
 	 * @throws CrawlerException if fail to retrieve next request
 	 */
-	public Request poll() throws CrawlerException {
+	public Request poll() throws CrawlerException;
 
-		// 次に処理を行う URL を参照
-		URL url = pollURL();
-		if(url == null){
-			return null;
-		}
-
-		// リクエストを構築して返す
-		Request request = new Request(this, url);
-		totalRequests ++;
-		return request;
-	}
+	// ======================================================================
+	// Response Callback
+	// ======================================================================
+	/**
+	 * このセッション上で実行したリクエストの実行結果をコールバックします。
+	 *
+	 * @param response result of request over this session
+	 */
+	public void callback(Response response);
 
 	// ======================================================================
 	// Close Session
 	// ======================================================================
 	/**
-	 * このセッションをクローズします。
+	 * このセッションをクローズしクローリングのために確保していたリソースを開放します。
 	 *
-	 * @throws CrawlerException セッションのクローズに失敗した場合
+	 * @throws CrawlerException if fail to close session
 	 */
-	public void close() throws CrawlerException{
-		return;
-	}
-
-	// ======================================================================
-	// Poll Next URL
-	// ======================================================================
-	/**
-	 * このセッション上で次にリクエストすべき URL を参照します。これ以上リクエスト対象の URL が存在しない
-	 * 場合は null を返します。
-	 *
-	 * @return URL to request over this session
-	 * @throws CrawlerException fail if retrieve request url
-	 */
-	protected abstract URL pollURL() throws CrawlerException;
-
-	// ======================================================================
-	// Retrieve Cookies
-	// ======================================================================
-	/**
-	 * 指定された URL へリクエストを送るための Cookie を参照します。
-	 *
-	 * @param url URL for request
-	 * @return request object
-	 * @throws IOException if specified URL is invalid
-	 */
-	protected Iterable<Cookie> retrieve(URL url) throws IOException {
-		List<Cookie> c = new ArrayList<Session.Cookie>();
-		Date now = new Date();
-		for(Cookie cookie: cookies){
-			if(cookie.shouldSend(url, now)){
-				c.add(cookie);
-			}
-		}
-		return c;
-	}
-
-	// ======================================================================
-	// Increase Total Retrieval Size
-	// ======================================================================
-	/**
-	 * このセッション上で取得したデータ量を加算します。
-	 *
-	 * @param size increase amount in bytes
-	 */
-	void increaseTotalRetrieval(long size){
-		totalRetrieval += size;
-		return;
-	}
+	public void close() throws CrawlerException;
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	// Cookie: HTTP Cookie
@@ -269,9 +138,9 @@ public abstract class Session implements Serializable {
 			return value;
 		}
 
-		// ======================================================================
+		// ==================================================================
 		// Refer domain
-		// ======================================================================
+		// ==================================================================
 		/**
 		 * を参照します。
 		 *
@@ -280,9 +149,10 @@ public abstract class Session implements Serializable {
 		public String getDomain() {
 			return domain;
 		}
-		// ======================================================================
+
+		// ==================================================================
 		// Set domain
-		// ======================================================================
+		// ==================================================================
 		/**
 		 * を設定します。
 		 *
@@ -292,9 +162,10 @@ public abstract class Session implements Serializable {
 			this.domain = domain;
 			return;
 		}
-		// ======================================================================
+
+		// ==================================================================
 		// Refer path
-		// ======================================================================
+		// ==================================================================
 		/**
 		 * を参照します。
 		 *
@@ -303,9 +174,9 @@ public abstract class Session implements Serializable {
 		public String getPath() {
 			return path;
 		}
-		// ======================================================================
+		// ==================================================================
 		// Set path
-		// ======================================================================
+		// ==================================================================
 		/**
 		 * を設定します。
 		 *
@@ -315,9 +186,9 @@ public abstract class Session implements Serializable {
 			this.path = path;
 			return;
 		}
-		// ======================================================================
+		// ==================================================================
 		// Set expires
-		// ======================================================================
+		// ==================================================================
 		/**
 		 * を設定します。
 		 *
@@ -327,9 +198,9 @@ public abstract class Session implements Serializable {
 			this.expires = expires;
 			return;
 		}
-		// ======================================================================
+		// ==================================================================
 		// Refer expires
-		// ======================================================================
+		// ==================================================================
 		/**
 		 * を参照します。
 		 *
@@ -356,9 +227,9 @@ public abstract class Session implements Serializable {
 			return expires != null && date.after(expires);
 		}
 
-		// ======================================================================
+		// ==================================================================
 		// Refer httpOnly
-		// ======================================================================
+		// ==================================================================
 		/**
 		 * を参照します。
 		 *
@@ -367,9 +238,9 @@ public abstract class Session implements Serializable {
 		public boolean isHttpOnly() {
 			return httpOnly;
 		}
-		// ======================================================================
+		// ==================================================================
 		// Set httpOnly
-		// ======================================================================
+		// ==================================================================
 		/**
 		 * を設定します。
 		 *
@@ -379,9 +250,9 @@ public abstract class Session implements Serializable {
 			this.httpOnly = httpOnly;
 			return;
 		}
-		// ======================================================================
+		// ==================================================================
 		// Refer secure
-		// ======================================================================
+		// ==================================================================
 		/**
 		 * を参照します。
 		 *
@@ -390,9 +261,9 @@ public abstract class Session implements Serializable {
 		public boolean isSecure() {
 			return secure;
 		}
-		// ======================================================================
+		// ==================================================================
 		// Set secure
-		// ======================================================================
+		// ==================================================================
 		/**
 		 * を設定します。
 		 *
@@ -430,13 +301,24 @@ public abstract class Session implements Serializable {
 
 			// パスの比較
 			String path = url.getPath();
+			if(path == null || path.length() == 0){
+				path = "/";
+			}
+			if(! this.path.equals(path) && ! path.startsWith(this.path)){
+				// TODO 厳密な判定が必要
+				return false;
+			}
 
+			// Secure 判定
 			if(this.isSecure() && !url.getProtocol().equalsIgnoreCase("https")){
 				return false;
 			}
+
+			// 有効期限切れ判定
 			if(this.isExpired(date)){
 				return false;
 			}
+
 			return true;
 		}
 
