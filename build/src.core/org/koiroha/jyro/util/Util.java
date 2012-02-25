@@ -69,7 +69,7 @@ public final class Util {
 	 * URL スキームに対するデフォルトポートです。
 	 */
 	static {
-		ResourceBundle res = ResourceBundle.getBundle("org.koiroha.jyrobot.jyrobot");
+		ResourceBundle res = ResourceBundle.getBundle("org.koiroha.jyro.jyro");
 
 		// デフォルトポートの参照
 		final String defPortPrefix = "defaultPort.";
